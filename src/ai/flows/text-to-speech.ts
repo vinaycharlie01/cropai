@@ -11,9 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { googleAI } from '@genkit-ai/googleai';
-import wav from 'wav';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { Buffer } from 'buffer';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
@@ -27,29 +26,6 @@ const TextToSpeechOutputSchema = z.object({
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 
-async function toWav(
-  pcmData: Buffer,
-  channels = 1,
-  rate = 24000, // Gemini TTS outputs at 24kHz
-  sampleWidth = 2
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const writer = new wav.Writer({
-      channels,
-      sampleRate: rate,
-      bitDepth: sampleWidth * 8,
-    });
-
-    const buffers: Buffer[] = [];
-    writer.on('data', (chunk) => buffers.push(chunk));
-    writer.on('end', () => resolve(Buffer.concat(buffers).toString('base64')));
-    writer.on('error', reject);
-
-    writer.write(pcmData);
-    writer.end();
-  });
-}
-
 const textToSpeechFlow = ai.defineFlow(
     {
         name: 'textToSpeechFlow',
@@ -60,7 +36,7 @@ const textToSpeechFlow = ai.defineFlow(
         const ttsLanguageCode = getTtsLanguageCode(input.language);
         
         const { media } = await ai.generate({
-            model: googleAI.model('gemini-2.5-flash-preview-tts'),
+            model: 'googleai/gemini-2.5-flash-preview-tts',
             config: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
@@ -73,14 +49,25 @@ const textToSpeechFlow = ai.defineFlow(
         if (!media?.url) {
             throw new Error('Audio generation failed. No media was returned from the model.');
         }
+        
+        // The Gemini TTS model returns audio in 'audio/L16;rate=24000;channels=1' PCM format.
+        // Most browsers can't play this directly. We need to convert it to a WAV file.
+        // A WAV file is just PCM data with a specific header.
 
-        // The data URI is base64 encoded PCM data, format: 'data:audio/L16;rate=24000;channels=1;base64,...'
-        const audioBuffer = Buffer.from(
+        const pcmData = Buffer.from(
             media.url.substring(media.url.indexOf(',') + 1),
             'base64'
         );
+        
+        const wavHeader = createWavHeader({
+          numFrames: pcmData.length / 2, // 16-bit PCM has 2 bytes per frame
+          sampleRate: 24000,
+          numChannels: 1,
+          bytesPerSample: 2,
+        });
 
-        const wavBase64 = await toWav(audioBuffer);
+        const wavData = Buffer.concat([wavHeader, pcmData]);
+        const wavBase64 = wavData.toString('base64');
 
         return {
             audioDataUri: `data:audio/wav;base64,${wavBase64}`,
@@ -90,4 +77,48 @@ const textToSpeechFlow = ai.defineFlow(
 
 export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
+}
+
+
+// Helper function to create a WAV file header.
+function createWavHeader(options: {
+  numFrames: number;
+  sampleRate: number;
+  numChannels: number;
+  bytesPerSample: number;
+}): Buffer {
+  const { numFrames, sampleRate, numChannels, bytesPerSample } = options;
+  const blockAlign = numChannels * bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = numFrames * blockAlign;
+  const buffer = Buffer.alloc(44);
+
+  // RIFF identifier
+  buffer.write('RIFF', 0);
+  // file length
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  // RIFF type
+  buffer.write('WAVE', 8);
+  // format chunk identifier
+  buffer.write('fmt ', 12);
+  // format chunk length
+  buffer.writeUInt32LE(16, 16);
+  // sample format (raw)
+  buffer.writeUInt16LE(1, 20);
+  // channel count
+  buffer.writeUInt16LE(numChannels, 22);
+  // sample rate
+  buffer.writeUInt32LE(sampleRate, 24);
+  // byte rate (sample rate * block align)
+  buffer.writeUInt32LE(byteRate, 28);
+  // block align (channel count * bytes per sample)
+  buffer.writeUInt16LE(blockAlign, 32);
+  // bits per sample
+  buffer.writeUInt16LE(bytesPerSample * 8, 34);
+  // data chunk identifier
+  buffer.write('data', 36);
+  // data chunk length
+  buffer.writeUInt32LE(dataSize, 40);
+
+  return buffer;
 }
