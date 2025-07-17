@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, Play, Pause, Volume2 } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -16,9 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { TranslationKeys } from '@/lib/translations';
 
 type FormInputs = {
   cropType: string;
@@ -27,28 +25,6 @@ type FormInputs = {
 };
 
 type FacingMode = 'user' | 'environment';
-
-const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
-
-const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
-    if (typeof window === 'undefined' || (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined')) return;
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-
-    oscillator.type = type;
-    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-
-    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.2);
-};
-
 
 export default function DiagnosePage() {
   const { t, language } = useLanguage();
@@ -68,92 +44,6 @@ export default function DiagnosePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
-  const recognitionRef = useRef<any>(null);
-  
-  const { isLoading: isAudioLoading, isPlaying, hasAudio, generateAudio, play, pause } = useAudioPlayer();
-
-  useEffect(() => {
-    if (diagnosis) {
-      const textToSpeak = [
-        t('disease') + ': ' + diagnosis.disease,
-        t('treatment') + ': ' + diagnosis.treatment,
-        t('remedies') + ': ' + diagnosis.remedies,
-      ].join('. ');
-      generateAudio(textToSpeak, language);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [diagnosis]);
-
-
-  useEffect(() => {
-    if (SpeechRecognition && !recognitionRef.current) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = false;
-
-        recognition.onresult = (event: any) => {
-            const transcript = event.results[0][0].transcript;
-            const currentListeningField = (recognition as any)._listeningField;
-            if (currentListeningField) {
-                setValue(currentListeningField, transcript, { shouldValidate: true });
-            }
-        };
-
-        recognition.onaudiostart = () => {
-            playSound(440, 'sine');
-        };
-
-        recognition.onaudioend = () => {
-            playSound(220, 'sine');
-            setListeningField(null);
-        };
-
-        recognition.onerror = (event: any) => {
-            console.error('Speech recognition error', event.error);
-            if (event.error !== 'no-speech') {
-                toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
-            }
-            setListeningField(null);
-        };
-
-        recognition.onend = () => {
-            setListeningField(null);
-        };
-
-        recognitionRef.current = recognition;
-    }
-  }, [setValue, t, toast]);
-
-
-  const toggleListening = (field: keyof FormInputs) => {
-    if (!SpeechRecognition || !recognitionRef.current) return;
-    const recognition = recognitionRef.current;
-    
-    // If we are listening to a field, and the user clicks the same button, stop listening.
-    if (listeningField === field) {
-        recognition.stop();
-        setListeningField(null);
-        return;
-    }
-
-    // If we are listening to another field, stop that one first.
-    if (listeningField) {
-        recognition.stop();
-    }
-    
-    // Start listening to the new field.
-    (recognition as any)._listeningField = field;
-    recognition.lang = language;
-    setListeningField(field);
-    try {
-        recognition.start();
-    } catch (e) {
-        console.error("Could not start recognition", e);
-        setListeningField(null);
-    }
-  };
-  
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -321,41 +211,6 @@ export default function DiagnosePage() {
       }
   };
   
-  const renderInputWithMic = (id: keyof FormInputs, placeholderKey: TranslationKeys, requiredMessageKey: TranslationKeys) => (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{t(id as TranslationKeys)}</Label>
-      <div className="relative">
-        <Input id={id} placeholder={t(placeholderKey)} {...register(id, { required: t(requiredMessageKey) })} />
-        {SpeechRecognition && (
-            <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${listeningField === id ? "text-destructive animate-pulse" : ""}`}
-                onClick={() => toggleListening(id)}
-            >
-                <Mic className="h-4 w-4" />
-            </Button>
-        )}
-      </div>
-      {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
-    </div>
-  );
-  
-  const AudioControls = () => {
-    if (isAudioLoading) {
-      return <Button variant="ghost" size="icon" disabled><Loader2 className="animate-spin" /></Button>;
-    }
-    if (hasAudio) {
-      return (
-        <Button variant="ghost" size="icon" onClick={isPlaying ? pause : play}>
-          {isPlaying ? <Pause /> : <Play />}
-        </Button>
-      );
-    }
-    return <Button variant="ghost" size="icon" disabled><Volume2 /></Button>;
-  };
-
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -370,8 +225,17 @@ export default function DiagnosePage() {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-             {renderInputWithMic('cropType', 'egTomato', 'cropTypeRequired')}
-             {renderInputWithMic('location', 'egAndhraPradesh', 'locationRequired')}
+            <div className="space-y-2">
+              <Label htmlFor="cropType">{t('cropType')}</Label>
+              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+              {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="location">{t('location')}</Label>
+              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+              {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
+            </div>
             
             <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange} value={activeTab}>
               <TabsList className="grid w-full grid-cols-2">
@@ -450,12 +314,11 @@ export default function DiagnosePage() {
             {diagnosis && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                 <Card className="bg-background">
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader>
                       <div className="flex items-center gap-2">
                         <Bot />
                         <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                       </div>
-                       <AudioControls />
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
