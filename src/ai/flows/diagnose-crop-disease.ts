@@ -24,17 +24,11 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
-const PesticideSuggestionSchema = z.object({
-  name: z.string().describe('The commercial name of the pesticide.'),
-  description: z.string().describe('Instructions on how to use the pesticide for the diagnosed disease.'),
-  purchaseLink: z.string().url().describe('A simulated e-commerce search link to buy the product. Generate a google.com search link.'),
-});
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy".'),
   remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
-  pesticideSuggestions: z.array(PesticideSuggestionSchema).describe('A list of 1 to 3 suggested pesticides to treat the disease. If the plant is healthy, this array should be empty.'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -52,13 +46,8 @@ const prompt = ai.definePrompt({
 1.  Your entire response MUST be in the language specified: **{{{language}}}**.
 2.  You MUST provide the output in the specified JSON format. Do not add any text before or after the JSON object.
 3.  **Disease**: Identify the disease. If the plant is healthy, you MUST state "Healthy".
-4.  **Remedies**: Provide non-pesticide remedies or care tips.
-5.  **Confidence**: Provide a confidence score between 0.0 and 1.0.
-6.  **Pesticide Suggestions**:
-    *   If a disease is found, suggest 1 to 3 pesticides.
-    *   For each pesticide, provide \`name\`, \`description\`, and a \`purchaseLink\`.
-    *   The \`purchaseLink\` MUST be a full Google search URL like "https://www.google.com/search?q=buy+PesticideName".
-    *   If the plant is "Healthy", the \`pesticideSuggestions\` array MUST be empty (\`[]\`).
+4.  **Remedies**: Provide non-pesticide remedies or general care tips if the plant is healthy.
+5.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
 
 **INPUT DATA:**
 *   **Crop Type**: {{{cropType}}}

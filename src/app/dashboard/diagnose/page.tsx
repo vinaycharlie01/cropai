@@ -272,7 +272,7 @@ export default function DiagnosePage() {
 
     let imageDataUri: string | null = null;
     
-    if (data.image && data.image[0]) {
+    if (data.image && data.image.length > 0) {
       imageDataUri = await fileToDataUri(data.image[0]);
     } else if (imagePreview) {
       imageDataUri = imagePreview;
@@ -298,11 +298,6 @@ export default function DiagnosePage() {
         setDiagnosis(result);
         if (result) {
             let diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}.`;
-            if(result.pesticideSuggestions && result.pesticideSuggestions.length > 0) {
-                const pesticidesText = result.pesticideSuggestions.map(p => `${p.name}: ${p.description}`).join(' ');
-                diagnosisText += ` ${t('treatmentSuggestions')}: ${pesticidesText}`;
-            }
-
             if (diagnosisText.trim().length > 0) {
                 diagnosisAudio.generateAudio(diagnosisText, language);
             }
@@ -463,31 +458,6 @@ export default function DiagnosePage() {
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
                         <p className="text-lg font-bold text-primary">{(diagnosis.confidence * 100).toFixed(0)}%</p>
                       </div>
-                      
-                      {diagnosis.pesticideSuggestions && diagnosis.pesticideSuggestions.length > 0 && (
-                        <div>
-                          <Separator className="my-4" />
-                          <h3 className="font-semibold text-muted-foreground mb-2">{t('treatmentSuggestions')}</h3>
-                          <div className="space-y-4">
-                            {diagnosis.pesticideSuggestions.map((pesticide, index) => (
-                              <div key={index} className="p-4 bg-muted/50 rounded-lg">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h4 className="font-bold">{pesticide.name}</h4>
-                                        <p className="text-sm mt-1">{pesticide.description}</p>
-                                    </div>
-                                    <a href={pesticide.purchaseLink} target="_blank" rel="noopener noreferrer">
-                                      <Button size="sm" className="ml-4 shrink-0">
-                                        <ShoppingCart className="mr-2 h-4 w-4"/>
-                                        {t('buyNow')}
-                                      </Button>
-                                    </a>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </CardContent>
                 </Card>
               </motion.div>
