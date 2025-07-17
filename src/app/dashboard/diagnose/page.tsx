@@ -272,13 +272,9 @@ export default function DiagnosePage() {
 
     let imageDataUri: string | null = null;
     
-    // Process the file from the form input first if it exists
     if (data.image && data.image[0]) {
       imageDataUri = await fileToDataUri(data.image[0]);
-      setImagePreview(imageDataUri);
-    } 
-    // Otherwise, use the preview from camera capture if available
-    else if (imagePreview) {
+    } else if (imagePreview) {
       imageDataUri = imagePreview;
     }
 
@@ -300,11 +296,16 @@ export default function DiagnosePage() {
           language: language,
         });
         setDiagnosis(result);
-        if (result && result.disease && result.remedies) {
-          const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
-          if (diagnosisText.trim().length > 0) {
-            diagnosisAudio.generateAudio(diagnosisText, language);
-          }
+        if (result) {
+            let diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}.`;
+            if(result.pesticideSuggestions && result.pesticideSuggestions.length > 0) {
+                const pesticidesText = result.pesticideSuggestions.map(p => `${p.name}: ${p.description}`).join(' ');
+                diagnosisText += ` ${t('treatmentSuggestions')}: ${pesticidesText}`;
+            }
+
+            if (diagnosisText.trim().length > 0) {
+                diagnosisAudio.generateAudio(diagnosisText, language);
+            }
         }
       } catch (e) {
         console.error(e);
@@ -369,7 +370,7 @@ export default function DiagnosePage() {
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: (value) => (value && value.length > 0) || imagePreview !== null || activeTab === 'camera' || t('noImage') })} />
+                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: (value) => (value && value.length > 0) || imagePreview !== null || t('noImage') })} />
                   <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">{t('uploadOrDrag')}</p>
@@ -462,6 +463,31 @@ export default function DiagnosePage() {
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
                         <p className="text-lg font-bold text-primary">{(diagnosis.confidence * 100).toFixed(0)}%</p>
                       </div>
+                      
+                      {diagnosis.pesticideSuggestions && diagnosis.pesticideSuggestions.length > 0 && (
+                        <div>
+                          <Separator className="my-4" />
+                          <h3 className="font-semibold text-muted-foreground mb-2">{t('treatmentSuggestions')}</h3>
+                          <div className="space-y-4">
+                            {diagnosis.pesticideSuggestions.map((pesticide, index) => (
+                              <div key={index} className="p-4 bg-muted/50 rounded-lg">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h4 className="font-bold">{pesticide.name}</h4>
+                                        <p className="text-sm mt-1">{pesticide.description}</p>
+                                    </div>
+                                    <a href={pesticide.purchaseLink} target="_blank" rel="noopener noreferrer">
+                                      <Button size="sm" className="ml-4 shrink-0">
+                                        <ShoppingCart className="mr-2 h-4 w-4"/>
+                                        {t('buyNow')}
+                                      </Button>
+                                    </a>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                 </Card>
               </motion.div>

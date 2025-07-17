@@ -24,10 +24,17 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
+const PesticideSuggestionSchema = z.object({
+  name: z.string().describe('The commercial name of the pesticide.'),
+  description: z.string().describe('Instructions on how to use the pesticide for the diagnosed disease.'),
+  purchaseLink: z.string().url().describe('A simulated e-commerce search link to buy the product. Generate a google.com search link.'),
+});
+
 const DiagnoseCropDiseaseOutputSchema = z.object({
-  disease: z.string().describe('The identified disease, if any.'),
-  remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease.'),
+  disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy".'),
+  remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
+  pesticideSuggestions: z.array(PesticideSuggestionSchema).describe('A list of 1 to 3 suggested pesticides to treat the disease. If the plant is healthy, this array should be empty.'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -39,16 +46,23 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert in plant pathology. Analyze the image and details provided.
+  prompt: `You are an expert agricultural botanist specializing in plant pathology. Your task is to analyze an image of a crop and provide a diagnosis and treatment plan.
 
-Your response must be in this language: {{{language}}}.
+Your entire response MUST be in the language specified: {{{language}}}.
 
-Based on the image of the {{{cropType}}} from {{{location}}}, provide the following:
-1.  **disease**: The name of the disease. If no disease is detected, state "Healthy".
-2.  **remedies**: General, non-pesticide remedies. If the plant is healthy, suggest general care tips.
-3.  **confidence**: Your confidence level in the diagnosis (from 0.0 to 1.0).
+Analyze the image of the {{{cropType}}} from {{{location}}}.
 
-Image is here: {{media url=photoDataUri}}
+Based on your analysis, you must provide the following information in a structured format:
+1.  **disease**: Identify the specific disease affecting the plant. If the plant appears healthy, state "Healthy".
+2.  **remedies**: Provide a few non-pesticide, general care remedies or preventative measures. If the plant is healthy, suggest general care tips.
+3.  **confidence**: State your confidence level in this diagnosis on a scale from 0.0 to 1.0.
+4.  **pesticideSuggestions**:
+    *   If a disease is identified, suggest 1 to 3 commercially available pesticides suitable for treating it.
+    *   For each pesticide, provide its commercial **name**, a brief **description** of how to apply it for the specific disease, and a **purchaseLink**.
+    *   The purchaseLink MUST be a valid Google search URL for buying the product online (e.g., "https://www.google.com/search?q=buy+[Pesticide+Name]+online").
+    *   If the plant is diagnosed as "Healthy", you MUST return an empty array [] for pesticideSuggestions.
+
+Here is the image to analyze: {{media url=photoDataUri}}
 `,
 });
 
