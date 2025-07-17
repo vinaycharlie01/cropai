@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A Text-to-Speech (TTS) AI agent, rebuilt for reliability.
+ * @fileOverview A Text-to-Speech (TTS) AI agent.
  *
  * - textToSpeech - Converts text to speech.
  * - TextToSpeechInput - The input type for the textToSpeech function.

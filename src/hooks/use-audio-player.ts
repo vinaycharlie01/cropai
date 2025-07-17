@@ -1,4 +1,3 @@
-
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { useToast } from './use-toast';
@@ -47,7 +46,9 @@ export const useAudioPlayer = () => {
       audio.removeEventListener('playing', onPlaying);
       audio.removeEventListener('pause', onPause);
       audio.removeEventListener('ended', onEnded);
-      audio.pause();
+      if (audioRef.current) {
+        audioRef.current.pause();
+      }
       audioRef.current = null;
     };
   }, []);
@@ -62,6 +63,7 @@ export const useAudioPlayer = () => {
       const result = await textToSpeech({ text, language });
       if (audioRef.current) {
         audioRef.current.src = result.audioDataUri;
+        play(); // Autoplay when ready
       }
     } catch (e) {
       console.error("TTS Error:", e);
@@ -76,7 +78,7 @@ export const useAudioPlayer = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast, cleanup]);
+  }, [toast, cleanup, play]);
 
   const hasAudio = !!audioRef.current?.src;
 

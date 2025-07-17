@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, Play, Pause, Volume2 } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TranslationKeys } from '@/lib/translations';
 
@@ -69,6 +70,21 @@ export default function DiagnosePage() {
 
   const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
   const recognitionRef = useRef<any>(null);
+  
+  const { isLoading: isAudioLoading, isPlaying, hasAudio, generateAudio, play, pause } = useAudioPlayer();
+
+  useEffect(() => {
+    if (diagnosis) {
+      const textToSpeak = [
+        t('disease') + ': ' + diagnosis.disease,
+        t('treatment') + ': ' + diagnosis.treatment,
+        t('remedies') + ': ' + diagnosis.remedies,
+      ].join('. ');
+      generateAudio(textToSpeak, language);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [diagnosis]);
+
 
   useEffect(() => {
     if (SpeechRecognition && !recognitionRef.current) {
@@ -320,6 +336,20 @@ export default function DiagnosePage() {
       {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
     </div>
   );
+  
+  const AudioControls = () => {
+    if (isAudioLoading) {
+      return <Button variant="ghost" size="icon" disabled><Loader2 className="animate-spin" /></Button>;
+    }
+    if (hasAudio) {
+      return (
+        <Button variant="ghost" size="icon" onClick={isPlaying ? pause : play}>
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
+      );
+    }
+    return <Button variant="ghost" size="icon" disabled><Volume2 /></Button>;
+  };
 
   return (
     <motion.div 
@@ -420,6 +450,7 @@ export default function DiagnosePage() {
                         <Bot />
                         <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                       </div>
+                       <AudioControls />
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
