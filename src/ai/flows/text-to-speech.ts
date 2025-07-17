@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -15,7 +16,7 @@ import wav from 'wav';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
-  languageCode: z.string().describe('The language code for the speech (e.g., "en-US", "hi-IN").'),
+  language: z.string().describe('The language code for the speech (e.g., "en", "hi").'),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
@@ -63,11 +64,16 @@ const textToSpeechFlow = ai.defineFlow(
             model: googleAI.model('gemini-2.5-flash-preview-tts'),
             config: {
                 responseModalities: ['AUDIO'],
+                speechConfig: {
+                    // Although languageCode is not directly in the API for this model,
+                    // providing it in the prompt helps guide the pronunciation.
+                    // The model is multilingual and infers language from text.
+                },
             },
             prompt: input.text,
         });
 
-        if (!media) {
+        if (!media || !media.url) {
             throw new Error('No audio was generated.');
         }
 
@@ -87,3 +93,5 @@ const textToSpeechFlow = ai.defineFlow(
 export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
 }
+
+    

@@ -3,12 +3,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Volume2 } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause, Volume2 } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
 import { suggestTreatment, SuggestTreatmentOutput } from '@/ai/flows/smart-treatment-suggestions';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -28,7 +28,6 @@ type FormInputs = {
 
 type FacingMode = 'user' | 'environment';
 
-// SpeechRecognition is a browser API, so we need to check for its existence
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 export default function DiagnosePage() {
@@ -52,9 +51,10 @@ export default function DiagnosePage() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [isListening, setIsListening] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const [isAudioLoading, setIsAudioLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
+
+  const diagnosisAudio = useAudioPlayer();
+  const treatmentAudio = useAudioPlayer();
 
   useEffect(() => {
     if (SpeechRecognition) {
@@ -67,7 +67,7 @@ export default function DiagnosePage() {
         const transcript = event.results[0][0].transcript;
         const targetField = (recognitionRef.current as any).targetField as keyof FormInputs;
         if (targetField) {
-            setValue(targetField, transcript);
+            setValue(targetField, transcript, { shouldValidate: true });
         }
         setIsListening(false);
       };
@@ -75,7 +75,7 @@ export default function DiagnosePage() {
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
         setIsListening(false);
-        toast({ variant: 'destructive', title: "Speech Error", description: "Could not recognize speech." });
+        toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
       };
 
       recognitionRef.current.onend = () => {
@@ -86,13 +86,15 @@ export default function DiagnosePage() {
 
 
   const startListening = (field: keyof FormInputs) => {
-    if (recognitionRef.current && !isListening) {
-      (recognitionRef.current as any).targetField = field;
-      recognitionRef.current.start();
-      setIsListening(true);
-    } else if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
+    if (recognitionRef.current) {
+        if(isListening) {
+            recognitionRef.current.stop();
+            setIsListening(false);
+        } else {
+            (recognitionRef.current as any).targetField = field;
+            recognitionRef.current.start();
+            setIsListening(true);
+        }
     }
   };
   
@@ -165,30 +167,12 @@ export default function DiagnosePage() {
     };
   }, [activeTab, facingMode, startCamera, stopCamera, detectCameras]);
   
-  const playAudioResult = useCallback(async (text: string) => {
-    if (!text) return;
-    setIsAudioLoading(true);
-    setAudioUrl(null);
-    try {
-        const result = await textToSpeech({ text, languageCode: language });
-        setAudioUrl(result.audioDataUri);
-    } catch (e) {
-        console.error("TTS Error:", e);
-        toast({ variant: "destructive", title: "Audio Error", description: "Could not generate audio." });
-    } finally {
-        setIsAudioLoading(false);
-    }
-  }, [language, toast]);
-
-  useEffect(() => {
-    if (audioUrl) {
-      const audio = new Audio(audioUrl);
-      audio.play();
-    }
-  }, [audioUrl]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
+    // Reset audio players when tab changes
+    diagnosisAudio.cleanup();
+    treatmentAudio.cleanup();
   };
 
   const handleSwitchCamera = () => {
@@ -232,6 +216,7 @@ export default function DiagnosePage() {
         dataTransfer.items.add(file);
         setValue('image', dataTransfer.files, { shouldValidate: true });
         clearErrors('image');
+        setActiveTab('upload');
       }
     }
   };
@@ -240,12 +225,15 @@ export default function DiagnosePage() {
     if (!diagnosis) return;
     setIsTreatmentLoading(true);
     setError(null);
+    treatmentAudio.cleanup();
     const { cropType, location } = watch();
     try {
       const result = await suggestTreatment({ cropType, disease: diagnosis.disease, location });
       setTreatment(result);
+      treatmentAudio.generateAudio(result.treatmentSuggestions, language);
     } catch (e) {
       setError(t('errorDiagnosis'));
+      toast({ variant: "destructive", title: t('error'), description: "Could not generate treatment suggestions." });
     } finally {
       setIsTreatmentLoading(false);
     }
@@ -265,7 +253,7 @@ export default function DiagnosePage() {
     if (!imageDataUri) {
         toast({
             variant: "destructive",
-            title: "Error",
+            title: t('error'),
             description: t('noImage'),
         })
         return;
@@ -275,7 +263,8 @@ export default function DiagnosePage() {
     setError(null);
     setDiagnosis(null);
     setTreatment(null);
-    setAudioUrl(null);
+    diagnosisAudio.cleanup();
+    treatmentAudio.cleanup();
     
     try {
         const result = await diagnoseCropDisease({
@@ -286,33 +275,48 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
-        playAudioResult(diagnosisText);
+        diagnosisAudio.generateAudio(diagnosisText, language);
       } catch (e) {
         console.error(e);
         setError(t('errorDiagnosis'));
+        toast({ variant: "destructive", title: t('error'), description: t('errorDiagnosis') });
       } finally {
         setIsLoading(false);
       }
   };
   
   const renderInputWithMic = (id: keyof FormInputs, placeholder: string, requiredMessage: string) => (
-    <div className="relative">
-      <Input id={id} placeholder={placeholder} {...register(id, { required: requiredMessage })} />
-      {SpeechRecognition && (
-          <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${isListening && (recognitionRef.current as any)?.targetField === id ? "text-destructive animate-pulse" : ""}`}
-              onClick={() => startListening(id)}
-          >
-              <Mic className="h-4 w-4" />
-          </Button>
-      )}
+    <div className="space-y-2">
+      <Label htmlFor={id}>{t(id as TranslationKeys)}</Label>
+      <div className="relative">
+        <Input id={id} placeholder={placeholder} {...register(id, { required: requiredMessage })} />
+        {SpeechRecognition && (
+            <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${isListening && (recognitionRef.current as any)?.targetField === id ? "text-destructive animate-pulse" : ""}`}
+                onClick={() => startListening(id)}
+            >
+                <Mic className="h-4 w-4" />
+            </Button>
+        )}
+      </div>
       {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
     </div>
   );
 
+  const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
+    const { isLoading, isPlaying, play, pause } = audioHook;
+
+    if (isLoading) {
+      return <Loader2 className="h-5 w-5 animate-spin" />;
+    }
+    if (isPlaying) {
+      return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
+    }
+    return <Play className="h-5 w-5 cursor-pointer" onClick={play} />;
+  }
 
   return (
     <motion.div 
@@ -328,23 +332,17 @@ export default function DiagnosePage() {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-             <div className="space-y-2">
-              <Label htmlFor="cropType">{t('cropType')}</Label>
-              {renderInputWithMic('cropType', t('egTomato'), t('cropTypeRequired'))}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">{t('location')}</Label>
-              {renderInputWithMic('location', t('egAndhraPradesh'), t('locationRequired'))}
-            </div>
+             {renderInputWithMic('cropType', t('egTomato'), t('cropTypeRequired'))}
+             {renderInputWithMic('location', t('egAndhraPradesh'), t('locationRequired'))}
             
-            <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange}>
+            <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange} value={activeTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upload"><Upload className="mr-2" /> {t('uploadImage')}</TabsTrigger>
                 <TabsTrigger value="camera"><Video className="mr-2" /> {t('useCamera')}</TabsTrigger>
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: () => imagePreview !== null || t('noImage') })} />
+                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: () => imagePreview !== null || activeTab === 'camera' || t('noImage') })} />
                   <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">{t('uploadOrDrag')}</p>
@@ -406,7 +404,7 @@ export default function DiagnosePage() {
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <Alert variant="destructive">
                       <ShieldAlert className="h-4 w-4" />
-                      <AlertTitle>Error</AlertTitle>
+                      <AlertTitle>{t('error')}</AlertTitle>
                       <AlertDescription>{error}</AlertDescription>
                     </Alert>
                 </motion.div>
@@ -419,14 +417,10 @@ export default function DiagnosePage() {
                         <Bot />
                         <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => playAudioResult(`${t('disease')}: ${diagnosis.disease}. ${t('remedies')}: ${diagnosis.remedies}`)}
-                        disabled={isAudioLoading}
-                      >
-                        {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        {diagnosisAudio.audioUrl && <AudioControls audioHook={diagnosisAudio} />}
+                        {diagnosisAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                      </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
@@ -443,7 +437,7 @@ export default function DiagnosePage() {
                       </div>
                     </CardContent>
                     <CardFooter>
-                       <Button onClick={getTreatmentSuggestions} disabled={isTreatmentLoading} className="w-full">
+                       <Button onClick={getTreatmentSuggestions} disabled={isTreatmentLoading || !!treatment} className="w-full">
                           {isTreatmentLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
                           {t('getTreatment')}
                         </Button>
@@ -455,15 +449,14 @@ export default function DiagnosePage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="bg-background">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
-                             <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => playAudioResult(treatment.treatmentSuggestions)}
-                                disabled={isAudioLoading}
-                             >
-                                {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
-                             </Button>
+                             <div className="flex items-center gap-2">
+                                <Bot />
+                                <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
+                             </div>
+                             <div className="flex items-center gap-2">
+                                {treatmentAudio.audioUrl && <AudioControls audioHook={treatmentAudio} />}
+                                {treatmentAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                             </div>
                         </CardHeader>
                         <CardContent>
                             <p>{treatment.treatmentSuggestions}</p>
@@ -476,3 +469,5 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
+
+    

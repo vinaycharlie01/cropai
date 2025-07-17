@@ -1,3 +1,4 @@
+
 export const translations = {
   en: {
     welcomeMessage: "AI-powered assistant for farmers",
@@ -72,6 +73,7 @@ export const translations = {
     egSellTime: "e.g., Immediately, within 1 week",
     quantityRequired: "Quantity is required.",
     sellTimeRequired: "Desired sell time is required.",
+    humidity: "humidity"
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -146,6 +148,7 @@ export const translations = {
     egSellTime: "उदा., तुरंत, 1 सप्ताह के भीतर",
     quantityRequired: "मात्रा आवश्यक है।",
     sellTimeRequired: "इच्छित बिक्री समय आवश्यक है।",
+    humidity: "नमी"
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -220,6 +223,7 @@ export const translations = {
     egSellTime: "ఉదా., వెంటనే, 1 వారంలో",
     quantityRequired: "పరిమాణం అవసరం.",
     sellTimeRequired: "కోరిన అమ్మకం సమయం అవసరం.",
+    humidity: "తేమ"
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -294,6 +298,7 @@ export const translations = {
     egSellTime: "ಉದಾ., ತಕ್ಷಣ, 1 ವಾರದೊಳಗೆ",
     quantityRequired: "ಪ್ರಮಾಣ ಅಗತ್ಯವಿದೆ.",
     sellTimeRequired: "ಬಯಸಿದ ಮಾರಾಟ ಸಮಯ ಅಗತ್ಯವಿದೆ.",
+    humidity: "ತೇವಾಂಶ"
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -368,6 +373,7 @@ export const translations = {
     egSellTime: "ഉദാ., ഉടൻ, 1 ആഴ്ചയ്ക്കുള്ളിൽ",
     quantityRequired: "അളവ് ആവശ്യമാണ്.",
     sellTimeRequired: "ആവശ്യമുള്ള വിൽപ്പന സമയം ആവശ്യമാണ്.",
+    humidity: "ഈർപ്പം"
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -442,7 +448,10 @@ mandiPriceAdvisor: "மண்டி விலை ஆலோசகர்",
     egSellTime: "எ.கா., உடனடியாக, 1 வாரத்திற்குள்",
     quantityRequired: "அளவு தேவை.",
     sellTimeRequired: "விருப்பமான விற்பனை நேரம் தேவை.",
+    humidity: "ஈரப்பதம்"
   },
 };
 
 export type TranslationKeys = keyof typeof translations.en;
+
+    
