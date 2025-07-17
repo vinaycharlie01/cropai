@@ -46,24 +46,17 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert in plant pathology and agriculture, specializing in diagnosing crop diseases and recommending treatments.
+  prompt: `You are an expert in plant pathology. Analyze the image and details provided.
 
-You will analyze the provided image of a crop, its type, and the location where it is grown to determine if the plant has any diseases. If a disease is detected, you will provide a diagnosis, suggest remedies, and recommend specific pesticides.
+Your response must be in this language: {{{language}}}.
 
-Crop Type: {{{cropType}}}
-Location: {{{location}}}
-Photo: {{media url=photoDataUri}}
+Based on the image of the {{{cropType}}} from {{{location}}}, provide the following:
+1.  **disease**: The name of the disease.
+2.  **remedies**: General, non-pesticide remedies.
+3.  **confidence**: Your confidence level (0.0 to 1.0).
+4.  **pesticideSuggestions**: Suggest 2-3 specific, commonly available pesticides. For each, provide its name, a brief description, and a simulated e-commerce search link (e.g., a Google search for the product on an Indian agri-store).
 
-IMPORTANT: Your entire response, including the disease name, remedies, and pesticide information, MUST be in the following language: {{{language}}}.
-
-Your tasks are:
-1.  Identify the disease.
-2.  Provide general remedies (non-pesticide solutions).
-3.  Set a confidence level (0-1) for your diagnosis.
-4.  Suggest 2-3 specific, commonly available pesticides suitable for the crop, disease, and location.
-5.  For each pesticide, provide a brief description and a simulated e-commerce search link. The link should point to a Google search for the product on a popular Indian e-commerce platform for agricultural products (e.g., 'https://www.google.com/search?q=Buy+[Pesticide+Name]+on+agri-shopping-site').
-
-Respond with the identified disease, remedies, confidence, and a list of pesticide suggestions.
+Image is here: {{media url=photoDataUri}}
 `,
 });
 
