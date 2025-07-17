@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -44,7 +45,7 @@ export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Prom
 const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
-  output: {schema: DiagnoseoseCropDiseaseOutputSchema},
+  output: {schema: DiagnoseCropDiseaseOutputSchema},
   prompt: `You are an expert in plant pathology and agriculture, specializing in diagnosing crop diseases and recommending treatments.
 
 You will analyze the provided image of a crop, its type, and the location where it is grown to determine if the plant has any diseases. If a disease is detected, you will provide a diagnosis, suggest remedies, and recommend specific pesticides.
