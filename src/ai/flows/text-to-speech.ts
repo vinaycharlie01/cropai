@@ -12,7 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getTtsLanguageCode } from '@/lib/translations';
-import { Buffer } from 'buffer';
+import { Buffer } from 'node:buffer';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
