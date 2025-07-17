@@ -18,7 +18,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+};
+
+const configWithAllowedOrigins = {
+  ...nextConfig,
   allowedDevOrigins: ["**/*.cloudworkstations.dev"],
 };
 
-export default nextConfig;
+export default configWithAllowedOrigins;
