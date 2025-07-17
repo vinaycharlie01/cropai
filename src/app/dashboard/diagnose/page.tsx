@@ -85,7 +85,6 @@ export default function DiagnosePage() {
 
         recognition.onresult = (event: any) => {
             const transcript = event.results[0][0].transcript;
-            // The target field is stored in a ref to avoid dependency issues with state in the callback
             const currentListeningField = (recognition as any)._listeningField;
             if (currentListeningField) {
                 setValue(currentListeningField, transcript, { shouldValidate: true });
@@ -129,7 +128,6 @@ export default function DiagnosePage() {
         if(listeningField) {
             recognition.stop();
         }
-        // Store the field to be updated in a property on the recognition instance
         (recognition as any)._listeningField = field;
         recognition.lang = language;
         setListeningField(field);
@@ -274,7 +272,9 @@ export default function DiagnosePage() {
     try {
       const result = await suggestTreatment({ cropType, disease: diagnosis.disease, location });
       setTreatment(result);
-      treatmentAudio.generateAudio(result.treatmentSuggestions, language);
+      if (result.treatmentSuggestions) {
+        treatmentAudio.generateAudio(result.treatmentSuggestions, language);
+      }
     } catch (e) {
       setError(t('errorDiagnosis'));
       toast({ variant: "destructive", title: t('error'), description: "Could not generate treatment suggestions." });
@@ -319,7 +319,9 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
-        diagnosisAudio.generateAudio(diagnosisText, language);
+        if (result.disease && result.remedies) {
+          diagnosisAudio.generateAudio(diagnosisText, language);
+        }
       } catch (e) {
         console.error(e);
         setError(t('errorDiagnosis'));
@@ -510,5 +512,3 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
-
-    
