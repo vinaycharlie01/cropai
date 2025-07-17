@@ -1,0 +1,62 @@
+'use server';
+
+/**
+ * @fileOverview A crop disease diagnosis AI agent.
+ *
+ * - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
+ * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
+ * - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+
+const DiagnoseCropDiseaseInputSchema = z.object({
+  photoDataUri: z
+    .string()
+    .describe(
+      "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+    ),
+  cropType: z.string().describe('The type of crop in the photo.'),
+  location: z.string().describe('The geographic location where the crop is grown.'),
+});
+export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
+
+const DiagnoseCropDiseaseOutputSchema = z.object({
+  disease: z.string().describe('The identified disease, if any.'),
+  remedies: z.string().describe('Suggested remedies for the identified disease.'),
+  confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
+});
+export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
+
+export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Promise<DiagnoseCropDiseaseOutput> {
+  return diagnoseCropDiseaseFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'diagnoseCropDiseasePrompt',
+  input: {schema: DiagnoseCropDiseaseInputSchema},
+  output: {schema: DiagnoseCropDiseaseOutputSchema},
+  prompt: `You are an expert in plant pathology and agriculture, specializing in diagnosing crop diseases and recommending treatments.
+
+You will analyze the provided image of a crop, its type, and the location where it is grown to determine if the plant has any diseases. If a disease is detected, you will provide a diagnosis and suggest appropriate remedies.
+
+Crop Type: {{{cropType}}}
+Location: {{{location}}}
+Photo: {{media url=photoDataUri}}
+
+Respond with the identified disease (if any), suggested remedies, and a confidence level (0-1) for the diagnosis.
+`,
+});
+
+const diagnoseCropDiseaseFlow = ai.defineFlow(
+  {
+    name: 'diagnoseCropDiseaseFlow',
+    inputSchema: DiagnoseCropDiseaseInputSchema,
+    outputSchema: DiagnoseCropDiseaseOutputSchema,
+  },
+  async input => {
+    const {output} = await prompt(input);
+    return output!;
+  }
+);
