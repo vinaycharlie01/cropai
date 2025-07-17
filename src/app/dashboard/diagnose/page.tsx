@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
@@ -27,7 +27,7 @@ type FormInputs = {
 export default function DiagnosePage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { register, handleSubmit, watch, formState: { errors }, setValue } = useForm<FormInputs>();
+  const { register, handleSubmit, watch, formState: { errors }, setValue, clearErrors } = useForm<FormInputs>();
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<DiagnoseCropDiseaseOutput | null>(null);
@@ -36,43 +36,61 @@ export default function DiagnosePage() {
   const [isTreatmentLoading, setIsTreatmentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState('upload');
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const stopCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    }
+  }, []);
+
+  const startCamera = useCallback(async () => {
+    if (streamRef.current) return;
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setHasCameraPermission(false);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      setHasCameraPermission(true);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      setHasCameraPermission(false);
+      toast({
+        variant: 'destructive',
+        title: t('cameraAccessDeniedTitle'),
+        description: t('cameraAccessDeniedDesc'),
+      });
+    }
+  }, [toast, t]);
 
   useEffect(() => {
-    const getCameraPermission = async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setHasCameraPermission(false);
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        setHasCameraPermission(true);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
-      }
-    };
-
-    getCameraPermission();
-    
     return () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
-    }
-  }, [toast]);
+      stopCamera();
+    };
+  }, [stopCamera]);
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    if (value === 'camera') {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+  };
+  
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -82,6 +100,7 @@ export default function DiagnosePage() {
         setDiagnosis(null);
         setTreatment(null);
         setError(null);
+        clearErrors('image');
       };
       reader.readAsDataURL(file);
     }
@@ -101,14 +120,14 @@ export default function DiagnosePage() {
         setDiagnosis(null);
         setTreatment(null);
         setError(null);
-
-        // Convert data URL to File object and set it in the form
+        
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const file = new File([blob], 'capture.png', { type: 'image/png' });
         const dataTransfer = new DataTransfer();
         dataTransfer.items.add(file);
         setValue('image', dataTransfer.files, { shouldValidate: true });
+        clearErrors('image');
       }
     }
   };
@@ -129,14 +148,14 @@ export default function DiagnosePage() {
   };
 
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    let imageDataUri: string | null = null;
+    let imageDataUri: string | null = imagePreview;
 
-    if (data.image && data.image[0]) {
-      imageDataUri = await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(data.image[0]);
-      });
+    if (!imageDataUri && data.image && data.image[0]) {
+        imageDataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(data.image[0]);
+        });
     }
 
     if (!imageDataUri) {
@@ -184,26 +203,26 @@ export default function DiagnosePage() {
           <CardContent className="space-y-4">
              <div className="space-y-2">
               <Label htmlFor="cropType">{t('cropType')}</Label>
-              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: 'Crop type is required.' })} />
+              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
               {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">{t('location')}</Label>
-              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: 'Location is required.' })} />
+              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
               {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
             </div>
             
-            <Tabs defaultValue="upload" className="w-full">
+            <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="upload"><Upload className="mr-2" /> {t('uploadImage')}</TabsTrigger>
                 <TabsTrigger value="camera"><Video className="mr-2" /> {t('useCamera')}</TabsTrigger>
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, required: 'An image is required.' })} />
+                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: () => imagePreview !== null || t('noImage') })} />
                   <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
-                      <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag and drop</p>
+                      <p className="mt-2 text-sm text-muted-foreground">{t('uploadOrDrag')}</p>
                   </label>
                    {errors.image && !imagePreview && <p className="text-destructive text-sm">{errors.image.message}</p>}
                 </div>
@@ -215,13 +234,13 @@ export default function DiagnosePage() {
                         <canvas ref={canvasRef} className="hidden" />
                          {hasCameraPermission === false && (
                             <Alert variant="destructive" className="w-auto m-4">
-                               <AlertTitle>Camera Access Required</AlertTitle>
+                               <AlertTitle>{t('cameraAccessDeniedTitle')}</AlertTitle>
                                 <AlertDescription>
-                                    Please allow camera access.
+                                    {t('cameraAccessDeniedDesc')}
                                 </AlertDescription>
                             </Alert>
                          )}
-                         {hasCameraPermission === null && (
+                         {activeTab === 'camera' && hasCameraPermission === null && (
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          )}
                     </div>
