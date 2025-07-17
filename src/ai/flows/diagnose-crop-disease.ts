@@ -56,9 +56,9 @@ const prompt = ai.definePrompt({
 5.  **Confidence**: Provide a confidence score between 0.0 and 1.0.
 6.  **Pesticide Suggestions**:
     *   If a disease is found, suggest 1 to 3 pesticides.
-    *   For each pesticide, provide `name`, `description`, and a `purchaseLink`.
-    *   The `purchaseLink` MUST be a full Google search URL like "https://www.google.com/search?q=buy+PesticideName".
-    *   If the plant is "Healthy", the `pesticideSuggestions` array MUST be empty (`[]`).
+    *   For each pesticide, provide \`name\`, \`description\`, and a \`purchaseLink\`.
+    *   The \`purchaseLink\` MUST be a full Google search URL like "https://www.google.com/search?q=buy+PesticideName".
+    *   If the plant is "Healthy", the \`pesticideSuggestions\` array MUST be empty (\`[]\`).
 
 **INPUT DATA:**
 *   **Crop Type**: {{{cropType}}}
