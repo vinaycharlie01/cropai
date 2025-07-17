@@ -31,7 +31,7 @@ type FacingMode = 'user' | 'environment';
 const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
-    if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
+    if (typeof window === 'undefined' || (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined')) return;
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -129,23 +129,28 @@ export default function DiagnosePage() {
   const toggleListening = (field: keyof FormInputs) => {
     if (!SpeechRecognition || !recognitionRef.current) return;
     const recognition = recognitionRef.current;
-
+    
+    // If we are listening to a field, and the user clicks the same button, stop listening.
     if (listeningField === field) {
         recognition.stop();
         setListeningField(null);
-    } else {
-        if(listeningField) {
-            recognition.stop();
-        }
-        (recognition as any)._listeningField = field;
-        recognition.lang = language;
-        setListeningField(field);
-        try {
-            recognition.start();
-        } catch (e) {
-            console.error("Could not start recognition", e);
-            setListeningField(null);
-        }
+        return;
+    }
+
+    // If we are listening to another field, stop that one first.
+    if (listeningField) {
+        recognition.stop();
+    }
+    
+    // Start listening to the new field.
+    (recognition as any)._listeningField = field;
+    recognition.lang = language;
+    setListeningField(field);
+    try {
+        recognition.start();
+    } catch (e) {
+        console.error("Could not start recognition", e);
+        setListeningField(null);
     }
   };
   
@@ -478,5 +483,3 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
-
-    

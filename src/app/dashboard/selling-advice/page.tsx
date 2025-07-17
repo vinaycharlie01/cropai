@@ -28,7 +28,7 @@ type FormInputs = {
 const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
-    if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
+    if (typeof window === 'undefined' || (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined')) return;
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -252,5 +252,3 @@ export default function SellingAdvicePage() {
     </motion.div>
   );
 }
-
-    

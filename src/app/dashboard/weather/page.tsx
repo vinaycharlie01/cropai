@@ -23,7 +23,7 @@ type FormInputs = {
 const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
-    if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
+    if (typeof window === 'undefined' || (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined')) return;
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -75,7 +75,7 @@ export default function WeatherPage() {
   useEffect(() => {
     if (forecast) {
       const textToSpeak = forecast.forecast
-        .map(day => `${day.day}: ${day.condition}, temperature ${day.temperature}, humidity ${day.humidity}.`)
+        .map(day => `${day.day}: ${day.condition}, ${t('temperature')} ${day.temperature}, ${t('humidity')} ${day.humidity}.`)
         .join(' ');
       generateAudio(`${t('forecastFor')} ${submittedLocation}. ${textToSpeak}`, language);
     }
@@ -96,7 +96,6 @@ export default function WeatherPage() {
       
       recognition.onaudiostart = () => {
         playSound(440, 'sine');
-        setIsListening(true);
       };
 
       recognition.onaudioend = () => {
@@ -127,10 +126,12 @@ export default function WeatherPage() {
 
     if (isListening) {
         recognition.stop();
+        setIsListening(false);
     } else {
         try {
             recognition.lang = language;
             recognition.start();
+            setIsListening(true);
         } catch (e) {
             console.error("Could not start recognition", e);
             setIsListening(false);
@@ -273,5 +274,3 @@ export default function WeatherPage() {
     </motion.div>
   );
 }
-
-    
