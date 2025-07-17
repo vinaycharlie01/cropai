@@ -65,9 +65,9 @@ const textToSpeechFlow = ai.defineFlow(
             config: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
-                    // Although languageCode is not directly in the API for this model,
-                    // providing it in the prompt helps guide the pronunciation.
-                    // The model is multilingual and infers language from text.
+                    // The model is multilingual and infers language from text,
+                    // but providing the language code can help guide pronunciation.
+                    languageCode: input.language,
                 },
             },
             prompt: input.text,
@@ -93,5 +93,3 @@ const textToSpeechFlow = ai.defineFlow(
 export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
 }
-
-    
