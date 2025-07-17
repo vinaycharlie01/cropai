@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 type FormInputs = {
   cropType: string;
@@ -47,19 +48,25 @@ export default function DiagnosePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const { transcript, isListening, startListening, stopListening } = useSpeechRecognition({
-    onResult: (result) => {
-        if (activeSttField) {
-            setValue(activeSttField, result, { shouldValidate: true });
-            setActiveSttField(null);
-        }
-    },
-    onError: (err) => {
-        console.error(err);
-        toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
-        setActiveSttField(null);
+  const onRecognitionResult = useCallback((result: string) => {
+    if (activeSttField) {
+      setValue(activeSttField, result, { shouldValidate: true });
+      setActiveSttField(null);
     }
+  }, [activeSttField, setValue]);
+
+  const onRecognitionError = useCallback((err: string) => {
+      console.error(err);
+      toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+      setActiveSttField(null);
+  }, [t, toast]);
+
+
+  const { transcript, isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: onRecognitionResult,
+    onError: onRecognitionError,
   });
+
 
   const handleSttToggle = (field: SttField) => {
     if (isListening && activeSttField === field) {
@@ -67,7 +74,8 @@ export default function DiagnosePage() {
         setActiveSttField(null);
     } else {
         setActiveSttField(field);
-        startListening(language);
+        const ttsLang = getTtsLanguageCode(language);
+        startListening(ttsLang);
     }
   };
 
@@ -262,6 +270,7 @@ export default function DiagnosePage() {
                     variant="ghost"
                     onClick={() => handleSttToggle('cropType')}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    disabled={!isSupported}
                 >
                     <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                 </Button>
@@ -279,6 +288,7 @@ export default function DiagnosePage() {
                     variant="ghost"
                     onClick={() => handleSttToggle('location')}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    disabled={!isSupported}
                 >
                     <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                 </Button>
