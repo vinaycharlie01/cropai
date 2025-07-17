@@ -127,7 +127,6 @@ export default function SellingAdvicePage() {
     setIsLoading(true);
     setError(null);
     setAdvice(null);
-    adviceAudio.cleanup();
 
     try {
       const result = await getSellingAdvice({ ...data, language });
@@ -163,10 +162,9 @@ export default function SellingAdvicePage() {
     </div>
   );
 
-  const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
-    const { isPlaying, play, pause } = audioHook;
-    if (isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
-    return <Play className="h-5 w-5 cursor-pointer" onClick={play} />;
+  const AudioControls = () => {
+    if (adviceAudio.isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={adviceAudio.pause} />;
+    return <Play className="h-5 w-5 cursor-pointer" onClick={adviceAudio.play} />;
   }
 
   return (
@@ -223,7 +221,7 @@ export default function SellingAdvicePage() {
                     </div>
                      <div className="flex items-center gap-2">
                         {adviceAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {adviceAudio.audioUrl && <AudioControls audioHook={adviceAudio} />}
+                        {adviceAudio.hasAudio && <AudioControls />}
                       </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

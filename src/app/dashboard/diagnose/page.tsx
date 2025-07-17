@@ -208,7 +208,6 @@ export default function DiagnosePage() {
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    diagnosisAudio.cleanup();
   };
 
   const handleSwitchCamera = () => {
@@ -267,7 +266,6 @@ export default function DiagnosePage() {
     setIsLoading(true);
     setError(null);
     setDiagnosis(null);
-    diagnosisAudio.cleanup();
 
     let imageDataUri: string | null = null;
     
@@ -296,7 +294,7 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         if (result) {
-            let diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}. ${t('treatment')}: ${result.treatment}.`;
+            const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}. ${t('treatment')}: ${result.treatment}.`;
             if (diagnosisText.trim().length > 0) {
                 diagnosisAudio.generateAudio(diagnosisText, language);
             }
@@ -332,13 +330,11 @@ export default function DiagnosePage() {
     </div>
   );
 
-  const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
-    const { isPlaying, play, pause } = audioHook;
-
-    if (isPlaying) {
-      return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
+  const AudioControls = () => {
+    if (diagnosisAudio.isPlaying) {
+      return <Pause className="h-5 w-5 cursor-pointer" onClick={diagnosisAudio.pause} />;
     }
-    return <Play className="h-5 w-5 cursor-pointer" onClick={play} />;
+    return <Play className="h-5 w-5 cursor-pointer" onClick={diagnosisAudio.play} />;
   }
 
   return (
@@ -442,7 +438,7 @@ export default function DiagnosePage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {diagnosisAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {diagnosisAudio.audioUrl && <AudioControls audioHook={diagnosisAudio} />}
+                        {diagnosisAudio.hasAudio && <AudioControls />}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">

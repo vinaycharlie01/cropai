@@ -132,7 +132,6 @@ export default function WeatherPage() {
     setError(null);
     setForecast(null);
     setSubmittedLocation(data.location);
-    forecastAudio.cleanup();
 
     try {
       const result = await getWeatherForecast({ location: data.location });
@@ -150,10 +149,9 @@ export default function WeatherPage() {
     }
   };
 
-  const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
-    const { isPlaying, play, pause } = audioHook;
-    if (isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
-    return <Play className="h-5 w-5 cursor-pointer" onClick={play} />;
+  const AudioControls = () => {
+    if (forecastAudio.isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={forecastAudio.pause} />;
+    return <Play className="h-5 w-5 cursor-pointer" onClick={forecastAudio.play} />;
   }
 
   return (
@@ -225,7 +223,7 @@ export default function WeatherPage() {
                     <CardTitle className="font-headline text-xl">{t('forecastFor')} {submittedLocation}</CardTitle>
                      <div className="flex items-center gap-2">
                         {forecastAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {forecastAudio.audioUrl && <AudioControls audioHook={forecastAudio} />}
+                        {forecastAudio.hasAudio && <AudioControls />}
                       </div>
                 </CardHeader>
                 <CardContent>
