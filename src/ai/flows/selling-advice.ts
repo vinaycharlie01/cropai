@@ -14,7 +14,10 @@ import {z} from 'genkit';
 
 const SellingAdviceInputSchema = z.object({
   cropType: z.string().describe('The type of crop to be sold.'),
+  quantity: z.string().describe('The quantity of the crop to be sold (e.g., "10 quintals").'),
   location: z.string().describe('The current location of the farmer.'),
+  desiredSellTime: z.string().describe('The desired timeframe for selling the crop (e.g., "immediately", "within a week").'),
+  language: z.string().describe('The language for the advice (e.g., "English", "Hindi", "Telugu").'),
 });
 export type SellingAdviceInput = z.infer<typeof SellingAdviceInputSchema>;
 
@@ -31,14 +34,21 @@ const prompt = ai.definePrompt({
   name: 'sellingAdvicePrompt',
   input: {schema: SellingAdviceInputSchema},
   output: {schema: SellingAdviceOutputSchema},
-  prompt: `You are an agricultural market expert. Based on the provided crop type and farmer's location, provide detailed advice on the best time and place to sell the crop for maximum profit.
+  prompt: `You are an agricultural market expert. Based on the provided crop type, quantity, farmer's location, and desired selling time, provide detailed advice on the best time and place to sell the crop for maximum profit.
 
-Consider factors like current market trends, demand in nearby cities/mandis, off-season advantages, and storage options.
+Consider factors like current market trends, demand in nearby cities/mandis, off-season advantages, storage options, and transportation costs.
 
 Crop Type: {{{cropType}}}
+Quantity: {{{quantity}}}
 Location: {{{location}}}
+Desired Sell Time: {{{desiredSellTime}}}
 
-Provide actionable advice to help a small-scale farmer.
+Your response MUST be in the following language: {{{language}}}.
+
+Provide actionable advice. Specifically include:
+1.  The single best market/place to sell for maximum profit right now.
+2.  A few alternative markets with their potential pros and cons.
+3.  General advice based on the quantity and desired sell time (e.g., "For this quantity, it might be better to sell in bulk at a larger mandi," or "If you can wait, prices are expected to rise in a month.").
 `,
 });
 

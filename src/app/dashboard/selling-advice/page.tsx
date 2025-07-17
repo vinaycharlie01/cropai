@@ -17,10 +17,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 type FormInputs = {
   cropType: string;
   location: string;
+  quantity: string;
+  desiredSellTime: string;
 };
 
 export default function SellingAdvicePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
   const [advice, setAdvice] = useState<SellingAdviceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function SellingAdvicePage() {
     setError(null);
     setAdvice(null);
     try {
-      const result = await getSellingAdvice(data);
+      const result = await getSellingAdvice({ ...data, language });
       setAdvice(result);
     } catch (e) {
       console.error(e);
@@ -55,17 +57,29 @@ export default function SellingAdvicePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-             <div className="space-y-2">
-              <Label htmlFor="cropType">{t('cropType')}</Label>
-              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
-              {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="location">{t('location')}</Label>
-              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
-              {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
-            </div>
-            <Button type="submit" disabled={isLoading} className="w-full">
+             <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cropType">{t('cropType')}</Label>
+                  <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                  {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="location">{t('location')}</Label>
+                  <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                  {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quantity">{t('quantity')}</Label>
+                  <Input id="quantity" placeholder={t('egQuantity')} {...register('quantity', { required: t('quantityRequired') })} />
+                  {errors.quantity && <p className="text-destructive text-sm">{errors.quantity.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="desiredSellTime">{t('desiredSellTime')}</Label>
+                  <Input id="desiredSellTime" placeholder={t('egSellTime')} {...register('desiredSellTime', { required: t('sellTimeRequired') })} />
+                  {errors.desiredSellTime && <p className="text-destructive text-sm">{errors.desiredSellTime.message}</p>}
+                </div>
+             </div>
+            <Button type="submit" disabled={isLoading} className="w-full !mt-6">
               {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="mr-2 h-4 w-4" />}
               {t('getAdvice')}
             </Button>
@@ -97,7 +111,7 @@ export default function SellingAdvicePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-                        <Lightbulb className="h-6 w-6 text-primary mt-1" />
+                        <Lightbulb className="h-6 w-6 text-primary mt-1 shrink-0" />
                         <p className="whitespace-pre-wrap">{advice.advice}</p>
                     </div>
                 </CardContent>
