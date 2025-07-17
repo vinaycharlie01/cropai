@@ -28,6 +28,7 @@ export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSc
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy".'),
   remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips.'),
+  treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed".'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
@@ -46,8 +47,9 @@ const prompt = ai.definePrompt({
 1.  Your entire response MUST be in the language specified: **{{{language}}}**.
 2.  You MUST provide the output in the specified JSON format. Do not add any text before or after the JSON object.
 3.  **Disease**: Identify the disease. If the plant is healthy, you MUST state "Healthy".
-4.  **Remedies**: Provide non-pesticide remedies or general care tips if the plant is healthy.
-5.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
+4.  **Remedies**: Provide general, non-pesticide remedies or care tips.
+5.  **Treatment**: Provide specific, actionable treatment steps. If healthy, state "No treatment needed".
+6.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
 
 **INPUT DATA:**
 *   **Crop Type**: {{{cropType}}}

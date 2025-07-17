@@ -297,7 +297,7 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         if (result) {
-            let diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}.`;
+            let diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}. ${t('treatment')}: ${result.treatment}.`;
             if (diagnosisText.trim().length > 0) {
                 diagnosisAudio.generateAudio(diagnosisText, language);
             }
@@ -449,6 +449,10 @@ export default function DiagnosePage() {
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('disease')}</h3>
                         <p className="text-lg">{diagnosis.disease}</p>
+                      </div>
+                       <div>
+                        <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
+                        <p>{diagnosis.treatment}</p>
                       </div>
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>
