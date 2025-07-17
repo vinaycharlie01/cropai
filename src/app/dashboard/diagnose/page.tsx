@@ -256,30 +256,40 @@ export default function DiagnosePage() {
     }
   };
 
+  const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
+
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    let imageDataUri: string | null = imagePreview;
-
-    if (!imageDataUri && data.image && data.image[0]) {
-        imageDataUri = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(data.image[0]);
-        });
-    }
-
-    if (!imageDataUri) {
-        toast({
-            variant: "destructive",
-            title: t('error'),
-            description: t('noImage'),
-        })
-        return;
-    }
-
     setIsLoading(true);
     setError(null);
     setDiagnosis(null);
     diagnosisAudio.cleanup();
+
+    let imageDataUri: string | null = null;
+    
+    // Check if there's a preview from the camera capture or a recent file upload
+    if (imagePreview) {
+      imageDataUri = imagePreview;
+    } 
+    // Otherwise, process the file from the form input if it exists
+    else if (data.image && data.image[0]) {
+      imageDataUri = await fileToDataUri(data.image[0]);
+    }
+
+    if (!imageDataUri) {
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: t('noImage'),
+      });
+      setIsLoading(false);
+      return;
+    }
     
     try {
         const result = await diagnoseCropDisease({
@@ -291,7 +301,9 @@ export default function DiagnosePage() {
         setDiagnosis(result);
         if (result && result.disease && result.remedies) {
           const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
-          diagnosisAudio.generateAudio(diagnosisText, language);
+          if (diagnosisText.trim().length > 0) {
+            diagnosisAudio.generateAudio(diagnosisText, language);
+          }
         }
       } catch (e) {
         console.error(e);
