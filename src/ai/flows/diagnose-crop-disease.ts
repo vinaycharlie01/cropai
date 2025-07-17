@@ -46,23 +46,26 @@ const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
   output: {schema: DiagnoseCropDiseaseOutputSchema},
-  prompt: `You are an expert agricultural botanist specializing in plant pathology. Your task is to analyze an image of a crop and provide a diagnosis and treatment plan.
+  prompt: `You are an expert agricultural botanist. Analyze the provided image and information to diagnose crop diseases.
 
-Your entire response MUST be in the language specified: {{{language}}}.
+**IMPORTANT INSTRUCTIONS:**
+1.  Your entire response MUST be in the language specified: **{{{language}}}**.
+2.  You MUST provide the output in the specified JSON format. Do not add any text before or after the JSON object.
+3.  **Disease**: Identify the disease. If the plant is healthy, you MUST state "Healthy".
+4.  **Remedies**: Provide non-pesticide remedies or care tips.
+5.  **Confidence**: Provide a confidence score between 0.0 and 1.0.
+6.  **Pesticide Suggestions**:
+    *   If a disease is found, suggest 1 to 3 pesticides.
+    *   For each pesticide, provide `name`, `description`, and a `purchaseLink`.
+    *   The `purchaseLink` MUST be a full Google search URL like "https://www.google.com/search?q=buy+PesticideName".
+    *   If the plant is "Healthy", the `pesticideSuggestions` array MUST be empty (`[]`).
 
-Analyze the image of the {{{cropType}}} from {{{location}}}.
+**INPUT DATA:**
+*   **Crop Type**: {{{cropType}}}
+*   **Location**: {{{location}}}
+*   **Photo**: {{media url=photoDataUri}}
 
-Based on your analysis, you must provide the following information in a structured format:
-1.  **disease**: Identify the specific disease affecting the plant. If the plant appears healthy, state "Healthy".
-2.  **remedies**: Provide a few non-pesticide, general care remedies or preventative measures. If the plant is healthy, suggest general care tips.
-3.  **confidence**: State your confidence level in this diagnosis on a scale from 0.0 to 1.0.
-4.  **pesticideSuggestions**:
-    *   If a disease is identified, suggest 1 to 3 commercially available pesticides suitable for treating it.
-    *   For each pesticide, provide its commercial **name**, a brief **description** of how to apply it for the specific disease, and a **purchaseLink**.
-    *   The purchaseLink MUST be a valid Google search URL for buying the product online (e.g., "https://www.google.com/search?q=buy+[Pesticide+Name]+online").
-    *   If the plant is diagnosed as "Healthy", you MUST return an empty array [] for pesticideSuggestions.
-
-Here is the image to analyze: {{media url=photoDataUri}}
+Begin analysis and provide the structured JSON output now.
 `,
 });
 
@@ -74,6 +77,9 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
+    }
+    return output;
   }
 );
