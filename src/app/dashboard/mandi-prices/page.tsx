@@ -17,14 +17,20 @@ import {
 } from "@/components/ui/table"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { motion } from "framer-motion";
+import type { TranslationKeys } from "@/lib/translations";
 
-const prices = [
-  { crop: "Tomato", price: "₹2,500", region: "Maharashtra", trend: "up" },
-  { crop: "Onion", price: "₹1,800", region: "Karnataka", trend: "down" },
-  { crop: "Potato", price: "₹1,200", region: "Uttar Pradesh", trend: "stable" },
-  { crop: "Wheat", price: "₹2,100", region: "Punjab", trend: "up" },
-  { crop: "Rice (Basmati)", price: "₹3,500", region: "Haryana", trend: "stable" },
-  { crop: "Cotton", price: "₹6,000", region: "Gujarat", trend: "down" },
+const prices: {
+    cropKey: TranslationKeys;
+    price: string;
+    regionKey: TranslationKeys;
+    trend: string;
+}[] = [
+  { cropKey: "tomato", price: "₹2,500", regionKey: "maharashtra", trend: "up" },
+  { cropKey: "onion", price: "₹1,800", regionKey: "karnataka", trend: "down" },
+  { cropKey: "potato", price: "₹1,200", regionKey: "uttarPradesh", trend: "stable" },
+  { cropKey: "wheat", price: "₹2,100", regionKey: "punjab", trend: "up" },
+  { cropKey: "riceBasmati", price: "₹3,500", regionKey: "haryana", trend: "stable" },
+  { cropKey: "cotton", price: "₹6,000", regionKey: "gujarat", trend: "down" },
 ]
 
 export default function MandiPricesPage() {
@@ -58,13 +64,13 @@ export default function MandiPricesPage() {
             </TableHeader>
             <TableBody>
               {prices.map((item) => (
-                <TableRow key={item.crop} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{item.crop}</TableCell>
+                <TableRow key={item.cropKey} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{t(item.cropKey)}</TableCell>
                   <TableCell className="flex items-center gap-2">
                     <TrendArrow trend={item.trend} />
                     {item.price}
                   </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{item.region}</TableCell>
+                  <TableCell className="text-right text-muted-foreground">{t(item.regionKey)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
