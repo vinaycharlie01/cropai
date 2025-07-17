@@ -19,6 +19,7 @@ const DiagnoseCropDiseaseInputSchema = z.object({
     ),
   cropType: z.string().describe('The type of crop in the photo.'),
   location: z.string().describe('The geographic location where the crop is grown.'),
+  language: z.string().describe('The language for the diagnosis result (e.g., "English", "Hindi", "Telugu").'),
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
@@ -44,6 +45,8 @@ You will analyze the provided image of a crop, its type, and the location where 
 Crop Type: {{{cropType}}}
 Location: {{{location}}}
 Photo: {{media url=photoDataUri}}
+
+IMPORTANT: Your entire response, including the disease name and remedies, MUST be in the following language: {{{language}}}.
 
 Respond with the identified disease (if any), suggested remedies, and a confidence level (0-1) for the diagnosis.
 `,

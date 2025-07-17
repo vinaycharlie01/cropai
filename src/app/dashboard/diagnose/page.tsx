@@ -28,7 +28,7 @@ type FormInputs = {
 type FacingMode = 'user' | 'environment';
 
 export default function DiagnosePage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const { register, handleSubmit, watch, formState: { errors }, setValue, clearErrors } = useForm<FormInputs>();
 
@@ -211,6 +211,7 @@ export default function DiagnosePage() {
           photoDataUri: imageDataUri,
           cropType: data.cropType,
           location: data.location,
+          language: language,
         });
         setDiagnosis(result);
       } catch (e) {
@@ -366,5 +367,3 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
-
-    
