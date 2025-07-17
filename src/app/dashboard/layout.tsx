@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig } from 'lucide-react';
+import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
