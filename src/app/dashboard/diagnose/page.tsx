@@ -1,8 +1,9 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -24,6 +25,8 @@ type FormInputs = {
   image: FileList;
 };
 
+type FacingMode = 'user' | 'environment';
+
 export default function DiagnosePage() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -37,6 +40,8 @@ export default function DiagnosePage() {
   const [error, setError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
+  const [facingMode, setFacingMode] = useState<FacingMode>('environment');
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -52,14 +57,14 @@ export default function DiagnosePage() {
     }
   }, []);
 
-  const startCamera = useCallback(async () => {
-    if (streamRef.current) return;
+  const startCamera = useCallback(async (mode: FacingMode) => {
+    stopCamera();
     if (!navigator.mediaDevices?.getUserMedia) {
       setHasCameraPermission(false);
       return;
     }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: mode } });
       streamRef.current = stream;
       setHasCameraPermission(true);
       if (videoRef.current) {
@@ -67,29 +72,58 @@ export default function DiagnosePage() {
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-      toast({
-        variant: 'destructive',
-        title: t('cameraAccessDeniedTitle'),
-        description: t('cameraAccessDeniedDesc'),
-      });
+      // If environment camera fails, try user camera
+      if (mode === 'environment') {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+          setFacingMode('user');
+          streamRef.current = stream;
+          setHasCameraPermission(true);
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        } catch (userError) {
+          setHasCameraPermission(false);
+          toast({ variant: 'destructive', title: t('cameraAccessDeniedTitle'), description: t('cameraAccessDeniedDesc') });
+        }
+      } else {
+        setHasCameraPermission(false);
+        toast({ variant: 'destructive', title: t('cameraAccessDeniedTitle'), description: t('cameraAccessDeniedDesc') });
+      }
     }
-  }, [toast, t]);
+  }, [stopCamera, t, toast]);
+  
+  const detectCameras = useCallback(async () => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter(device => device.kind === 'videoinput');
+      setHasMultipleCameras(videoInputs.length > 1);
+    } catch (error) {
+      console.error("Could not enumerate devices:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    return () => {
-      stopCamera();
-    };
-  }, [stopCamera]);
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value === 'camera') {
-      startCamera();
+    if (activeTab === 'camera') {
+      startCamera(facingMode);
+      detectCameras();
     } else {
       stopCamera();
     }
+
+    return () => {
+      stopCamera();
+    };
+  }, [activeTab, facingMode, startCamera, stopCamera, detectCameras]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
   };
+
+  const handleSwitchCamera = () => {
+    setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
+  }
   
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -243,6 +277,11 @@ export default function DiagnosePage() {
                          {activeTab === 'camera' && hasCameraPermission === null && (
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          )}
+                         {hasCameraPermission && hasMultipleCameras && (
+                           <Button type="button" size="icon" variant="ghost" className="absolute bottom-2 right-2 bg-black/50 hover:bg-black/75 text-white rounded-full" onClick={handleSwitchCamera}>
+                             <SwitchCamera />
+                           </Button>
+                         )}
                     </div>
                   <Button type="button" onClick={handleCapture} className="w-full" disabled={!hasCameraPermission}>
                     <Camera className="mr-2" />
@@ -327,3 +366,5 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
+
+    
