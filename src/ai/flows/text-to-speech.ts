@@ -13,10 +13,11 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 import wav from 'wav';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
-  language: z.string().describe('The language code for the speech (e.g., "en-US", "hi-IN").'),
+  language: z.string().describe('The language code for the speech (e.g., "en", "hi").'),
 });
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
@@ -56,12 +57,14 @@ const textToSpeechFlow = ai.defineFlow(
         outputSchema: TextToSpeechOutputSchema,
     },
     async (input) => {
+        const ttsLanguageCode = getTtsLanguageCode(input.language);
+        
         const { media } = await ai.generate({
             model: googleAI.model('gemini-2.5-flash-preview-tts'),
             config: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
-                    languageCode: input.language,
+                    languageCode: ttsLanguageCode,
                 },
             },
             prompt: input.text,
