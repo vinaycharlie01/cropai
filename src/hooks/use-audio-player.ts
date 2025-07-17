@@ -10,6 +10,17 @@ export const useAudioPlayer = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
+  const cleanup = useCallback(() => {
+    if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
+        audioRef.current = null;
+    }
+    setAudioUrl(null);
+    setIsPlaying(false);
+    setIsLoading(false);
+  }, []);
+
   const generateAudio = useCallback(async (text: string, language: string) => {
     if (!text) return;
     setIsLoading(true);
@@ -24,46 +35,39 @@ export const useAudioPlayer = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  }, [toast, cleanup]);
   
   const play = useCallback(() => {
     if (audioRef.current) {
-        audioRef.current.play();
-        setIsPlaying(true);
+        audioRef.current.play().catch(e => console.error("Audio play error:", e));
     }
   }, []);
 
   const pause = useCallback(() => {
     if (audioRef.current) {
         audioRef.current.pause();
-        setIsPlaying(false);
     }
   }, []);
-  
-  const cleanup = useCallback(() => {
-      if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = '';
-      }
-      setAudioUrl(null);
-      setIsPlaying(false);
-      setIsLoading(false);
-  }, []);
-
 
   useEffect(() => {
     if (audioUrl) {
       audioRef.current = new Audio(audioUrl);
-      audioRef.current.onended = () => setIsPlaying(false);
-      audioRef.current.onpause = () => setIsPlaying(false);
-      audioRef.current.onplay = () => setIsPlaying(true);
-    }
-    
-    // Cleanup on unmount
-    return () => {
-        if(audioRef.current) {
-            audioRef.current.pause();
-        }
+      const audio = audioRef.current;
+      
+      const onPlaying = () => setIsPlaying(true);
+      const onPause = () => setIsPlaying(false);
+      const onEnded = () => setIsPlaying(false);
+
+      audio.addEventListener('playing', onPlaying);
+      audio.addEventListener('pause', onPause);
+      audio.addEventListener('ended', onEnded);
+      
+      return () => {
+        audio.removeEventListener('playing', onPlaying);
+        audio.removeEventListener('pause', onPause);
+        audio.removeEventListener('ended', onEnded);
+        audio.pause();
+      };
     }
   }, [audioUrl]);
 
@@ -78,5 +82,3 @@ export const useAudioPlayer = () => {
     cleanup,
   };
 };
-
-    

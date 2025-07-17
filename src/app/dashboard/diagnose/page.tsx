@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause, ShoppingCart } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, Play, Pause } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -19,7 +19,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TranslationKeys } from '@/lib/translations';
-import { Separator } from '@/components/ui/separator';
 
 type FormInputs = {
   cropType: string;
@@ -304,8 +303,9 @@ export default function DiagnosePage() {
         }
       } catch (e) {
         console.error(e);
-        setError(t('errorDiagnosis'));
-        toast({ variant: "destructive", title: t('error'), description: t('errorDiagnosis') });
+        const errorMessage = (e as Error).message || t('errorDiagnosis');
+        setError(errorMessage);
+        toast({ variant: "destructive", title: t('error'), description: errorMessage });
       } finally {
         setIsLoading(false);
       }
