@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, CloudSnow, Wind, Droplets, MapPin, Search, Loader2, Mic } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, Wind, Droplets, MapPin, Search, Loader2, Mic, Play, Pause, Volume2, Bot } from 'lucide-react';
 
 import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 type FormInputs = {
   location: string;
@@ -69,6 +70,18 @@ export default function WeatherPage() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  const { isLoading: isAudioLoading, isPlaying, hasAudio, generateAudio, play, pause } = useAudioPlayer();
+
+  useEffect(() => {
+    if (forecast) {
+      const textToSpeak = forecast.forecast
+        .map(day => `${day.day}: ${day.condition}, temperature ${day.temperature}, humidity ${day.humidity}.`)
+        .join(' ');
+      generateAudio(`${t('forecastFor')} ${submittedLocation}. ${textToSpeak}`, language);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forecast]);
+
 
    useEffect(() => {
     if (SpeechRecognition && !recognitionRef.current) {
@@ -142,6 +155,20 @@ export default function WeatherPage() {
       setIsLoading(false);
     }
   };
+  
+  const AudioControls = () => {
+    if (isAudioLoading) {
+      return <Button variant="ghost" size="icon" disabled><Loader2 className="animate-spin" /></Button>;
+    }
+    if (hasAudio) {
+      return (
+        <Button variant="ghost" size="icon" onClick={isPlaying ? pause : play}>
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
+      );
+    }
+    return <Button variant="ghost" size="icon" disabled><Volume2 /></Button>;
+  };
 
   return (
     <motion.div
@@ -210,6 +237,7 @@ export default function WeatherPage() {
             <Card className="bg-background">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="font-headline text-xl">{t('forecastFor')} {submittedLocation}</CardTitle>
+                    <AudioControls />
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -245,3 +273,5 @@ export default function WeatherPage() {
     </motion.div>
   );
 }
+
+    

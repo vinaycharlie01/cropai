@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Lightbulb, Loader2, Search, Mic } from 'lucide-react';
+import { Bot, Lightbulb, Loader2, Search, Mic, Play, Pause, Volume2 } from 'lucide-react';
 
 import { getSellingAdvice, SellingAdviceOutput } from '@/ai/flows/selling-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { useAudioPlayer } from '@/hooks/use-audio-player';
 import type { TranslationKeys } from '@/lib/translations';
 
 
@@ -56,6 +57,16 @@ export default function SellingAdvicePage() {
   const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
+  
+  const { isLoading: isAudioLoading, isPlaying, hasAudio, generateAudio, play, pause } = useAudioPlayer();
+
+  useEffect(() => {
+    if (advice) {
+      generateAudio(advice.advice, language);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [advice]);
+
 
   useEffect(() => {
     if (SpeechRecognition && !recognitionRef.current) {
@@ -159,6 +170,21 @@ export default function SellingAdvicePage() {
     </div>
   );
 
+  const AudioControls = () => {
+    if (isAudioLoading) {
+      return <Button variant="ghost" size="icon" disabled><Loader2 className="animate-spin" /></Button>;
+    }
+    if (hasAudio) {
+      return (
+        <Button variant="ghost" size="icon" onClick={isPlaying ? pause : play}>
+          {isPlaying ? <Pause /> : <Play />}
+        </Button>
+      );
+    }
+    return <Button variant="ghost" size="icon" disabled><Volume2 /></Button>;
+  };
+
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -211,6 +237,7 @@ export default function SellingAdvicePage() {
                         <Bot />
                         <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
                     </div>
+                    <AudioControls />
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
@@ -225,3 +252,5 @@ export default function SellingAdvicePage() {
     </motion.div>
   );
 }
+
+    

@@ -478,3 +478,5 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
+
+    
