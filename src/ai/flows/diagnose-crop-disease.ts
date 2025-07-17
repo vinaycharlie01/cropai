@@ -26,9 +26,9 @@ export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSc
 
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
-  disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy".'),
-  remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips.'),
-  treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed".'),
+  disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy". This field MUST be in the requested language.'),
+  remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips. This field MUST be in the requested language.'),
+  treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed". This field MUST be in the requested language.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert agricultural botanist. Analyze the provided image and information to diagnose crop diseases.
 
 **IMPORTANT INSTRUCTIONS:**
-1.  Your entire response MUST be in the language specified: **{{{language}}}**.
+1.  Your entire response, including the 'disease', 'remedies', and 'treatment' fields, MUST be in the language specified: **{{{language}}}**.
 2.  You MUST provide the output in the specified JSON format. Do not add any text before or after the JSON object.
 3.  **Disease**: Identify the disease. If the plant is healthy, you MUST state "Healthy".
 4.  **Remedies**: Provide general, non-pesticide remedies or care tips.
