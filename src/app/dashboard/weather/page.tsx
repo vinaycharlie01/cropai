@@ -20,7 +20,7 @@ type FormInputs = {
   location: string;
 };
 
-const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
     if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
@@ -73,27 +73,27 @@ export default function WeatherPage() {
   const { toast } = useToast();
 
    useEffect(() => {
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+    if (SpeechRecognition && !recognitionRef.current) {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = false;
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setValue('location', transcript, { shouldValidate: true });
       };
       
-      recognitionRef.current.onaudiostart = () => {
+      recognition.onaudiostart = () => {
         playSound(440, 'sine');
         setIsListening(true);
       };
 
-      recognitionRef.current.onaudioend = () => {
+      recognition.onaudioend = () => {
         playSound(220, 'sine');
         setIsListening(false);
       };
 
-      recognitionRef.current.onerror = (event: any) => {
+      recognition.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
         if (event.error !== 'no-speech') {
             toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
@@ -101,22 +101,25 @@ export default function WeatherPage() {
         setIsListening(false);
       };
 
-      recognitionRef.current.onend = () => {
+      recognition.onend = () => {
         setIsListening(false);
       };
+
+      recognitionRef.current = recognition;
     }
-  }, [language, setValue, toast]);
+  }, [setValue, t, toast]);
 
 
   const toggleListening = () => {
-     if (!SpeechRecognition) return;
+     if (!SpeechRecognition || !recognitionRef.current) return;
+     const recognition = recognitionRef.current;
 
     if (isListening) {
-        recognitionRef.current.stop();
+        recognition.stop();
     } else {
         try {
-            recognitionRef.current.lang = language;
-            recognitionRef.current.start();
+            recognition.lang = language;
+            recognition.start();
         } catch (e) {
             console.error("Could not start recognition", e);
             setIsListening(false);
@@ -148,8 +151,7 @@ export default function WeatherPage() {
   };
 
   const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
-    const { isLoading, isPlaying, play, pause } = audioHook;
-    if (isLoading) return <Loader2 className="h-5 w-5 animate-spin" />;
+    const { isPlaying, play, pause } = audioHook;
     if (isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
     return <Play className="h-5 w-5 cursor-pointer" onClick={play} />;
   }
@@ -222,8 +224,8 @@ export default function WeatherPage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="font-headline text-xl">{t('forecastFor')} {submittedLocation}</CardTitle>
                      <div className="flex items-center gap-2">
-                        {forecastAudio.audioUrl && <AudioControls audioHook={forecastAudio} />}
                         {forecastAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                        {forecastAudio.audioUrl && <AudioControls audioHook={forecastAudio} />}
                       </div>
                 </CardHeader>
                 <CardContent>

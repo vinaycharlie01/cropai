@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause, Volume2 } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -29,7 +29,7 @@ type FormInputs = {
 
 type FacingMode = 'user' | 'environment';
 
-const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+const SpeechRecognition = typeof window !== 'undefined' ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : null;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
     if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
@@ -78,57 +78,63 @@ export default function DiagnosePage() {
   const treatmentAudio = useAudioPlayer();
 
   useEffect(() => {
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
+    if (SpeechRecognition && !recognitionRef.current) {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
 
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        const targetField = listeningField;
-        if (targetField) {
-            setValue(targetField, transcript, { shouldValidate: true });
-        }
-      };
-      
-      recognitionRef.current.onaudiostart = () => {
-        playSound(440, 'sine');
-      };
-      
-      recognitionRef.current.onaudioend = () => {
-        playSound(220, 'sine');
-        setListeningField(null);
-      };
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            // The target field is stored in a ref to avoid dependency issues with state in the callback
+            const currentListeningField = (recognition as any)._listeningField;
+            if (currentListeningField) {
+                setValue(currentListeningField, transcript, { shouldValidate: true });
+            }
+        };
 
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error', event.error);
-        if (event.error !== 'no-speech') {
-            toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
-        }
-        setListeningField(null);
-      };
+        recognition.onaudiostart = () => {
+            playSound(440, 'sine');
+        };
 
-      recognitionRef.current.onend = () => {
-        setListeningField(null);
-      };
+        recognition.onaudioend = () => {
+            playSound(220, 'sine');
+            setListeningField(null);
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error', event.error);
+            if (event.error !== 'no-speech') {
+                toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
+            }
+            setListeningField(null);
+        };
+
+        recognition.onend = () => {
+            setListeningField(null);
+        };
+
+        recognitionRef.current = recognition;
     }
-  }, [setValue, toast, listeningField]);
+  }, [setValue, t, toast]);
 
 
   const toggleListening = (field: keyof FormInputs) => {
-    if (!SpeechRecognition) return;
+    if (!SpeechRecognition || !recognitionRef.current) return;
+    const recognition = recognitionRef.current;
 
     if (listeningField === field) {
-        recognitionRef.current.stop();
+        recognition.stop();
         setListeningField(null);
     } else {
         if(listeningField) {
-            recognitionRef.current.stop();
+            recognition.stop();
         }
+        // Store the field to be updated in a property on the recognition instance
+        (recognition as any)._listeningField = field;
         setListeningField(field);
         try {
-            recognitionRef.current.lang = language;
-            recognitionRef.current.start();
+            recognition.lang = language;
+            recognition.start();
         } catch (e) {
             console.error("Could not start recognition", e);
             setListeningField(null);
@@ -345,11 +351,8 @@ export default function DiagnosePage() {
   );
 
   const AudioControls = ({ audioHook }: { audioHook: ReturnType<typeof useAudioPlayer>}) => {
-    const { isLoading, isPlaying, play, pause } = audioHook;
+    const { isPlaying, play, pause } = audioHook;
 
-    if (isLoading) {
-      return <Loader2 className="h-5 w-5 animate-spin" />;
-    }
     if (isPlaying) {
       return <Pause className="h-5 w-5 cursor-pointer" onClick={pause} />;
     }
@@ -456,8 +459,8 @@ export default function DiagnosePage() {
                         <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                       </div>
                       <div className="flex items-center gap-2">
-                        {diagnosisAudio.audioUrl && <AudioControls audioHook={diagnosisAudio} />}
                         {diagnosisAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                        {diagnosisAudio.audioUrl && <AudioControls audioHook={diagnosisAudio} />}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -492,8 +495,8 @@ export default function DiagnosePage() {
                                 <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
                              </div>
                              <div className="flex items-center gap-2">
-                                {treatmentAudio.audioUrl && <AudioControls audioHook={treatmentAudio} />}
                                 {treatmentAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
+                                {treatmentAudio.audioUrl && <AudioControls audioHook={treatmentAudio} />}
                              </div>
                         </CardHeader>
                         <CardContent>
