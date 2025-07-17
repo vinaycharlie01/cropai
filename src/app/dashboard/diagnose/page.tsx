@@ -131,9 +131,9 @@ export default function DiagnosePage() {
         }
         // Store the field to be updated in a property on the recognition instance
         (recognition as any)._listeningField = field;
+        recognition.lang = language;
         setListeningField(field);
         try {
-            recognition.lang = language;
             recognition.start();
         } catch (e) {
             console.error("Could not start recognition", e);
@@ -510,3 +510,5 @@ export default function DiagnosePage() {
     </motion.div>
   );
 }
+
+    
