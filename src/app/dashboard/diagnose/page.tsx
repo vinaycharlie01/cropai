@@ -3,10 +3,11 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -24,6 +25,7 @@ type FormInputs = {
   image: FileList;
 };
 
+type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
 
 export default function DiagnosePage() {
@@ -39,10 +41,35 @@ export default function DiagnosePage() {
   const [activeTab, setActiveTab] = useState('upload');
   const [facingMode, setFacingMode] = useState<FacingMode>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+
+  const { transcript, isListening, startListening, stopListening } = useSpeechRecognition({
+    onResult: (result) => {
+        if (activeSttField) {
+            setValue(activeSttField, result, { shouldValidate: true });
+            setActiveSttField(null);
+        }
+    },
+    onError: (err) => {
+        console.error(err);
+        toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+        setActiveSttField(null);
+    }
+  });
+
+  const handleSttToggle = (field: SttField) => {
+    if (isListening && activeSttField === field) {
+        stopListening();
+        setActiveSttField(null);
+    } else {
+        setActiveSttField(field);
+        startListening(language);
+    }
+  };
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -227,13 +254,35 @@ export default function DiagnosePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="cropType">{t('cropType')}</Label>
-              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+              <div className="relative">
+                <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleSttToggle('cropType')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                >
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                </Button>
+              </div>
               {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="location">{t('location')}</Label>
-              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+              <div className="relative">
+                <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => handleSttToggle('location')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                >
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                </Button>
+              </div>
               {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
             </div>
             
