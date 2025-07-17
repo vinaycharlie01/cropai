@@ -87,7 +87,7 @@ export default function DiagnosePage() {
     }
   };
 
-  const handleCapture = () => {
+  const handleCapture = async () => {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -102,14 +102,13 @@ export default function DiagnosePage() {
         setTreatment(null);
         setError(null);
 
-        fetch(dataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const file = new File([blob], 'capture.png', { type: 'image/png' });
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-            setValue('image', dataTransfer.files);
-          });
+        // Convert data URL to File object and set it in the form
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], 'capture.png', { type: 'image/png' });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        setValue('image', dataTransfer.files, { shouldValidate: true });
       }
     }
   };
@@ -130,9 +129,9 @@ export default function DiagnosePage() {
   };
 
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
-    let imageDataUri = imagePreview;
+    let imageDataUri: string | null = null;
 
-    if (!imageDataUri && data.image && data.image[0]) {
+    if (data.image && data.image[0]) {
       imageDataUri = await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
@@ -201,12 +200,12 @@ export default function DiagnosePage() {
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange })} />
+                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, required: 'An image is required.' })} />
                   <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag and drop</p>
                   </label>
-                   {errors.image && !imagePreview && <p className="text-destructive text-sm">An image is required.</p>}
+                   {errors.image && !imagePreview && <p className="text-destructive text-sm">{errors.image.message}</p>}
                 </div>
               </TabsContent>
               <TabsContent value="camera">
