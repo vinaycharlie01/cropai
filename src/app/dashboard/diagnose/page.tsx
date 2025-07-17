@@ -3,11 +3,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Play, Pause, ShoppingCart } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
-import { suggestTreatment, SuggestTreatmentOutput } from '@/ai/flows/smart-treatment-suggestions';
 import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
 import type { TranslationKeys } from '@/lib/translations';
+import { Separator } from '@/components/ui/separator';
 
 type FormInputs = {
   cropType: string;
@@ -58,9 +58,7 @@ export default function DiagnosePage() {
 
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [diagnosis, setDiagnosis] = useState<DiagnoseCropDiseaseOutput | null>(null);
-  const [treatment, setTreatment] = useState<SuggestTreatmentOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isTreatmentLoading, setIsTreatmentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState('upload');
@@ -75,7 +73,6 @@ export default function DiagnosePage() {
   const recognitionRef = useRef<any>(null);
 
   const diagnosisAudio = useAudioPlayer();
-  const treatmentAudio = useAudioPlayer();
 
   useEffect(() => {
     if (SpeechRecognition && !recognitionRef.current) {
@@ -212,9 +209,7 @@ export default function DiagnosePage() {
   
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    // Reset audio players when tab changes
     diagnosisAudio.cleanup();
-    treatmentAudio.cleanup();
   };
 
   const handleSwitchCamera = () => {
@@ -228,7 +223,6 @@ export default function DiagnosePage() {
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
         setDiagnosis(null);
-        setTreatment(null);
         setError(null);
         clearErrors('image');
       };
@@ -248,7 +242,6 @@ export default function DiagnosePage() {
         const dataUrl = canvas.toDataURL('image/png');
         setImagePreview(dataUrl);
         setDiagnosis(null);
-        setTreatment(null);
         setError(null);
         
         const res = await fetch(dataUrl);
@@ -260,26 +253,6 @@ export default function DiagnosePage() {
         clearErrors('image');
         setActiveTab('upload');
       }
-    }
-  };
-
-  const getTreatmentSuggestions = async () => {
-    if (!diagnosis) return;
-    setIsTreatmentLoading(true);
-    setError(null);
-    treatmentAudio.cleanup();
-    const { cropType, location } = watch();
-    try {
-      const result = await suggestTreatment({ cropType, disease: diagnosis.disease, location });
-      setTreatment(result);
-      if (result.treatmentSuggestions) {
-        treatmentAudio.generateAudio(result.treatmentSuggestions, language);
-      }
-    } catch (e) {
-      setError(t('errorDiagnosis'));
-      toast({ variant: "destructive", title: t('error'), description: "Could not generate treatment suggestions." });
-    } finally {
-      setIsTreatmentLoading(false);
     }
   };
 
@@ -306,9 +279,7 @@ export default function DiagnosePage() {
     setIsLoading(true);
     setError(null);
     setDiagnosis(null);
-    setTreatment(null);
     diagnosisAudio.cleanup();
-    treatmentAudio.cleanup();
     
     try {
         const result = await diagnoseCropDisease({
@@ -478,34 +449,32 @@ export default function DiagnosePage() {
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
                         <p className="text-lg font-bold text-primary">{(diagnosis.confidence * 100).toFixed(0)}%</p>
                       </div>
+
+                      {diagnosis.pesticideSuggestions && diagnosis.pesticideSuggestions.length > 0 && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h3 className="font-headline text-lg mb-2">{t('treatmentSuggestions')}</h3>
+                            <div className="space-y-4">
+                              {diagnosis.pesticideSuggestions.map((suggestion, index) => (
+                                <div key={index} className="p-4 bg-muted/50 rounded-lg">
+                                    <h4 className="font-semibold">{suggestion.name}</h4>
+                                    <p className="text-sm text-muted-foreground mb-2">{suggestion.description}</p>
+                                    <Button asChild size="sm" className="gap-2">
+                                        <a href={suggestion.purchaseLink} target="_blank" rel="noopener noreferrer">
+                                            <ShoppingCart />
+                                            {t('buyNow')}
+                                        </a>
+                                    </Button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </CardContent>
-                    <CardFooter>
-                       <Button onClick={getTreatmentSuggestions} disabled={isTreatmentLoading || !!treatment} className="w-full">
-                          {isTreatmentLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                          {t('getTreatment')}
-                        </Button>
-                    </CardFooter>
                 </Card>
               </motion.div>
-            )}
-            {treatment && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-                    <Card className="bg-background">
-                        <CardHeader className="flex flex-row items-center justify-between">
-                             <div className="flex items-center gap-2">
-                                <Bot />
-                                <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
-                             </div>
-                             <div className="flex items-center gap-2">
-                                {treatmentAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                                {treatmentAudio.audioUrl && <AudioControls audioHook={treatmentAudio} />}
-                             </div>
-                        </CardHeader>
-                        <CardContent>
-                            <p>{treatment.treatmentSuggestions}</p>
-                        </CardContent>
-                    </Card>
-                </motion.div>
             )}
         </AnimatePresence>
       </div>

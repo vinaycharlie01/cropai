@@ -23,10 +23,17 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
+const PesticideSuggestionSchema = z.object({
+  name: z.string().describe('The brand or chemical name of the suggested pesticide.'),
+  description: z.string().describe('A brief description of why this pesticide is recommended and how to use it.'),
+  purchaseLink: z.string().url().describe('A simulated e-commerce search link to buy the product. The link should be a valid URL format, like a google search for the product on a popular indian e-commerce site for agricultural products.'),
+});
+
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any.'),
-  remedies: z.string().describe('Suggested remedies for the identified disease.'),
+  remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
+  pesticideSuggestions: z.array(PesticideSuggestionSchema).describe('A list of suggested pesticides to treat the identified disease.'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -37,18 +44,25 @@ export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Prom
 const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},
-  output: {schema: DiagnoseCropDiseaseOutputSchema},
+  output: {schema: DiagnoseoseCropDiseaseOutputSchema},
   prompt: `You are an expert in plant pathology and agriculture, specializing in diagnosing crop diseases and recommending treatments.
 
-You will analyze the provided image of a crop, its type, and the location where it is grown to determine if the plant has any diseases. If a disease is detected, you will provide a diagnosis and suggest appropriate remedies.
+You will analyze the provided image of a crop, its type, and the location where it is grown to determine if the plant has any diseases. If a disease is detected, you will provide a diagnosis, suggest remedies, and recommend specific pesticides.
 
 Crop Type: {{{cropType}}}
 Location: {{{location}}}
 Photo: {{media url=photoDataUri}}
 
-IMPORTANT: Your entire response, including the disease name and remedies, MUST be in the following language: {{{language}}}.
+IMPORTANT: Your entire response, including the disease name, remedies, and pesticide information, MUST be in the following language: {{{language}}}.
 
-Respond with the identified disease (if any), suggested remedies, and a confidence level (0-1) for the diagnosis.
+Your tasks are:
+1.  Identify the disease.
+2.  Provide general remedies (non-pesticide solutions).
+3.  Set a confidence level (0-1) for your diagnosis.
+4.  Suggest 2-3 specific, commonly available pesticides suitable for the crop, disease, and location.
+5.  For each pesticide, provide a brief description and a simulated e-commerce search link. The link should point to a Google search for the product on a popular Indian e-commerce platform for agricultural products (e.g., 'https://www.google.com/search?q=Buy+[Pesticide+Name]+on+agri-shopping-site').
+
+Respond with the identified disease, remedies, confidence, and a list of pesticide suggestions.
 `,
 });
 
