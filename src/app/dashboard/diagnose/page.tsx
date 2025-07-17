@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
+import { AnimatePresence, motion } from 'framer-motion';
 
 type FormInputs = {
   cropType: string;
@@ -101,7 +102,6 @@ export default function DiagnosePage() {
         setTreatment(null);
         setError(null);
 
-        // Convert Data URL to File object and set it in react-hook-form
         fetch(dataUrl)
           .then(res => res.blob())
           .then(blob => {
@@ -170,10 +170,10 @@ export default function DiagnosePage() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card>
+    <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up">
+      <Card className="bg-background">
         <CardHeader>
-          <CardTitle className="font-headline">{t('cropDiseaseDiagnosis')}</CardTitle>
+          <CardTitle className="font-headline text-2xl">{t('cropDiseaseDiagnosis')}</CardTitle>
           <CardDescription>{t('uploadInstruction')}</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -196,13 +196,10 @@ export default function DiagnosePage() {
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Label htmlFor="image-upload">{t('uploadImage')}</Label>
                   <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange })} />
-                  <label htmlFor="image-upload" className="cursor-pointer flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted">
-                    <div className="text-center">
+                  <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                    </div>
                   </label>
                    {errors.image && !imagePreview && <p className="text-destructive text-sm">An image is required.</p>}
                 </div>
@@ -221,10 +218,11 @@ export default function DiagnosePage() {
                             </Alert>
                          )}
                          {hasCameraPermission === null && (
-                            <Loader2 className="h-8 w-8 animate-spin" />
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
                          )}
                     </div>
                   <Button type="button" onClick={handleCapture} className="w-full" disabled={!hasCameraPermission}>
+                    <Camera className="mr-2" />
                     {t('captureImage')}
                   </Button>
                 </div>
@@ -250,51 +248,58 @@ export default function DiagnosePage() {
       </Card>
 
       <div className="space-y-6">
-        {error && (
-            <Alert variant="destructive">
-              <ShieldAlert className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-              <Button variant="link" className="p-0 h-auto mt-2">{t('helpSupport')}</Button>
-            </Alert>
-        )}
-        {diagnosis && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline flex items-center gap-2"><Bot /> {t('diagnosisResult')}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold">{t('disease')}</h3>
-                <p>{diagnosis.disease}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">{t('remedies')}</h3>
-                <p>{diagnosis.remedies}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold">{t('confidence')}</h3>
-                <p>{(diagnosis.confidence * 100).toFixed(2)}%</p>
-              </div>
-            </CardContent>
-            <CardFooter>
-               <Button onClick={getTreatmentSuggestions} disabled={isTreatmentLoading} className="w-full">
-                  {isTreatmentLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                  {t('getTreatment')}
-                </Button>
-            </CardFooter>
-          </Card>
-        )}
-        {treatment && (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>{treatment.treatmentSuggestions}</p>
-                </CardContent>
-            </Card>
-        )}
+        <AnimatePresence>
+            {error && (
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+                    <Alert variant="destructive">
+                      <ShieldAlert className="h-4 w-4" />
+                      <AlertTitle>Error</AlertTitle>
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                </motion.div>
+            )}
+            {diagnosis && (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+                <Card className="bg-background">
+                    <CardHeader>
+                      <CardTitle className="font-headline flex items-center gap-2"><Bot /> {t('diagnosisResult')}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-muted-foreground">{t('disease')}</h3>
+                        <p className="text-lg">{diagnosis.disease}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>
+                        <p>{diagnosis.remedies}</p>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
+                        <p className="text-lg font-bold text-primary">{(diagnosis.confidence * 100).toFixed(0)}%</p>
+                      </div>
+                    </CardContent>
+                    <CardFooter>
+                       <Button onClick={getTreatmentSuggestions} disabled={isTreatmentLoading} className="w-full">
+                          {isTreatmentLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                          {t('getTreatment')}
+                        </Button>
+                    </CardFooter>
+                </Card>
+              </motion.div>
+            )}
+            {treatment && (
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                    <Card className="bg-background">
+                        <CardHeader>
+                            <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p>{treatment.treatmentSuggestions}</p>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            )}
+        </AnimatePresence>
       </div>
     </div>
   );

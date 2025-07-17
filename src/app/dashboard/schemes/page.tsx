@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { motion } from "framer-motion";
 
 
 const schemes = [
@@ -41,27 +42,29 @@ export default function SchemesPage() {
     const { t } = useLanguage()
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline">{t('governmentSchemeNavigator')}</CardTitle>
-        <CardDescription>{t('schemeInfo')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Accordion type="single" collapsible className="w-full">
-          {schemes.map((scheme) => (
-            <AccordionItem value={scheme.id} key={scheme.id}>
-              <AccordionTrigger className="font-semibold">{scheme.title}</AccordionTrigger>
-              <AccordionContent className="space-y-4">
-                <p>{scheme.description}</p>
-                <div>
-                  <h4 className="font-medium">Eligibility:</h4>
-                  <p className="text-muted-foreground">{scheme.eligibility}</p>
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </CardContent>
-    </Card>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <Card className="bg-background">
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">{t('governmentSchemeNavigator')}</CardTitle>
+          <CardDescription>{t('schemeInfo')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Accordion type="single" collapsible className="w-full">
+            {schemes.map((scheme) => (
+              <AccordionItem value={scheme.id} key={scheme.id}>
+                <AccordionTrigger className="font-semibold text-lg hover:no-underline">{scheme.title}</AccordionTrigger>
+                <AccordionContent className="space-y-4 pt-2">
+                  <p className="text-muted-foreground">{scheme.description}</p>
+                  <div>
+                    <h4 className="font-medium text-primary">Eligibility:</h4>
+                    <p className="text-muted-foreground">{scheme.eligibility}</p>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

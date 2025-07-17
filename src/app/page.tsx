@@ -1,8 +1,9 @@
 'use client';
 
-import { use, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Leaf } from 'lucide-react';
+import { Leaf, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/lib/translations';
@@ -19,7 +20,7 @@ const languages = [
 ];
 
 export default function LanguageSelectionPage() {
-  const { language, setLanguage, isLanguageSelected, setIsLanguageSelected } = useLanguage();
+  const { setLanguage, isLanguageSelected, setIsLanguageSelected } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -36,35 +37,75 @@ export default function LanguageSelectionPage() {
 
   if (isLanguageSelected) {
     // To prevent flash of content while redirecting
-    return null;
+    return <div className="min-h-screen w-full bg-background" />;
   }
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: 'spring',
+        stiffness: 100,
+      },
+    },
+  };
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
-            <Leaf size={40} />
-          </div>
-          <CardTitle className="text-3xl font-bold font-headline">Kisan Rakshak</CardTitle>
-          <CardDescription>{translations.en.welcomeMessage}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground mb-6 font-semibold">{translations.en.selectLanguage}</p>
-          <div className="grid grid-cols-2 gap-4">
-            {languages.map((lang) => (
-              <Button
-                key={lang.code}
-                variant="outline"
-                className="p-6 text-lg"
-                onClick={() => handleLanguageSelect(lang.code)}
-              >
-                {lang.name}
-              </Button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+    <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080.png')] bg-cover bg-center opacity-10" data-ai-hint="farm landscape" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background to-background" />
+
+      <motion.div
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="z-10"
+      >
+        <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 shadow-2xl animate-fade-in-up">
+          <CardHeader className="text-center">
+            <motion.div variants={itemVariants} className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
+              <Leaf size={40} />
+            </motion.div>
+            <motion.h1 variants={itemVariants} className="text-4xl font-bold font-headline text-foreground">
+              Kisan Rakshak
+            </motion.h1>
+            <motion.p variants={itemVariants} className="text-muted-foreground">
+              {translations.en.welcomeMessage}
+            </motion.p>
+          </CardHeader>
+          <CardContent>
+            <motion.p variants={itemVariants} className="text-center text-muted-foreground mb-6 font-semibold">
+              {translations.en.selectLanguage}
+            </motion.p>
+            <motion.div variants={containerVariants} className="grid grid-cols-2 gap-4">
+              {languages.map((lang) => (
+                <motion.div variants={itemVariants} key={lang.code}>
+                  <Button
+                    variant="outline"
+                    className="w-full p-6 text-lg justify-between group transition-all duration-300 hover:bg-primary/90 hover:text-primary-foreground hover:shadow-lg"
+                    onClick={() => handleLanguageSelect(lang.code)}
+                  >
+                    {lang.name}
+                    <ArrowRight className="h-5 w-5 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                  </Button>
+                </motion.div>
+              ))}
+            </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
     </main>
   );
 }
