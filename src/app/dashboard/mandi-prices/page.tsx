@@ -37,7 +37,11 @@ export default function MandiPricesPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
       <Card className="bg-background">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>

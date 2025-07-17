@@ -100,10 +100,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
   
   return (
-    <div className="grid min-h-screen w-full bg-secondary">
+    <div className="grid min-h-screen w-full bg-background">
       {/* Desktop Sidebar */}
       <div className={cn(
-        "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out",
+        "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out fixed top-0 left-0 h-full z-40",
         isSidebarOpen ? 'w-64' : 'w-20'
       )}>
         <div className="flex h-16 items-center border-b px-6 shrink-0 relative">
@@ -111,7 +111,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Leaf className="h-6 w-6" />
             <span className={cn("transition-opacity", !isSidebarOpen && "opacity-0 w-0")}>Kisan Rakshak</span>
           </Link>
-           <Button variant="ghost" size="icon" className="absolute -right-5 top-1/2 -translate-y-1/2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+           <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <ChevronLeft className={cn("h-4 w-4 transition-transform", !isSidebarOpen && "rotate-180")} />
           </Button>
         </div>
@@ -121,7 +121,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
       
       <div className={cn("flex flex-col transition-all duration-300 ease-in-out", isSidebarOpen ? 'md:ml-64' : 'md:ml-20')}>
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 lg:px-6 sticky top-0 z-30">
+        <header className="flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -130,8 +130,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0 w-64 bg-background">
-              <SheetHeader className="sr-only">
-                <SheetTitle>Navigation Menu</SheetTitle>
+              <SheetHeader className="p-4 border-b">
+                <SheetTitle className="sr-only">Menu</SheetTitle>
               </SheetHeader>
               <div className="flex h-16 items-center border-b px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold font-headline text-primary">
@@ -166,7 +166,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </div>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/60 rounded-tl-2xl">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
           {children}
         </main>
       </div>

@@ -170,7 +170,12 @@ export default function DiagnosePage() {
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 animate-fade-in-up">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="grid gap-6 md:grid-cols-2"
+    >
       <Card className="bg-background">
         <CardHeader>
           <CardTitle className="font-headline text-2xl">{t('cropDiseaseDiagnosis')}</CardTitle>
@@ -301,6 +306,6 @@ export default function DiagnosePage() {
             )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }
