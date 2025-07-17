@@ -272,13 +272,14 @@ export default function DiagnosePage() {
 
     let imageDataUri: string | null = null;
     
-    // Check if there's a preview from the camera capture or a recent file upload
-    if (imagePreview) {
-      imageDataUri = imagePreview;
-    } 
-    // Otherwise, process the file from the form input if it exists
-    else if (data.image && data.image[0]) {
+    // Process the file from the form input first if it exists
+    if (data.image && data.image[0]) {
       imageDataUri = await fileToDataUri(data.image[0]);
+      setImagePreview(imageDataUri);
+    } 
+    // Otherwise, use the preview from camera capture if available
+    else if (imagePreview) {
+      imageDataUri = imagePreview;
     }
 
     if (!imageDataUri) {
@@ -368,7 +369,7 @@ export default function DiagnosePage() {
               </TabsList>
               <TabsContent value="upload">
                 <div className="space-y-2 pt-4">
-                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: () => imagePreview !== null || activeTab === 'camera' || t('noImage') })} />
+                  <Input id="image-upload" type="file" accept="image/*" className="hidden" {...register('image', { onChange: handleImageChange, validate: (value) => (value && value.length > 0) || imagePreview !== null || activeTab === 'camera' || t('noImage') })} />
                   <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center justify-center w-full p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors">
                       <Upload className="mx-auto h-12 w-12 text-muted-foreground" />
                       <p className="mt-2 text-sm text-muted-foreground">{t('uploadOrDrag')}</p>
@@ -461,29 +462,6 @@ export default function DiagnosePage() {
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
                         <p className="text-lg font-bold text-primary">{(diagnosis.confidence * 100).toFixed(0)}%</p>
                       </div>
-
-                      {diagnosis.pesticideSuggestions && diagnosis.pesticideSuggestions.length > 0 && (
-                        <>
-                          <Separator />
-                          <div>
-                            <h3 className="font-headline text-lg mb-2">{t('treatmentSuggestions')}</h3>
-                            <div className="space-y-4">
-                              {diagnosis.pesticideSuggestions.map((suggestion, index) => (
-                                <div key={index} className="p-4 bg-muted/50 rounded-lg">
-                                    <h4 className="font-semibold">{suggestion.name}</h4>
-                                    <p className="text-sm text-muted-foreground mb-2">{suggestion.description}</p>
-                                    <Button asChild size="sm" className="gap-2">
-                                        <a href={suggestion.purchaseLink} target="_blank" rel="noopener noreferrer">
-                                            <ShoppingCart />
-                                            {t('buyNow')}
-                                        </a>
-                                    </Button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </>
-                      )}
                     </CardContent>
                 </Card>
               </motion.div>

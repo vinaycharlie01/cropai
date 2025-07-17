@@ -24,17 +24,10 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
-const PesticideSuggestionSchema = z.object({
-  name: z.string().describe('The brand or chemical name of the suggested pesticide.'),
-  description: z.string().describe('A brief description of why this pesticide is recommended and how to use it.'),
-  purchaseLink: z.string().url().describe('A simulated e-commerce search link to buy the product. The link should be a valid URL format, like a google search for the product on a popular indian e-commerce site for agricultural products.'),
-});
-
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any.'),
   remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
-  pesticideSuggestions: z.array(PesticideSuggestionSchema).describe('A list of suggested pesticides to treat the identified disease.'),
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -51,10 +44,9 @@ const prompt = ai.definePrompt({
 Your response must be in this language: {{{language}}}.
 
 Based on the image of the {{{cropType}}} from {{{location}}}, provide the following:
-1.  **disease**: The name of the disease.
-2.  **remedies**: General, non-pesticide remedies.
-3.  **confidence**: Your confidence level (0.0 to 1.0).
-4.  **pesticideSuggestions**: Suggest 2-3 specific, commonly available pesticides. For each, provide its name, a brief description, and a simulated e-commerce search link (e.g., a Google search for the product on an Indian agri-store).
+1.  **disease**: The name of the disease. If no disease is detected, state "Healthy".
+2.  **remedies**: General, non-pesticide remedies. If the plant is healthy, suggest general care tips.
+3.  **confidence**: Your confidence level in the diagnosis (from 0.0 to 1.0).
 
 Image is here: {{media url=photoDataUri}}
 `,
