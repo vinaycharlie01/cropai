@@ -3,7 +3,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft } from 'lucide-react';
+import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
@@ -24,6 +24,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
+  { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
   { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
   { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
 ] as const;
@@ -131,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0 w-64 bg-background">
               <SheetHeader className="p-4 border-b">
-                <SheetTitle className="sr-only">Menu</SheetTitle>
+                 <SheetTitle className="sr-only">Menu</SheetTitle>
               </SheetHeader>
               <div className="flex h-16 items-center border-b px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold font-headline text-primary">
