@@ -23,6 +23,7 @@ type FormInputs = {
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
+    if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -76,7 +77,6 @@ export default function WeatherPage() {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = language; 
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
@@ -115,6 +115,7 @@ export default function WeatherPage() {
         recognitionRef.current.stop();
     } else {
         try {
+            recognitionRef.current.lang = language;
             recognitionRef.current.start();
         } catch (e) {
             console.error("Could not start recognition", e);

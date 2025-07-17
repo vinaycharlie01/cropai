@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
+import type { TranslationKeys } from '@/lib/translations';
 
 type FormInputs = {
   cropType: string;
@@ -31,6 +32,7 @@ type FacingMode = 'user' | 'environment';
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
+    if (typeof window.AudioContext === 'undefined' && typeof (window as any).webkitAudioContext === 'undefined') return;
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
@@ -80,7 +82,6 @@ export default function DiagnosePage() {
       recognitionRef.current = new SpeechRecognition();
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = language; 
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
@@ -111,7 +112,7 @@ export default function DiagnosePage() {
         setListeningField(null);
       };
     }
-  }, [language, setValue, toast, listeningField]);
+  }, [setValue, toast, listeningField]);
 
 
   const toggleListening = (field: keyof FormInputs) => {
@@ -126,6 +127,7 @@ export default function DiagnosePage() {
         }
         setListeningField(field);
         try {
+            recognitionRef.current.lang = language;
             recognitionRef.current.start();
         } catch (e) {
             console.error("Could not start recognition", e);
@@ -321,11 +323,11 @@ export default function DiagnosePage() {
       }
   };
   
-  const renderInputWithMic = (id: keyof FormInputs, placeholder: string, requiredMessage: string) => (
+  const renderInputWithMic = (id: keyof FormInputs, placeholderKey: TranslationKeys, requiredMessageKey: TranslationKeys) => (
     <div className="space-y-2">
       <Label htmlFor={id}>{t(id as TranslationKeys)}</Label>
       <div className="relative">
-        <Input id={id} placeholder={placeholder} {...register(id, { required: requiredMessage })} />
+        <Input id={id} placeholder={t(placeholderKey)} {...register(id, { required: t(requiredMessageKey) })} />
         {SpeechRecognition && (
             <Button
                 type="button"
@@ -368,8 +370,8 @@ export default function DiagnosePage() {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-             {renderInputWithMic('cropType', t('egTomato'), t('cropTypeRequired'))}
-             {renderInputWithMic('location', t('egAndhraPradesh'), t('locationRequired'))}
+             {renderInputWithMic('cropType', 'egTomato', 'cropTypeRequired')}
+             {renderInputWithMic('location', 'egAndhraPradesh', 'locationRequired')}
             
             <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange} value={activeTab}>
               <TabsList className="grid w-full grid-cols-2">
