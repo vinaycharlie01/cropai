@@ -27,6 +27,25 @@ type FormInputs = {
 
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
+const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+};
+
+
 export default function SellingAdvicePage() {
   const { t, language } = useLanguage();
   const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormInputs>();
@@ -34,7 +53,7 @@ export default function SellingAdvicePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [isListening, setIsListening] = useState(false);
+  const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
   const recognitionRef = useRef<any>(null);
   const adviceAudio = useAudioPlayer();
   const { toast } = useToast();
@@ -48,35 +67,52 @@ export default function SellingAdvicePage() {
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
-        const targetField = (recognitionRef.current as any).targetField as keyof FormInputs;
+        const targetField = listeningField;
         if (targetField) {
             setValue(targetField, transcript, { shouldValidate: true });
         }
-        setIsListening(false);
+      };
+      
+      recognitionRef.current.onaudiostart = () => {
+        playSound(440, 'sine');
+      };
+      
+      recognitionRef.current.onaudioend = () => {
+        playSound(220, 'sine');
+        setListeningField(null);
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-        setIsListening(false);
-        toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
+        if (event.error !== 'no-speech') {
+            toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
+        }
+        setListeningField(null);
       };
 
       recognitionRef.current.onend = () => {
-        setIsListening(false);
+        setListeningField(null);
       };
     }
-  }, [language, setValue, toast]);
+  }, [language, setValue, toast, listeningField]);
 
 
-  const startListening = (field: keyof FormInputs) => {
-    if (recognitionRef.current) {
-        if(isListening) {
+  const toggleListening = (field: keyof FormInputs) => {
+    if (!SpeechRecognition) return;
+
+    if (listeningField === field) {
+        recognitionRef.current.stop();
+        setListeningField(null);
+    } else {
+        if(listeningField) {
             recognitionRef.current.stop();
-            setIsListening(false);
-        } else {
-            (recognitionRef.current as any).targetField = field;
+        }
+        setListeningField(field);
+        try {
             recognitionRef.current.start();
-            setIsListening(true);
+        } catch (e) {
+            console.error("Could not start recognition", e);
+            setListeningField(null);
         }
     }
   };
@@ -111,8 +147,8 @@ export default function SellingAdvicePage() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${isListening && (recognitionRef.current as any)?.targetField === id ? "text-destructive animate-pulse" : ""}`}
-                onClick={() => startListening(id)}
+                className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${listeningField === id ? "text-destructive animate-pulse" : ""}`}
+                onClick={() => toggleListening(id)}
             >
                 <Mic className="h-4 w-4" />
             </Button>
@@ -199,5 +235,3 @@ export default function SellingAdvicePage() {
     </motion.div>
   );
 }
-
-    

@@ -22,6 +22,25 @@ type FormInputs = {
 
 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
+const playSound = (freq: number, type: 'sine' | 'square' = 'sine') => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.5);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.2);
+};
+
+
 const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
   const lowerCaseCondition = condition.toLowerCase();
   if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
@@ -62,13 +81,24 @@ export default function WeatherPage() {
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setValue('location', transcript, { shouldValidate: true });
+      };
+      
+      recognitionRef.current.onaudiostart = () => {
+        playSound(440, 'sine');
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onaudioend = () => {
+        playSound(220, 'sine');
         setIsListening(false);
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
+        if (event.error !== 'no-speech') {
+            toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
+        }
         setIsListening(false);
-        toast({ variant: 'destructive', title: t('error'), description: "Could not recognize speech." });
       };
 
       recognitionRef.current.onend = () => {
@@ -78,14 +108,17 @@ export default function WeatherPage() {
   }, [language, setValue, toast]);
 
 
-  const startListening = () => {
-    if (recognitionRef.current) {
-        if(isListening) {
-            recognitionRef.current.stop();
-            setIsListening(false);
-        } else {
+  const toggleListening = () => {
+     if (!SpeechRecognition) return;
+
+    if (isListening) {
+        recognitionRef.current.stop();
+    } else {
+        try {
             recognitionRef.current.start();
-            setIsListening(true);
+        } catch (e) {
+            console.error("Could not start recognition", e);
+            setIsListening(false);
         }
     }
   };
@@ -150,7 +183,7 @@ export default function WeatherPage() {
                         variant="ghost"
                         size="icon"
                         className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${isListening ? "text-destructive animate-pulse" : ""}`}
-                        onClick={startListening}
+                        onClick={toggleListening}
                     >
                         <Mic className="h-4 w-4" />
                     </Button>
@@ -226,5 +259,3 @@ export default function WeatherPage() {
     </motion.div>
   );
 }
-
-    
