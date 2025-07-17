@@ -15,26 +15,32 @@ import {
 } from "@/components/ui/card"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { motion } from "framer-motion";
+import type { TranslationKeys } from "@/lib/translations";
 
 
-const schemes = [
+const schemes: {
+    id: string;
+    titleKey: TranslationKeys;
+    descriptionKey: TranslationKeys;
+    eligibilityKey: TranslationKeys;
+}[] = [
   {
     id: "pm-kisan",
-    title: "PM-KISAN Scheme",
-    description: "A government scheme with the objective to supplement the financial needs of all landholding farmers' families in procuring various inputs to ensure proper crop health and appropriate yields, commensurate with the anticipated farm income.",
-    eligibility: "All landholding farmer families, who have cultivable landholding in their names are eligible to get benefit under the scheme.",
+    titleKey: "pmKisanTitle",
+    descriptionKey: "pmKisanDesc",
+    eligibilityKey: "pmKisanElig",
   },
   {
     id: "fasal-bima",
-    title: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
-    description: "The scheme provides comprehensive insurance coverage against failure of the crop thus helping in stabilising the income of the farmers.",
-    eligibility: "All farmers including sharecroppers and tenant farmers growing notified crops in the notified areas are eligible for coverage.",
+    titleKey: "pmfbyTitle",
+    descriptionKey: "pmfbyDesc",
+    eligibilityKey: "pmfbyElig",
   },
   {
     id: "krishi-sinchai",
-    title: "Pradhan Mantri Krishi Sinchayee Yojana (PMKSY)",
-    description: "Launched with the motto of 'Har Khet Ko Pani', the scheme is being implemented to expand cultivated area with assured irrigation, reduce wastage of water and improve water use efficiency.",
-    eligibility: "Varies by component, but generally open to all farmers and farmer groups.",
+    titleKey: "pmksyTitle",
+    descriptionKey: "pmksyDesc",
+    eligibilityKey: "pmksyElig",
   },
 ]
 
@@ -52,12 +58,12 @@ export default function SchemesPage() {
           <Accordion type="single" collapsible className="w-full">
             {schemes.map((scheme) => (
               <AccordionItem value={scheme.id} key={scheme.id}>
-                <AccordionTrigger className="font-semibold text-lg hover:no-underline">{scheme.title}</AccordionTrigger>
+                <AccordionTrigger className="font-semibold text-lg hover:no-underline text-left">{t(scheme.titleKey)}</AccordionTrigger>
                 <AccordionContent className="space-y-4 pt-2">
-                  <p className="text-muted-foreground">{scheme.description}</p>
+                  <p className="text-muted-foreground">{t(scheme.descriptionKey)}</p>
                   <div>
-                    <h4 className="font-medium text-primary">Eligibility:</h4>
-                    <p className="text-muted-foreground">{scheme.eligibility}</p>
+                    <h4 className="font-medium text-primary">{t('eligibility')}:</h4>
+                    <p className="text-muted-foreground">{t(scheme.eligibilityKey)}</p>
                   </div>
                 </AccordionContent>
               </AccordionItem>
