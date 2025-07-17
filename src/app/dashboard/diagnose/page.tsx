@@ -3,11 +3,10 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, Play, Pause } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -70,8 +69,6 @@ export default function DiagnosePage() {
 
   const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
   const recognitionRef = useRef<any>(null);
-
-  const diagnosisAudio = useAudioPlayer();
 
   useEffect(() => {
     if (SpeechRecognition && !recognitionRef.current) {
@@ -293,12 +290,6 @@ export default function DiagnosePage() {
           language: language,
         });
         setDiagnosis(result);
-        if (result) {
-            const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}. ${t('treatment')}: ${result.treatment}.`;
-            if (diagnosisText.trim().length > 0) {
-                diagnosisAudio.generateAudio(diagnosisText, language);
-            }
-        }
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
@@ -329,13 +320,6 @@ export default function DiagnosePage() {
       {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
     </div>
   );
-
-  const AudioControls = () => {
-    if (diagnosisAudio.isPlaying) {
-      return <Pause className="h-5 w-5 cursor-pointer" onClick={diagnosisAudio.pause} />;
-    }
-    return <Play className="h-5 w-5 cursor-pointer" onClick={diagnosisAudio.play} />;
-  }
 
   return (
     <motion.div 
@@ -435,10 +419,6 @@ export default function DiagnosePage() {
                       <div className="flex items-center gap-2">
                         <Bot />
                         <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {diagnosisAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {diagnosisAudio.hasAudio && <AudioControls />}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">

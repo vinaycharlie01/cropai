@@ -4,11 +4,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Lightbulb, Loader2, Search, Mic, Play, Pause } from 'lucide-react';
+import { Bot, Lightbulb, Loader2, Search, Mic } from 'lucide-react';
 
 import { getSellingAdvice, SellingAdviceOutput } from '@/ai/flows/selling-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -56,7 +55,6 @@ export default function SellingAdvicePage() {
 
   const [listeningField, setListeningField] = useState<keyof FormInputs | null>(null);
   const recognitionRef = useRef<any>(null);
-  const adviceAudio = useAudioPlayer();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -131,7 +129,6 @@ export default function SellingAdvicePage() {
     try {
       const result = await getSellingAdvice({ ...data, language });
       setAdvice(result);
-      adviceAudio.generateAudio(result.advice, language);
     } catch (e) {
       console.error(e);
       setError(t('errorGettingAdvice'));
@@ -161,11 +158,6 @@ export default function SellingAdvicePage() {
       {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
     </div>
   );
-
-  const AudioControls = () => {
-    if (adviceAudio.isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={adviceAudio.pause} />;
-    return <Play className="h-5 w-5 cursor-pointer" onClick={adviceAudio.play} />;
-  }
 
   return (
     <motion.div
@@ -219,10 +211,6 @@ export default function SellingAdvicePage() {
                         <Bot />
                         <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
                     </div>
-                     <div className="flex items-center gap-2">
-                        {adviceAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {adviceAudio.hasAudio && <AudioControls />}
-                      </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">

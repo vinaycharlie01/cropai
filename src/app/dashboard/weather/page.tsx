@@ -4,11 +4,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, CloudSnow, Wind, Droplets, MapPin, Search, Loader2, Mic, Play, Pause } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudSnow, Wind, Droplets, MapPin, Search, Loader2, Mic } from 'lucide-react';
 
 import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAudioPlayer } from '@/hooks/use-audio-player';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -69,7 +68,6 @@ export default function WeatherPage() {
 
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const forecastAudio = useAudioPlayer();
   const { toast } = useToast();
 
    useEffect(() => {
@@ -136,10 +134,6 @@ export default function WeatherPage() {
     try {
       const result = await getWeatherForecast({ location: data.location });
       setForecast(result);
-      const forecastText = result.forecast.map(day => 
-        `${day.day}: ${day.temperature}, ${day.condition}, ${t('humidity')} ${day.humidity}`
-      ).join('. ');
-      forecastAudio.generateAudio(forecastText, language);
     } catch (e) {
       console.error(e);
       setError(t('errorWeather'));
@@ -148,11 +142,6 @@ export default function WeatherPage() {
       setIsLoading(false);
     }
   };
-
-  const AudioControls = () => {
-    if (forecastAudio.isPlaying) return <Pause className="h-5 w-5 cursor-pointer" onClick={forecastAudio.pause} />;
-    return <Play className="h-5 w-5 cursor-pointer" onClick={forecastAudio.play} />;
-  }
 
   return (
     <motion.div
@@ -221,10 +210,6 @@ export default function WeatherPage() {
             <Card className="bg-background">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <CardTitle className="font-headline text-xl">{t('forecastFor')} {submittedLocation}</CardTitle>
-                     <div className="flex items-center gap-2">
-                        {forecastAudio.isLoading && <Loader2 className="h-5 w-5 animate-spin" />}
-                        {forecastAudio.hasAudio && <AudioControls />}
-                      </div>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
