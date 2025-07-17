@@ -3,9 +3,15 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Leaf, Menu, HeartPulse, LineChart, ScrollText } from 'lucide-react';
+import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Sheet,
   SheetContent,
@@ -22,9 +28,17 @@ const navItems = [
   { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
 ] as const;
 
+const languages = [
+  { code: 'en', name: 'English' },
+  { code: 'hi', name: 'हिन्दी' },
+  { code: 'te', name: 'తెలుగు' },
+  { code: 'kn', name: 'ಕನ್ನಡ' },
+  { code: 'ml', name: 'മലയാളം' },
+  { code: 'ta', name: 'தமிழ்' },
+];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { t, isLanguageSelected } = useLanguage();
+  const { t, setLanguage, isLanguageSelected } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -40,6 +54,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const currentNavItem = navItems.find((item) => pathname.startsWith(item.href));
 
+  const handleLanguageChange = (langCode: string) => {
+    setLanguage(langCode);
+  };
 
   const sidebarContent = (
     <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
@@ -56,6 +73,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </Link>
     ))}
   </nav>
+  );
+
+  const languageSelector = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon">
+          <Languages className="h-5 w-5" />
+          <span className="sr-only">Change language</span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {languages.map((lang) => (
+          <DropdownMenuItem key={lang.code} onClick={() => handleLanguageChange(lang.code)}>
+            {lang.name}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   return (
@@ -83,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="flex flex-col p-0">
-              <SheetHeader className="sr-only">
+               <SheetHeader className="sr-only">
                 <SheetTitle>Navigation Menu</SheetTitle>
                 <SheetDescription>Main navigation links for the application.</SheetDescription>
               </SheetHeader>
@@ -98,10 +133,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
             </SheetContent>
           </Sheet>
-          <div className="w-full flex-1">
+          <div className="w-full flex-1 flex items-center justify-between">
             <h1 className="text-xl font-semibold font-headline">
               {currentNavItem ? t(currentNavItem.labelKey) : t('dashboard')}
             </h1>
+            <div className="ml-auto">
+              {languageSelector}
+            </div>
           </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-background">
