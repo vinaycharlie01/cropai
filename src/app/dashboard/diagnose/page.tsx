@@ -289,8 +289,8 @@ export default function DiagnosePage() {
           language: language,
         });
         setDiagnosis(result);
-        const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
-        if (result.disease && result.remedies) {
+        if (result && result.disease && result.remedies) {
+          const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
           diagnosisAudio.generateAudio(diagnosisText, language);
         }
       } catch (e) {
