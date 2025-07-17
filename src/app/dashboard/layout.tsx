@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun } from 'lucide-react';
+import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
@@ -24,6 +25,7 @@ import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
+  { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
   { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
   { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
   { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
@@ -62,6 +64,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   const sidebarContent = (
     <nav className="flex flex-col gap-2 px-2 text-sm font-medium lg:px-4">
+      <Link
+        href="/dashboard"
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-3 text-muted-foreground transition-all hover:text-primary hover:bg-muted",
+          "group",
+          pathname === "/dashboard" && "bg-muted text-primary font-semibold"
+        )}
+      >
+        <LayoutDashboard className="h-5 w-5" />
+        <span className={cn("truncate transition-opacity duration-300", !isSidebarOpen && "md:opacity-0 md:w-0")}>{t('dashboard')}</span>
+      </Link>
       {navItems.map((item) => {
         const isActive = pathname.startsWith(item.href);
         return (
@@ -142,6 +155,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               <div className="flex-1 py-4">
                 <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+                  <Link
+                      href="/dashboard"
+                      className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-all hover:text-primary ${
+                        pathname === '/dashboard' ? 'bg-muted text-primary font-semibold' : 'text-muted-foreground'
+                      }`}
+                    >
+                      <LayoutDashboard className="h-5 w-5" />
+                      {t('dashboard')}
+                  </Link>
                   {navItems.map((item) => (
                     <Link
                       key={item.href}
