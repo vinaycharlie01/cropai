@@ -26,60 +26,6 @@ const TextToSpeechOutputSchema = z.object({
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 
-const textToSpeechFlow = ai.defineFlow(
-    {
-        name: 'textToSpeechFlow',
-        inputSchema: TextToSpeechInputSchema,
-        outputSchema: TextToSpeechOutputSchema,
-    },
-    async (input) => {
-        const ttsLanguageCode = getTtsLanguageCode(input.language);
-        
-        const { media } = await ai.generate({
-            model: 'googleai/gemini-2.5-flash-preview-tts',
-            config: {
-                responseModalities: ['AUDIO'],
-                speechConfig: {
-                    languageCode: ttsLanguageCode,
-                },
-            },
-            prompt: input.text,
-        });
-
-        if (!media?.url) {
-            throw new Error('Audio generation failed. No media was returned from the model.');
-        }
-        
-        // The Gemini TTS model returns audio in 'audio/L16;rate=24000;channels=1' PCM format.
-        // Most browsers can't play this directly. We need to convert it to a WAV file.
-        // A WAV file is just PCM data with a specific header.
-
-        const pcmData = Buffer.from(
-            media.url.substring(media.url.indexOf(',') + 1),
-            'base64'
-        );
-        
-        const wavHeader = createWavHeader({
-          numFrames: pcmData.length / 2, // 16-bit PCM has 2 bytes per frame
-          sampleRate: 24000,
-          numChannels: 1,
-          bytesPerSample: 2,
-        });
-
-        const wavData = Buffer.concat([wavHeader, pcmData]);
-        const wavBase64 = wavData.toString('base64');
-
-        return {
-            audioDataUri: `data:audio/wav;base64,${wavBase64}`,
-        };
-    }
-);
-
-export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
-  return textToSpeechFlow(input);
-}
-
-
 // Helper function to create a WAV file header.
 function createWavHeader(options: {
   numFrames: number;
@@ -121,4 +67,56 @@ function createWavHeader(options: {
   buffer.writeUInt32LE(dataSize, 40);
 
   return buffer;
+}
+
+
+const textToSpeechFlow = ai.defineFlow(
+    {
+        name: 'textToSpeechFlow',
+        inputSchema: TextToSpeechInputSchema,
+        outputSchema: TextToSpeechOutputSchema,
+    },
+    async (input) => {
+        const ttsLanguageCode = getTtsLanguageCode(input.language);
+        
+        const { media } = await ai.generate({
+            model: 'googleai/gemini-2.5-flash-preview-tts',
+            config: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                    languageCode: ttsLanguageCode,
+                },
+            },
+            prompt: input.text,
+        });
+
+        if (!media?.url) {
+            throw new Error('Audio generation failed. No media was returned from the model.');
+        }
+        
+        // The Gemini TTS model returns audio in raw PCM format.
+        // Most browsers can't play this directly. We need to add a WAV header.
+        const pcmData = Buffer.from(
+            media.url.substring(media.url.indexOf(',') + 1),
+            'base64'
+        );
+        
+        const wavHeader = createWavHeader({
+          numFrames: pcmData.length / 2, // 16-bit PCM has 2 bytes per frame
+          sampleRate: 24000,
+          numChannels: 1,
+          bytesPerSample: 2,
+        });
+
+        const wavData = Buffer.concat([wavHeader, pcmData]);
+        const wavBase64 = wavData.toString('base64');
+
+        return {
+            audioDataUri: `data:audio/wav;base64,${wavBase64}`,
+        };
+    }
+);
+
+export async function textToSpeech(input: TextToSpeechInput): Promise<TextToSpeechOutput> {
+  return textToSpeechFlow(input);
 }
