@@ -3,11 +3,12 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, PlusCircle, Video, Camera, SwitchCamera, Mic, Volume2 } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
 import { suggestTreatment, SuggestTreatmentOutput } from '@/ai/flows/smart-treatment-suggestions';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -26,6 +27,9 @@ type FormInputs = {
 };
 
 type FacingMode = 'user' | 'environment';
+
+// SpeechRecognition is a browser API, so we need to check for its existence
+const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
 export default function DiagnosePage() {
   const { t, language } = useLanguage();
@@ -47,6 +51,51 @@ export default function DiagnosePage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
+  const [isListening, setIsListening] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = language; 
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        const targetField = (recognitionRef.current as any).targetField as keyof FormInputs;
+        if (targetField) {
+            setValue(targetField, transcript);
+        }
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        setIsListening(false);
+        toast({ variant: 'destructive', title: "Speech Error", description: "Could not recognize speech." });
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    }
+  }, [language, setValue, toast]);
+
+
+  const startListening = (field: keyof FormInputs) => {
+    if (recognitionRef.current && !isListening) {
+      (recognitionRef.current as any).targetField = field;
+      recognitionRef.current.start();
+      setIsListening(true);
+    } else if (isListening) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  };
+  
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -72,7 +121,6 @@ export default function DiagnosePage() {
       }
     } catch (error) {
       console.error('Error accessing camera:', error);
-      // If environment camera fails, try user camera
       if (mode === 'environment') {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
@@ -116,7 +164,29 @@ export default function DiagnosePage() {
       stopCamera();
     };
   }, [activeTab, facingMode, startCamera, stopCamera, detectCameras]);
+  
+  const playAudioResult = useCallback(async (text: string) => {
+    if (!text) return;
+    setIsAudioLoading(true);
+    setAudioUrl(null);
+    try {
+        const result = await textToSpeech({ text, languageCode: language });
+        setAudioUrl(result.audioDataUri);
+    } catch (e) {
+        console.error("TTS Error:", e);
+        toast({ variant: "destructive", title: "Audio Error", description: "Could not generate audio." });
+    } finally {
+        setIsAudioLoading(false);
+    }
+  }, [language, toast]);
 
+  useEffect(() => {
+    if (audioUrl) {
+      const audio = new Audio(audioUrl);
+      audio.play();
+    }
+  }, [audioUrl]);
+  
   const handleTabChange = (value: string) => {
     setActiveTab(value);
   };
@@ -205,6 +275,7 @@ export default function DiagnosePage() {
     setError(null);
     setDiagnosis(null);
     setTreatment(null);
+    setAudioUrl(null);
     
     try {
         const result = await diagnoseCropDisease({
@@ -214,6 +285,8 @@ export default function DiagnosePage() {
           language: language,
         });
         setDiagnosis(result);
+        const diagnosisText = `${t('disease')}: ${result.disease}. ${t('remedies')}: ${result.remedies}`;
+        playAudioResult(diagnosisText);
       } catch (e) {
         console.error(e);
         setError(t('errorDiagnosis'));
@@ -221,6 +294,25 @@ export default function DiagnosePage() {
         setIsLoading(false);
       }
   };
+  
+  const renderInputWithMic = (id: keyof FormInputs, placeholder: string, requiredMessage: string) => (
+    <div className="relative">
+      <Input id={id} placeholder={placeholder} {...register(id, { required: requiredMessage })} />
+      {SpeechRecognition && (
+          <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={`absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 ${isListening && (recognitionRef.current as any)?.targetField === id ? "text-destructive animate-pulse" : ""}`}
+              onClick={() => startListening(id)}
+          >
+              <Mic className="h-4 w-4" />
+          </Button>
+      )}
+      {errors[id] && <p className="text-destructive text-sm">{errors[id]?.message}</p>}
+    </div>
+  );
+
 
   return (
     <motion.div 
@@ -238,13 +330,11 @@ export default function DiagnosePage() {
           <CardContent className="space-y-4">
              <div className="space-y-2">
               <Label htmlFor="cropType">{t('cropType')}</Label>
-              <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
-              {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
+              {renderInputWithMic('cropType', t('egTomato'), t('cropTypeRequired'))}
             </div>
             <div className="space-y-2">
               <Label htmlFor="location">{t('location')}</Label>
-              <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
-              {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
+              {renderInputWithMic('location', t('egAndhraPradesh'), t('locationRequired'))}
             </div>
             
             <Tabs defaultValue="upload" className="w-full" onValueChange={handleTabChange}>
@@ -324,8 +414,19 @@ export default function DiagnosePage() {
             {diagnosis && (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                 <Card className="bg-background">
-                    <CardHeader>
-                      <CardTitle className="font-headline flex items-center gap-2"><Bot /> {t('diagnosisResult')}</CardTitle>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Bot />
+                        <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => playAudioResult(`${t('disease')}: ${diagnosis.disease}. ${t('remedies')}: ${diagnosis.remedies}`)}
+                        disabled={isAudioLoading}
+                      >
+                        {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
+                      </Button>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div>
@@ -353,8 +454,16 @@ export default function DiagnosePage() {
             {treatment && (
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
                     <Card className="bg-background">
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="font-headline">{t('treatmentSuggestions')}</CardTitle>
+                             <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => playAudioResult(treatment.treatmentSuggestions)}
+                                disabled={isAudioLoading}
+                             >
+                                {isAudioLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
+                             </Button>
                         </CardHeader>
                         <CardContent>
                             <p>{treatment.treatmentSuggestions}</p>
