@@ -85,7 +85,9 @@ export default function LoginPage() {
       // Send OTP
       try {
         const recaptchaVerifier = setupRecaptcha();
-        const result = await signInWithPhoneNumber(auth, `+${data.phoneNumber}`, recaptchaVerifier);
+        // Prepend +91 country code for India
+        const formattedPhoneNumber = `+91${data.phoneNumber}`;
+        const result = await signInWithPhoneNumber(auth, formattedPhoneNumber, recaptchaVerifier);
         setConfirmationResult(result);
         setIsOtpSent(true);
         toast({ title: 'OTP Sent', description: 'Please check your phone for the OTP.' });
@@ -175,13 +177,25 @@ export default function LoginPage() {
                 <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-6">
                    <div className="space-y-2">
                     <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <Input
-                      id="phoneNumber"
-                      type="tel"
-                      placeholder="91xxxxxxxxxx"
-                      disabled={isOtpSent}
-                      {...phoneForm.register('phoneNumber', { required: 'Phone number is required.' })}
-                    />
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-10 items-center rounded-md border border-input bg-background px-3">
+                           <span className="text-sm text-muted-foreground">+91</span>
+                        </div>
+                        <Input
+                          id="phoneNumber"
+                          type="tel"
+                          placeholder="Your 10-digit number"
+                          disabled={isOtpSent}
+                          maxLength={10}
+                          {...phoneForm.register('phoneNumber', { 
+                            required: 'Phone number is required.',
+                            pattern: {
+                                value: /^\d{10}$/,
+                                message: "Please enter a valid 10-digit phone number."
+                            }
+                           })}
+                        />
+                    </div>
                     {phoneForm.formState.errors.phoneNumber && <p className="text-destructive text-sm">{phoneForm.formState.errors.phoneNumber.message}</p>}
                   </div>
 
