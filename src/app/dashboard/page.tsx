@@ -100,6 +100,22 @@ const carouselSlides = [
         imgSrc: "https://placehold.co/1200x500",
         imgHint: "market stall vegetables"
     },
+    {
+      titleKey: "aiSellingAdvice",
+      descriptionKey: "aiSellingAdviceDesc",
+      buttonKey: "getAdvice",
+      href: "/dashboard/selling-advice",
+      imgSrc: "https://placehold.co/1200x500",
+      imgHint: "market stall vegetables"
+    },
+    {
+      titleKey: "aiSellingAdvice",
+      descriptionKey: "aiSellingAdviceDesc",
+      buttonKey: "getAdvice",
+      href: "/dashboard/selling-advice",
+      imgSrc: "https://placehold.co/1200x500",
+      imgHint: "market stall vegetables"
+    },
 ];
 
 export default function DashboardPage() {
