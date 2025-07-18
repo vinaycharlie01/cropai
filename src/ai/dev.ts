@@ -5,3 +5,4 @@ import '@/ai/flows/diagnose-crop-disease.ts';
 import '@/ai/flows/weather-forecast.ts';
 import '@/ai/flows/selling-advice.ts';
 import '@/ai/flows/irrigation-advice.ts';
+import '@/ai/flows/predict-mandi-price.ts';
