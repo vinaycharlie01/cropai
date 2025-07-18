@@ -46,6 +46,7 @@ type InsuranceFormInputs = {
   sowingDate: Date;
   harvestDate: Date;
   scheme: 'pmfby' | 'private';
+  season: 'kharif' | 'rabi';
   sumInsured: number;
   landProof: FileList;
   idProof: FileList;
@@ -184,25 +185,35 @@ function InsuranceRegistrationForm() {
 
     const sumInsured = watch('sumInsured');
     const scheme = watch('scheme');
+    const season = watch('season');
     const cropType = watch('cropType');
     const location = watch('location');
     const landArea = watch('landArea');
 
     const calculatePremium = useCallback(() => {
         if (!sumInsured || !scheme) return { farmerShare: 0, govtSubsidy: 0, total: 0 };
-        const totalPremiumRate = 0.05; // Assume 5% total premium
+        
+        // As per PMFBY: Kharif all crops: 2%, Rabi all crops: 1.5%. Simplified for this example.
+        // Commercial and horticultural crops have higher rates, not implemented here for simplicity.
+        const totalPremiumRate = 0.05; // Assumed total premium rate for calculation
         const totalPremium = sumInsured * totalPremiumRate;
         let farmerRate = totalPremiumRate;
 
         if (scheme === 'pmfby') {
-            farmerRate = 0.02; // Simplified: 2% for all crops
+            if (season === 'kharif') {
+                farmerRate = 0.02; // 2% for Kharif
+            } else if (season === 'rabi') {
+                farmerRate = 0.015; // 1.5% for Rabi
+            } else {
+                farmerRate = 0.02; // Default fallback
+            }
         }
 
         const farmerShare = sumInsured * farmerRate;
-        const govtSubsidy = totalPremium - farmerShare;
+        const govtSubsidy = Math.max(0, totalPremium - farmerShare);
 
         return { farmerShare, govtSubsidy, total: totalPremium };
-    }, [sumInsured, scheme]);
+    }, [sumInsured, scheme, season]);
 
     const { farmerShare, govtSubsidy } = calculatePremium();
 
@@ -344,8 +355,26 @@ function InsuranceRegistrationForm() {
                     />
                     {errors.scheme && <p className="text-destructive text-sm">{t('fieldRequired')}</p>}
                 </div>
-                 {farmerShare > 0 && (
-                    <Card className="bg-muted/50">
+                 <div className="space-y-2">
+                    <Label>{t('season')}</Label>
+                    <Controller
+                        name="season"
+                        control={control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger><SelectValue placeholder={t('selectSeason')} /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="kharif">{t('kharif')}</SelectItem>
+                                    <SelectItem value="rabi">{t('rabi')}</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.season && <p className="text-destructive text-sm">{t('fieldRequired')}</p>}
+                </div>
+                 {scheme === 'pmfby' && farmerShare > 0 && (
+                    <Card className="bg-muted/50 md:col-span-2">
                         <CardHeader className="pb-2"><CardTitle className="text-base">{t('premiumDetails')}</CardTitle></CardHeader>
                         <CardContent className="space-y-1 text-sm">
                             <div className="flex justify-between"><span>{t('yourShare')}:</span> <span className="font-semibold">₹{farmerShare.toFixed(2)}</span></div>
