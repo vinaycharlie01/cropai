@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, Bell } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, Bell, LogOut } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
@@ -18,11 +18,15 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
+    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LogoIcon } from '@/components/icons/logo';
 import { SearchCommand } from '@/components/SearchCommand';
+import { useAuth } from '@/contexts/AuthContext';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getAuth, signOut } from 'firebase/auth';
 
 
 const navItems = [
@@ -48,16 +52,18 @@ const languages = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t, setLanguage, isLanguageSelected } = useLanguage();
+  const { user, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [openSearch, setOpenSearch] = useState(false);
-
+  
   useEffect(() => {
-    if (!isLanguageSelected) {
-      router.replace('/');
+    if (!loading && !user) {
+      router.replace('/login');
     }
-  }, [isLanguageSelected, router]);
+  }, [user, loading, router]);
+
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -70,10 +76,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener("keydown", down)
   }, []);
   
-  if (!isLanguageSelected) {
-    return <div className="min-h-screen w-full bg-background" />;
+  if (loading || !user) {
+    return (
+        <div className="flex items-center justify-center min-h-screen bg-background">
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
+        </div>
+    );
   }
   
+  const handleSignOut = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    router.push('/login');
+  };
+
   const currentNavItem = navItems.find((item) => pathname.startsWith(item.href));
 
   const handleLanguageChange = (langCode: string) => {
@@ -113,6 +129,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </nav>
   );
 
+  const userMenu = (
+     <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={user.photoURL || `https://avatar.vercel.sh/${user.uid}.png`} alt={user.email || 'User'} />
+              <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+            </Avatar>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuItem className="focus:bg-transparent cursor-default">
+            <div className="flex flex-col">
+              <span className="font-medium text-sm">{user.email}</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+  );
+
   const languageSelector = (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -148,7 +189,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <ChevronLeft className={cn("h-4 w-4 transition-transform", !isSidebarOpen && "rotate-180")} />
           </Button>
         </div>
-        <div className="flex-1 py-4">
+        <div className="flex-1 py-4 overflow-y-auto">
           {sidebarContent}
         </div>
       </div>
@@ -213,6 +254,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <span className="sr-only">Notifications</span>
               </Button>
               {languageSelector}
+              {userMenu}
             </div>
           </div>
         </header>
