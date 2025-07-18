@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Leaf, Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LogoIcon } from '@/components/icons/logo';
 
 
 const navItems = [
@@ -122,7 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )}>
         <div className="flex h-16 items-center border-b px-6 shrink-0 relative">
           <Link href="/" className="flex items-center gap-2 font-semibold font-headline text-primary">
-            <Leaf className="h-6 w-6" />
+            <LogoIcon className="h-7 w-7" />
             <span className={cn("transition-opacity", !isSidebarOpen && "opacity-0 w-0")}>Kisan Rakshak</span>
           </Link>
            <Button variant="ghost" size="icon" className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground h-8 w-8" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -149,7 +150,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </SheetHeader>
               <div className="flex h-16 items-center border-b px-6">
                 <Link href="/" className="flex items-center gap-2 font-semibold font-headline text-primary">
-                  <Leaf className="h-6 w-6" />
+                  <LogoIcon className="h-7 w-7" />
                   <span>Kisan Rakshak</span>
                 </Link>
               </div>

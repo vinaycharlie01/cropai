@@ -2,13 +2,14 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Leaf, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LogoIcon } from '@/components/icons/logo';
 
 const languages = [
   { code: 'en', name: 'English' },
@@ -76,7 +77,7 @@ export default function LanguageSelectionPage() {
         <Card className="w-full max-w-md bg-card/80 backdrop-blur-sm border-border/50 shadow-2xl animate-fade-in-up">
           <CardHeader className="text-center">
             <motion.div variants={itemVariants} className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
-              <Leaf size={40} />
+              <LogoIcon className="h-10 w-10" />
             </motion.div>
             <motion.h1 variants={itemVariants} className="text-4xl font-bold font-headline text-foreground">
               Kisan Rakshak
