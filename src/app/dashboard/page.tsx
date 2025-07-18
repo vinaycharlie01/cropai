@@ -2,7 +2,7 @@
 'use client'
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, PieChart, ScrollText } from "lucide-react";
+import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -12,6 +12,12 @@ const featureCards = [
     icon: HeartPulse,
     titleKey: "diagnoseDisease",
     descriptionKey: "diagnoseDescription",
+  },
+  {
+    href: "/dashboard/monitor",
+    icon: Activity,
+    titleKey: "growthMonitoring",
+    descriptionKey: "growthMonitoringDescShort",
   },
   {
     href: "/dashboard/analytics",
@@ -87,7 +93,7 @@ export default function DashboardPage() {
 
             <motion.div 
                 variants={containerVariants}
-                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             >
                 {featureCards.map((feature, index) => (
                     <motion.div key={index} variants={itemVariants}>
