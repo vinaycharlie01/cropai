@@ -52,7 +52,7 @@ export default function AnalyticsPage() {
                     id: doc.id,
                     cropType: data.cropType,
                     disease: data.disease,
-                    confidence: data.confidence,
+                    confidence: Number(data.confidence), // Ensure confidence is a number
                     date: (data.createdAt as Timestamp).toDate().toISOString().split('T')[0],
                 });
             });
@@ -259,4 +259,3 @@ export default function AnalyticsPage() {
         </motion.div>
     );
 }
-
