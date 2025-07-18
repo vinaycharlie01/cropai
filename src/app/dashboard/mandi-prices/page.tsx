@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from "react";
@@ -29,6 +30,8 @@ import {
 } from "@/components/ui/chart"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { Button } from '@/components/ui/button';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { predictMandiPrice, PredictMandiPriceOutput } from "@/ai/flows/predict-mandi-price";
@@ -51,12 +54,13 @@ const prices: {
 
 type PredictionFormInputs = {
   crop: string;
+  location: string;
 }
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { control, handleSubmit, formState: { errors } } = useForm<PredictionFormInputs>();
+  const { control, register, handleSubmit, formState: { errors } } = useForm<PredictionFormInputs>();
 
   const [prediction, setPrediction] = useState<PredictMandiPriceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -76,7 +80,7 @@ export default function MandiPricesPage() {
 
       const result = await predictMandiPrice({
         cropType: t(selectedCrop.cropKey),
-        location: t(selectedCrop.regionKey),
+        location: data.location,
         language: language,
       });
       setPrediction(result);
@@ -139,12 +143,13 @@ export default function MandiPricesPage() {
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
           <CardContent className="space-y-4">
-              <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="w-full sm:w-2/3">
+              <div className="grid sm:grid-cols-2 gap-4 items-start">
+                  <div>
+                    <Label htmlFor="crop-select">{t('crop')}</Label>
                     <Controller
                         name="crop"
                         control={control}
-                        rules={{ required: 'Please select a crop.' }}
+                        rules={{ required: t('cropTypeRequired') }}
                         render={({ field }) => (
                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <SelectTrigger id="crop-select">
@@ -160,11 +165,16 @@ export default function MandiPricesPage() {
                       />
                       {errors.crop && <p className="text-destructive text-sm mt-1">{errors.crop.message}</p>}
                   </div>
-                  <Button type="submit" disabled={isLoading} className="w-full sm:w-1/3">
-                    {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
-                    Predict
-                  </Button>
+                   <div>
+                    <Label htmlFor="location">{t('location')}</Label>
+                    <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                    {errors.location && <p className="text-destructive text-sm mt-1">{errors.location.message}</p>}
+                </div>
               </div>
+              <Button type="submit" disabled={isLoading} className="w-full !mt-6">
+                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
+                Predict
+              </Button>
           </CardContent>
         </form>
 
