@@ -20,6 +20,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from "@/hooks/use-toast";
 import { AnimatePresence, motion } from 'framer-motion';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { db } from '@/lib/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
 
 type FormInputs = {
   cropType: string;
@@ -206,6 +209,26 @@ export default function DiagnosePage() {
     });
   }
 
+  const saveDiagnosis = async (data: FormInputs, diagnosisResult: DiagnoseCropDiseaseOutput) => {
+    try {
+      await addDoc(collection(db, "diagnoses"), {
+        cropType: data.cropType,
+        location: data.location,
+        language: language,
+        ...diagnosisResult,
+        createdAt: serverTimestamp(),
+      });
+    } catch (e) {
+      console.error("Error adding document: ", e);
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: 'Failed to save diagnosis to your history.',
+      });
+    }
+  };
+
+
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     setIsLoading(true);
     setError(null);
@@ -237,6 +260,7 @@ export default function DiagnosePage() {
           language: language,
         });
         setDiagnosis(result);
+        await saveDiagnosis(data, result);
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
