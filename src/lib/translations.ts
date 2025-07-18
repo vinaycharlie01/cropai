@@ -50,7 +50,7 @@ export const translations = {
     pmfbyElig: "All farmers including sharecroppers and tenant farmers growing notified crops in the notified areas are eligible for coverage.",
     pmksyTitle: "Pradhan Mantri Krishi Sinchayee Yojana (PMKSY)",
     pmksyDesc: "Launched with the motto of 'Har Khet Ko Pani', the scheme is being implemented to expand cultivated area with assured irrigation, reduce wastage of water and improve water use efficiency.",
-    pmksyElig: "Varies by component, but generally open to all farmers and farmer groups.",
+    schemePmksyElig: "Varies by component, but generally open to all farmers and farmer groups.",
     uploadOrDrag: "Click to upload or drag and drop",
     cropTypeRequired: "Crop type is required.",
     locationRequired: "Location is required.",
@@ -191,7 +191,10 @@ export const translations = {
     recommendations: "Recommendations",
     growthTimeline: "Growth Timeline",
     growthTimelineDesc: "A timeline of your crop's development.",
-    day: "Day"
+    day: "Day",
+    stageGermination: "Germination",
+    stageSeedling: "Seedling",
+    stageVegetative: "Vegetative",
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -384,7 +387,10 @@ export const translations = {
     recommendations: "सिफारिशें",
     growthTimeline: "विकास समयरेखा",
     growthTimelineDesc: "आपकी फसल के विकास की एक समयरेखा।",
-    day: "दिन"
+    day: "दिन",
+    stageGermination: "अंकुरण",
+    stageSeedling: "नन्हा पौधा",
+    stageVegetative: "वनस्पति",
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -577,7 +583,10 @@ export const translations = {
     recommendations: "సిఫార్సులు",
     growthTimeline: "పెరుగుదల కాలక్రమం",
     growthTimelineDesc: "మీ పంట అభివృద్ధి యొక్క కాలక్రమం.",
-    day: "రోజు"
+    day: "రోజు",
+    stageGermination: "అంకురోత్పత్తి",
+    stageSeedling: "మొలక",
+    stageVegetative: "శాకీయ",
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -770,7 +779,10 @@ export const translations = {
     recommendations: "ಶಿಫಾರಸುಗಳು",
     growthTimeline: "ಬೆಳವಣಿಗೆಯ ಟೈಮ್‌ಲೈನ್",
     growthTimelineDesc: "ನಿಮ್ಮ ಬೆಳೆಯ ಅಭಿವೃದ್ಧಿಯ ಟೈಮ್‌ಲೈನ್.",
-    day: "ದಿನ"
+    day: "ದಿನ",
+    stageGermination: "ಮೊಳಕೆಯೊಡೆಯುವಿಕೆ",
+    stageSeedling: "ಸಸಿ",
+    stageVegetative: "ಸಸ್ಯಕ",
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -963,7 +975,10 @@ export const translations = {
     recommendations: "ശുപാർശകൾ",
     growthTimeline: "വളർച്ചാ ടൈംലൈൻ",
     growthTimelineDesc: "നിങ്ങളുടെ വിളയുടെ വികാസത്തിന്റെ ഒരു ടൈംലൈൻ.",
-    day: "ദിവസം"
+    day: "ദിവസം",
+    stageGermination: "മുളയ്ക്കൽ",
+    stageSeedling: "തൈ",
+    stageVegetative: "സസ്യം",
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -1058,9 +1073,9 @@ export const translations = {
     schemePmKisanTitle: "பிஎம்-கிசான் திட்டம்",
     schemePmKisanDesc: "சரியான பயிர் ஆரோக்கியம் மற்றும் எதிர்பார்க்கப்படும் பண்ணை வருமானத்திற்கு ஏற்ப பொருத்தமான விளைச்சலை உறுதி செய்வதற்காக பல்வேறு உள்ளீடுகளை வாங்குவதில் அனைத்து நில உரிமையாளர் விவசாயிகளின் குடும்பங்களின் நிதித் தேவைகளை συμπληக்கும் நோக்கத்துடன் ஒரு அரசாங்கத் திட்டம்.",
     schemePmKisanElig: "தங்கள் பெயரில் பயிரிடக்கூடிய நிலம் வைத்திருக்கும் அனைத்து நில உரிமையாளர் விவசாயி குடும்பங்களும் இந்த திட்டத்தின் கீழ் लाभம் பெற தகுதியுடையவர்கள்.",
-    schemePmfbyTitle: "பிரதான் மந்திரி ஃபசல் பீமா யோஜனா (PMFBY)",
-    schemePmfbyDesc: "இந்த திட்டம் பயிர் தோல்விக்கு எதிராக விரிவான காப்பீட்டுத் தொகையை வழங்குகிறது, இதனால் விவசாயிகளின் வருமானத்தை ஸ்திரப்படுத்த உதவுகிறது.",
-    schemePmfbyElig: "அறிவிக்கப்பட்ட பகுதிகளில் அறிவிக்கப்பட்ட பயிர்களை பயிரிடும் பங்குதாரர்கள் மற்றும் குத்தகை விவசாயிகள் உட்பட அனைத்து விவசாயிகளும் காப்பீட்டிற்கு தகுதியுடையவர்கள்.",
+    pmfbyTitle: "பிரதான் மந்திரி ஃபசல் பீமா யோஜனா (PMFBY)",
+    pmfbyDesc: "இந்த திட்டம் பயிர் தோல்விக்கு எதிராக விரிவான காப்பீட்டுத் தொகையை வழங்குகிறது, இதனால் விவசாயிகளின் வருமானத்தை ஸ்திரப்படுத்த உதவுகிறது.",
+    pmfbyElig: "அறிவிக்கப்பட்ட பகுதிகளில் அறிவிக்கப்பட்ட பயிர்களை பயிரிடும் பங்குதாரர்கள் மற்றும் குத்தகை விவசாயிகள் உட்பட அனைத்து விவசாயிகளும் காப்பீட்டிற்கு தகுதியுடையவர்கள்.",
     schemePmksyTitle: "பிரதான் மந்திரி கிருஷி சின்சாயீ யோஜனா (PMKSY)",
     schemePmksyDesc: "'हर खेत को पानी' என்ற குறிக்கோளுடன் தொடங்கப்பட்ட இந்த திட்டம், உறுதிசெய்யப்பட்ட நீர்ப்பாசனத்துடன் பயிரிடப்பட்ட பரப்பை விரிவுபடுத்துவதற்கும், நீர் வீணாவதைக் குறைப்பதற்கும் மற்றும் நீர் பயன்பாட்டுத் திறனை மேம்படுத்துவதற்கும் செயல்படுத்தப்படுகிறது.",
     schemePmksyElig: "கூறுபாட்டைப் பொறுத்து மாறுபடும், ஆனால் பொதுவாக அனைத்து விவசாயிகள் மற்றும் விவசாயி குழுக்களுக்கும் திறந்திருக்கும்.",
@@ -1156,7 +1171,10 @@ export const translations = {
     recommendations: "பரிந்துரைகள்",
     growthTimeline: "வளர்ச்சி காலவரிசை",
     growthTimelineDesc: "உங்கள் பயிர் வளர்ச்சியின் காலவரிசை.",
-    day: "நாள்"
+    day: "நாள்",
+    stageGermination: "முளைப்பு",
+    stageSeedling: "நாற்று",
+    stageVegetative: "தழை",
   },
 };
 
