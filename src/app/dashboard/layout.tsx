@@ -22,6 +22,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LogoIcon } from '@/components/icons/logo';
+import { SearchCommand } from '@/components/SearchCommand';
 
 
 const navItems = [
@@ -50,12 +51,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [openSearch, setOpenSearch] = useState(false);
 
   useEffect(() => {
     if (!isLanguageSelected) {
       router.replace('/');
     }
   }, [isLanguageSelected, router]);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault()
+        setOpenSearch((open) => !open)
+      }
+    }
+    document.addEventListener("keydown", down)
+    return () => document.removeEventListener("keydown", down)
+  }, []);
   
   if (!isLanguageSelected) {
     return <div className="min-h-screen w-full bg-background" />;
@@ -120,6 +133,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   return (
     <div className="grid min-h-screen w-full bg-background">
+      <SearchCommand open={openSearch} setOpen={setOpenSearch} />
       {/* Desktop Sidebar */}
       <div className={cn(
         "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out fixed top-0 left-0 h-full z-40",
@@ -190,7 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {currentNavItem ? t(currentNavItem.labelKey) : t('dashboard')}
             </h1>
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => setOpenSearch(true)}>
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
               </Button>
