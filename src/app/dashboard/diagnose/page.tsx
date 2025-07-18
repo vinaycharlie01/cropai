@@ -3,8 +3,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, LifeBuoy } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
+import Link from 'next/link';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
@@ -364,9 +365,16 @@ export default function DiagnosePage() {
             {error && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                     <Alert variant="destructive">
-                      <ShieldAlert className="h-4 w-4" />
-                      <AlertTitle>{t('error')}</AlertTitle>
-                      <AlertDescription>{error}</AlertDescription>
+                      <div className="flex justify-between items-center">
+                        <div className='flex items-center'>
+                           <ShieldAlert className="h-4 w-4" />
+                           <AlertTitle className="ml-2">{t('error')}</AlertTitle>
+                        </div>
+                         <Button variant="outline" size="sm" asChild>
+                           <Link href="/dashboard/help"><LifeBuoy className="mr-2" /> {t('contactSupport')}</Link>
+                         </Button>
+                      </div>
+                      <AlertDescription className="mt-2">{error}</AlertDescription>
                     </Alert>
                 </motion.div>
             )}
