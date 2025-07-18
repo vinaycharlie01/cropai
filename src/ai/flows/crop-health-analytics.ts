@@ -11,7 +11,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { translations, TranslationKeys } from '@/lib/translations';
 
 const DiagnosisHistoryItemSchema = z.object({
   date: z.string().describe('The date of the diagnosis.'),
@@ -42,7 +41,7 @@ const prompt = ai.definePrompt({
   name: 'cropHealthAnalyticsPrompt',
   input: {schema: CropHealthAnalyticsInputSchema},
   output: {schema: CropHealthAnalyticsOutputSchema},
-  prompt: `You are an expert agronomist and data analyst. Analyze the provided history of crop disease diagnoses to identify trends and provide an overall assessment and preventative advice.
+  prompt: `You are an expert agronomist and data analyst. Analyze the provided history of crop disease diagnoses to identify trends and provide an overall assessment and preventative advice. The input data will be in English.
 
 **INPUT DATA: Diagnosis History**
 {{#each diagnosisHistory}}
@@ -60,17 +59,6 @@ Analyze the data and provide the structured JSON output now.
 `,
 });
 
-// Helper function to find the translation key for a given English value.
-const findTranslationKey = (value: string): TranslationKeys | null => {
-    const valueLower = value.toLowerCase().replace(/\s+/g, '');
-    for (const key in translations.en) {
-        if (translations.en[key as TranslationKeys].toLowerCase().replace(/\s+/g, '') === valueLower) {
-            return key as TranslationKeys;
-        }
-    }
-    return null;
-}
-
 const cropHealthAnalyticsFlow = ai.defineFlow(
   {
     name: 'cropHealthAnalyticsFlow',
@@ -78,28 +66,11 @@ const cropHealthAnalyticsFlow = ai.defineFlow(
     outputSchema: CropHealthAnalyticsOutputSchema,
   },
   async input => {
-    const { diagnosisHistory, language } = input;
-    const targetLanguage = language as keyof typeof translations;
-
-    // Translate the history before sending it to the prompt
-    const translatedHistory = diagnosisHistory.map(item => {
-        const t = (key: TranslationKeys) => translations[targetLanguage]?.[key] || translations.en[key];
-        
-        const cropKey = findTranslationKey(item.cropType);
-        const diseaseKey = findTranslationKey(item.disease);
-
-        return {
-            ...item,
-            cropType: cropKey ? t(cropKey) : item.cropType,
-            disease: diseaseKey ? t(diseaseKey) : item.disease,
-        };
-    });
-
-    const { output } = await prompt({
-        diagnosisHistory: translatedHistory,
-        language: targetLanguage
-    });
-    
-    return output!;
+    // The prompt is capable of handling translation, so we pass the input directly.
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error("The AI model did not return a valid analysis.");
+    }
+    return output;
   }
 );
