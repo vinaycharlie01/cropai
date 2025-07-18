@@ -3,6 +3,7 @@ import './globals.css';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/contexts/AuthContext';
+import { getAuth, signOut } from 'firebase/auth';
 
 export const metadata: Metadata = {
   title: 'Kisan Rakshak',
