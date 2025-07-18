@@ -2,7 +2,7 @@
 'use client'
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, BarChartBig, CloudSun, HeartPulse, LineChart, ScrollText } from "lucide-react";
+import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, ScrollText } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -24,6 +24,12 @@ const featureCards = [
     icon: CloudSun,
     titleKey: "weatherForecast",
     descriptionKey: "weatherInstruction",
+  },
+  {
+    href: "/dashboard/irrigation",
+    icon: Droplets,
+    titleKey: "smartIrrigation",
+    descriptionKey: "irrigationDescription",
   },
   {
     href: "/dashboard/mandi-prices",
