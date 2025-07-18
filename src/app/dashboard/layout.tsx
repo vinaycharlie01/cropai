@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, Bell } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import {
   Sheet,
@@ -189,7 +189,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <h1 className="text-xl font-semibold font-headline">
               {currentNavItem ? t(currentNavItem.labelKey) : t('dashboard')}
             </h1>
-            <div className="ml-auto">
+            <div className="ml-auto flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Button>
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+                <Bell className="h-5 w-5" />
+                <span className="sr-only">Notifications</span>
+              </Button>
               {languageSelector}
             </div>
           </div>
