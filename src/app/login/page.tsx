@@ -5,30 +5,64 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, SubmitHandler } from 'react-hook-form';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { LogIn, Loader2 } from 'lucide-react';
+import {
+  signInWithEmailAndPassword,
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult
+} from 'firebase/auth';
+import { LogIn, Loader2, KeyRound } from 'lucide-react';
 
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { LogoIcon } from '@/components/icons/logo';
 import { motion } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type FormInputs = {
+
+type EmailFormInputs = {
   email: string;
   password: string;
 };
 
+type PhoneFormInputs = {
+  phoneNumber: string;
+  otp: string;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { register, handleSubmit, formState: { errors } } = useForm<FormInputs>();
-  const [isLoading, setIsLoading] = useState(false);
+  const emailForm = useForm<EmailFormInputs>();
+  const phoneForm = useForm<PhoneFormInputs>();
 
-  const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        },
+      });
+    }
+    return window.recaptchaVerifier;
+  };
+
+  const onEmailSubmit: SubmitHandler<EmailFormInputs> = async (data) => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, data.email, data.password);
@@ -45,8 +79,42 @@ export default function LoginPage() {
     }
   };
 
+  const onPhoneSubmit: SubmitHandler<PhoneFormInputs> = async (data) => {
+    setIsLoading(true);
+    if (!isOtpSent) {
+      // Send OTP
+      try {
+        const recaptchaVerifier = setupRecaptcha();
+        const result = await signInWithPhoneNumber(auth, `+${data.phoneNumber}`, recaptchaVerifier);
+        setConfirmationResult(result);
+        setIsOtpSent(true);
+        toast({ title: 'OTP Sent', description: 'Please check your phone for the OTP.' });
+      } catch (error: any) {
+        console.error("OTP send error:", error);
+        toast({ variant: 'destructive', title: 'Failed to Send OTP', description: error.message });
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Verify OTP
+      if (confirmationResult && data.otp) {
+        try {
+          await confirmationResult.confirm(data.otp);
+          router.push('/dashboard');
+        } catch (error: any) {
+          console.error("OTP verify error:", error);
+          toast({ variant: 'destructive', title: 'Invalid OTP', description: 'The OTP you entered is incorrect. Please try again.' });
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }
+  };
+
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
+      <div id="recaptcha-container"></div>
       <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080.png')] bg-cover bg-center opacity-10" data-ai-hint="farm landscape" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background to-background" />
 
@@ -69,33 +137,80 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  {...register('email', { required: 'Email is required.' })}
-                />
-                {errors.email && <p className="text-destructive text-sm">{errors.email.message}</p>}
-              </div>
+            <Tabs defaultValue="email" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="email">Email</TabsTrigger>
+                <TabsTrigger value="phone">Phone</TabsTrigger>
+              </TabsList>
+              <TabsContent value="email" className="pt-6">
+                <form onSubmit={emailForm.handleSubmit(onEmailSubmit)} className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="name@example.com"
+                      {...emailForm.register('email', { required: 'Email is required.' })}
+                    />
+                    {emailForm.formState.errors.email && <p className="text-destructive text-sm">{emailForm.formState.errors.email.message}</p>}
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  {...register('password', { required: 'Password is required.' })}
-                />
-                {errors.password && <p className="text-destructive text-sm">{errors.password.message}</p>}
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      {...emailForm.register('password', { required: 'Password is required.' })}
+                    />
+                    {emailForm.formState.errors.password && <p className="text-destructive text-sm">{emailForm.formState.errors.password.message}</p>}
+                  </div>
 
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Button>
-            </form>
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogIn className="mr-2 h-4 w-4" />}
+                    {isLoading ? 'Signing In...' : 'Sign In with Email'}
+                  </Button>
+                </form>
+              </TabsContent>
+              <TabsContent value="phone" className="pt-6">
+                <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-6">
+                   <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      type="tel"
+                      placeholder="91xxxxxxxxxx"
+                      disabled={isOtpSent}
+                      {...phoneForm.register('phoneNumber', { required: 'Phone number is required.' })}
+                    />
+                    {phoneForm.formState.errors.phoneNumber && <p className="text-destructive text-sm">{phoneForm.formState.errors.phoneNumber.message}</p>}
+                  </div>
+
+                  {isOtpSent && (
+                    <div className="space-y-2">
+                      <Label htmlFor="otp">OTP</Label>
+                      <Input
+                        id="otp"
+                        type="text"
+                        maxLength={6}
+                        placeholder="Enter 6-digit OTP"
+                        {...phoneForm.register('otp', { required: 'OTP is required.', minLength: 6, maxLength: 6 })}
+                      />
+                      {phoneForm.formState.errors.otp && <p className="text-destructive text-sm">{phoneForm.formState.errors.otp.message}</p>}
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      isOtpSent ? <KeyRound className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />
+                    )}
+                    {isLoading ? (isOtpSent ? 'Verifying...' : 'Sending OTP...') : (isOtpSent ? 'Verify OTP' : 'Send OTP')}
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
+            
             <p className="mt-6 text-center text-sm">
               Don't have an account?{' '}
               <Link href="/signup" className="font-semibold text-primary hover:underline">

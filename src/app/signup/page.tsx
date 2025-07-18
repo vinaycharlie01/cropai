@@ -18,6 +18,7 @@ import { LogoIcon } from '@/components/icons/logo';
 import { motion } from 'framer-motion';
 
 type FormInputs = {
+  name: string;
   email: string;
   password: string;
 };
@@ -33,8 +34,7 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
       
-      // Optionally update profile here if you collect more info like name
-      // await updateProfile(userCredential.user, { displayName: data.name });
+      await updateProfile(userCredential.user, { displayName: data.name });
 
       toast({
         title: 'Account Created',
@@ -78,6 +78,16 @@ export default function SignupPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder="Your Name"
+                  {...register('name', { required: 'Name is required.' })}
+                />
+                {errors.name && <p className="text-destructive text-sm">{errors.name.message}</p>}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input

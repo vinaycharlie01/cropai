@@ -4,8 +4,9 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, Bell, LogOut } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTheme } from "next-themes";
 import {
   Sheet,
   SheetContent,
@@ -53,6 +54,7 @@ const languages = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { t, setLanguage, isLanguageSelected } = useLanguage();
   const { user, loading } = useAuth();
+  const { setTheme, theme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -142,7 +144,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuItem className="focus:bg-transparent cursor-default">
             <div className="flex flex-col">
-              <span className="font-medium text-sm">{user.email}</span>
+              <span className="font-medium text-sm">{user.displayName || user.email}</span>
+              <span className="text-xs text-muted-foreground">{user.phoneNumber || (user.displayName ? user.email : null)}</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -170,6 +173,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         ))}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+
+  const themeToggle = (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="text-muted-foreground hover:text-primary"
+      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+    >
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
   );
   
   return (
@@ -249,16 +265,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
               </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
-                <Bell className="h-5 w-5" />
-                <span className="sr-only">Notifications</span>
-              </Button>
+              {themeToggle}
               {languageSelector}
               {userMenu}
             </div>
           </div>
         </header>
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-secondary/30">
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/50">
           {children}
         </main>
       </div>
