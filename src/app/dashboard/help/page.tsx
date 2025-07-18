@@ -23,6 +23,13 @@ export default function HelpPage() {
             isExternal: true,
         },
         {
+            href: "/dashboard/help/chat",
+            icon: MessageSquare,
+            titleKey: "chatWithSupport",
+            descriptionKey: "chatWithSupportDesc",
+            isExternal: false,
+        },
+        {
             href: "/dashboard/help/faq",
             icon: HelpCircle,
             titleKey: "viewFaqs",
@@ -36,13 +43,6 @@ export default function HelpPage() {
             descriptionKey: "submitIssueDesc",
             isExternal: false,
         },
-        // {
-        //     href: "/dashboard/help/chat",
-        //     icon: MessageSquare,
-        //     titleKey: "chatWithSupport",
-        //     descriptionKey: "chatWithSupportDesc",
-        //     isExternal: false,
-        // },
     ];
 
     const containerVariants = {
