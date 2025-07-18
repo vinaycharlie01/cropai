@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, CloudSun, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from "next-themes";
 import {
@@ -34,6 +34,7 @@ const navItems = [
   { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
   { href: '/dashboard/monitor', icon: Activity, labelKey: 'growthMonitoring' },
   { href: '/dashboard/analytics', icon: PieChart, labelKey: 'healthAnalytics' },
+  { href: '/dashboard/insurance', icon: Shield, labelKey: 'cropInsurance' },
   { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
   { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
   { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },

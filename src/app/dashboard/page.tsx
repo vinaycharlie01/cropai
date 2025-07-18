@@ -2,7 +2,7 @@
 'use client'
 
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity } from "lucide-react";
+import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 
@@ -24,6 +24,12 @@ const featureCards = [
     icon: PieChart,
     titleKey: "healthAnalytics",
     descriptionKey: "healthAnalyticsDesc",
+  },
+   {
+    href: "/dashboard/insurance",
+    icon: Shield,
+    titleKey: "cropInsurance",
+    descriptionKey: "cropInsuranceDesc",
   },
   {
     href: "/dashboard/selling-advice",

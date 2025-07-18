@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 config();
 
@@ -9,3 +10,4 @@ import '@/ai/flows/predict-mandi-price.ts';
 import '@/ai/flows/support-chat.ts';
 import '@/ai/flows/crop-health-analytics.ts';
 import '@/ai/flows/daily-crop-growth.ts';
+import '@/ai/flows/insurance-advice.ts';

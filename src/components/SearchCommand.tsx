@@ -14,6 +14,7 @@ import {
   LineChart,
   PieChart,
   ScrollText,
+  Shield,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -30,6 +31,7 @@ const navItems = [
     { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
     { href: '/dashboard/monitor', icon: Activity, labelKey: 'growthMonitoring' },
     { href: '/dashboard/analytics', icon: PieChart, labelKey: 'healthAnalytics' },
+    { href: '/dashboard/insurance', icon: Shield, labelKey: 'cropInsurance' },
     { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
     { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
     { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },
