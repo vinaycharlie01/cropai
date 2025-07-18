@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
                 setIsAiLoading(true);
                 try {
                     const result = await getCropHealthAnalytics({
-                        diagnosisHistory: diagnosisHistory.map(({ id, date, ...rest}) => rest), // pass without id
+                        diagnosisHistory: diagnosisHistory.map(({ id, ...rest}) => rest), // pass without id, but keep date
                         language: language,
                     });
                     setAnalyticsData(result);
