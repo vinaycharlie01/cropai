@@ -7,3 +7,4 @@ import '@/ai/flows/selling-advice.ts';
 import '@/ai/flows/irrigation-advice.ts';
 import '@/ai/flows/predict-mandi-price.ts';
 import '@/ai/flows/support-chat.ts';
+import '@/ai/flows/crop-health-analytics.ts';
