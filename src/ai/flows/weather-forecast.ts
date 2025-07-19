@@ -31,43 +31,35 @@ const WeatherForecastOutputSchema = z.object({
 });
 export type WeatherForecastOutput = z.infer<typeof WeatherForecastOutputSchema>;
 
-// --- Tools for OpenWeatherMap API ---
-
-const geocodeTool = ai.defineTool(
-  {
-    name: 'geocodeTool',
-    description: 'Get latitude and longitude for a given location name.',
-    inputSchema: z.object({ location: z.string() }),
-    outputSchema: z.object({ lat: z.number(), lon: z.number() }),
-  },
-  async ({ location }) => {
-    const apiKey = await genkit.getSecret("OPENWEATHERMAP_API_KEY");
-    const response = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${location}&limit=1&appid=${apiKey}`);
-    if (!response.ok) {
-      throw new Error('Failed to fetch geocoding data.');
-    }
-    const data = await response.json();
-    if (!data || data.length === 0) {
-      throw new Error(`Could not find location: ${location}`);
-    }
-    return { lat: data[0].lat, lon: data[0].lon };
-  }
-);
+// --- Tool for OpenWeatherMap API ---
 
 const getWeatherTool = ai.defineTool(
   {
     name: 'getWeatherTool',
-    description: 'Get the 5-day weather forecast for a given latitude and longitude.',
-    inputSchema: z.object({ lat: z.number(), lon: z.number() }),
+    description: 'Get the 5-day weather forecast for a given location name.',
+    inputSchema: z.object({ location: z.string() }),
     outputSchema: z.any(), // Allow any JSON structure from the API
   },
-  async ({ lat, lon }) => {
+  async ({ location }) => {
     const apiKey = await genkit.getSecret("OPENWEATHERMAP_API_KEY");
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
-    if (!response.ok) {
+
+    // 1. Geocode location to lat/lon
+    const geoResponse = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${location}&limit=1&appid=${apiKey}`);
+    if (!geoResponse.ok) {
+      throw new Error('Failed to fetch geocoding data.');
+    }
+    const geoData = await geoResponse.json();
+    if (!geoData || geoData.length === 0) {
+      throw new Error(`Could not find location: ${location}`);
+    }
+    const { lat, lon } = geoData[0];
+
+    // 2. Fetch weather forecast using lat/lon
+    const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
+    if (!weatherResponse.ok) {
       throw new Error('Failed to fetch weather forecast data.');
     }
-    return await response.json();
+    return await weatherResponse.json();
   }
 );
 
@@ -80,18 +72,17 @@ export async function getWeatherForecast(input: WeatherForecastInput): Promise<W
 
 const prompt = ai.definePrompt({
   name: 'weatherForecastPrompt',
-  tools: [geocodeTool, getWeatherTool],
+  tools: [getWeatherTool],
   input: { schema: WeatherForecastInputSchema },
   output: { schema: WeatherForecastOutputSchema },
   prompt: `You are a weather data processor. Your task is to process the raw weather data provided by the tools and format it into a user-friendly 5-day forecast.
 
 Location to forecast: {{{location}}}
 
-1.  Use the geocodeTool to get the latitude and longitude for the location.
-2.  Use the getWeatherTool with the obtained coordinates to get the weather data.
-3.  Analyze the 'list' array in the returned weather data. Each item in the list is a 3-hour forecast.
-4.  Group the forecasts by day. For each of the next 5 days, find the representative weather condition, average temperature, and average humidity.
-5.  Format the result into the required JSON output schema. The temperature should be rounded to the nearest whole number and include "°C". The humidity should be a percentage string like "60%".
+1.  Use the getWeatherTool to get the raw weather data for the location.
+2.  Analyze the 'list' array in the returned weather data. Each item in the list is a 3-hour forecast.
+3.  Group the forecasts by day. For each of the next 5 days, find the representative weather condition, average temperature, and average humidity.
+4.  Format the result into the required JSON output schema. The temperature should be rounded to the nearest whole number and include "°C". The humidity should be a percentage string like "60%".
 `,
 });
 
