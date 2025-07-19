@@ -10,10 +10,10 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { genkit } from 'genkit';
 
-// Input and Output Schemas remain the same for the frontend
+// Input and Output Schemas for the frontend
 const WeatherForecastInputSchema = z.object({
   location: z.string().describe('The location for which to get the weather forecast.'),
 });
@@ -36,17 +36,20 @@ export type WeatherForecastOutput = z.infer<typeof WeatherForecastOutputSchema>;
 const getWeatherTool = ai.defineTool(
   {
     name: 'getWeatherTool',
-    description: 'Get the 5-day weather forecast for a given location name.',
+    description: 'Get the 5-day weather forecast raw data for a given location name.',
     inputSchema: z.object({ location: z.string() }),
     outputSchema: z.any(), // Allow any JSON structure from the API
   },
   async ({ location }) => {
     const apiKey = await genkit.getSecret("OPENWEATHERMAP_API_KEY");
-
+    if (!apiKey) {
+      throw new Error("OpenWeatherMap API key is not configured.");
+    }
+    
     // 1. Geocode location to lat/lon
     const geoResponse = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${location}&limit=1&appid=${apiKey}`);
     if (!geoResponse.ok) {
-      throw new Error('Failed to fetch geocoding data.');
+      throw new Error(`Failed to fetch geocoding data. Status: ${geoResponse.status}`);
     }
     const geoData = await geoResponse.json();
     if (!geoData || geoData.length === 0) {
@@ -57,7 +60,7 @@ const getWeatherTool = ai.defineTool(
     // 2. Fetch weather forecast using lat/lon
     const weatherResponse = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
     if (!weatherResponse.ok) {
-      throw new Error('Failed to fetch weather forecast data.');
+      throw new Error(`Failed to fetch weather forecast data. Status: ${weatherResponse.status}`);
     }
     return await weatherResponse.json();
   }
@@ -70,33 +73,53 @@ export async function getWeatherForecast(input: WeatherForecastInput): Promise<W
   return weatherForecastFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'weatherForecastPrompt',
-  tools: [getWeatherTool],
-  input: { schema: WeatherForecastInputSchema },
-  output: { schema: WeatherForecastOutputSchema },
-  prompt: `You are a weather data processor. Your task is to process the raw weather data provided by the tools and format it into a user-friendly 5-day forecast.
-
-Location to forecast: {{{location}}}
-
-1.  Use the getWeatherTool to get the raw weather data for the location.
-2.  Analyze the 'list' array in the returned weather data. Each item in the list is a 3-hour forecast.
-3.  Group the forecasts by day. For each of the next 5 days, find the representative weather condition, average temperature, and average humidity.
-4.  Format the result into the required JSON output schema. The temperature should be rounded to the nearest whole number and include "°C". The humidity should be a percentage string like "60%".
-`,
-});
-
 const weatherForecastFlow = ai.defineFlow(
   {
     name: 'weatherForecastFlow',
     inputSchema: WeatherForecastInputSchema,
     outputSchema: WeatherForecastOutputSchema,
   },
-  async input => {
-    const { output } = await prompt(input);
-    if (!output) {
-        throw new Error("The AI model did not return a valid forecast.");
+  async ({ location }) => {
+    const weatherData = await getWeatherTool({ location });
+
+    if (!weatherData || !weatherData.list) {
+      throw new Error("Invalid data received from weather API.");
     }
-    return output;
+
+    // Process the raw data in code
+    const dailyData: { [key: string]: { temps: number[], humidities: number[], conditions: { [key: string]: number } } } = {};
+
+    weatherData.list.forEach((item: any) => {
+      const date = new Date(item.dt * 1000);
+      const day = date.toISOString().split('T')[0];
+
+      if (!dailyData[day]) {
+        dailyData[day] = { temps: [], humidities: [], conditions: {} };
+      }
+
+      dailyData[day].temps.push(item.main.temp);
+      dailyData[day].humidities.push(item.main.humidity);
+      const condition = item.weather[0].main;
+      dailyData[day].conditions[condition] = (dailyData[day].conditions[condition] || 0) + 1;
+    });
+
+    const forecast: z.infer<typeof DailyForecastSchema>[] = [];
+    const days = Object.keys(dailyData).sort().slice(0, 5);
+
+    for (const day of days) {
+      const data = dailyData[day];
+      const avgTemp = data.temps.reduce((a, b) => a + b, 0) / data.temps.length;
+      const avgHumidity = data.humidities.reduce((a, b) => a + b, 0) / data.humidities.length;
+      const mostCommonCondition = Object.keys(data.conditions).reduce((a, b) => data.conditions[a] > data.conditions[b] ? a : b);
+
+      forecast.push({
+        day: new Date(day).toLocaleDateString('en-US', { weekday: 'long' }),
+        temperature: `${Math.round(avgTemp)}°C`,
+        condition: mostCommonCondition,
+        humidity: `${Math.round(avgHumidity)}%`,
+      });
+    }
+
+    return { forecast };
   }
 );
