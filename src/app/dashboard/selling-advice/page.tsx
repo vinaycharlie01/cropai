@@ -6,7 +6,6 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Loader2, Search, Mic } from 'lucide-react';
 
-import { getSellingAdvice, SellingAdviceOutput } from '@/ai/flows/selling-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,7 +28,7 @@ type SttField = 'cropType' | 'location' | 'quantity' | 'desiredSellTime';
 export default function SellingAdvicePage() {
   const { t, language } = useLanguage();
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormInputs>();
-  const [advice, setAdvice] = useState<SellingAdviceOutput | null>(null);
+  const [advice, setAdvice] = useState<{ advice: string } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
@@ -78,32 +77,11 @@ export default function SellingAdvicePage() {
       .replace('{location}', data.location)
       .replace('{desiredSellTime}', data.desiredSellTime);
 
-    const mockAdvice: SellingAdviceOutput = {
+    const mockAdvice = {
         advice: mockAdviceText,
     };
     setAdvice(mockAdvice);
     setIsLoading(false);
-
-    // --- Original AI Call (commented out) ---
-    /*
-    try {
-      const result = await getSellingAdvice({ ...data, language });
-      setAdvice(result);
-    } catch (e) {
-      console.error(e);
-      const errorMessage = (e as Error).message || t('errorGettingAdvice');
-      
-      if (errorMessage.includes('429')) {
-          setError("You have exceeded the daily request limit for this feature. Please try again tomorrow.");
-      } else {
-          setError(errorMessage);
-      }
-      
-      toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-    } finally {
-      setIsLoading(false);
-    }
-    */
   };
   
   return (
