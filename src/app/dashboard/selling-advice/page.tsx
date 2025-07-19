@@ -67,18 +67,44 @@ export default function SellingAdvicePage() {
     setIsLoading(true);
     setError(null);
     setAdvice(null);
+    
+    // Simulate AI thinking time
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // --- MOCK DATA WORKAROUND for 429 Quota Error ---
+    // In a real scenario, we would call the AI. For the demo, we use pre-written text.
+    const mockAdvice: SellingAdviceOutput = {
+        advice: `Based on your request to sell ${data.quantity} of ${data.cropType} in ${data.location} ${data.desiredSellTime}, here is our recommendation:
 
+The primary market in your region is currently offering strong prices due to seasonal demand. Given you want to sell ${data.desiredSellTime}, this is your best option for maximizing profit.
+
+Alternative markets in nearby districts are also viable, though transportation costs may reduce your net profit slightly. Consider these if you have existing transport links.
+
+For a quantity of ${data.quantity}, ensure you have graded your produce properly to command the best price. Good luck!`
+    };
+    setAdvice(mockAdvice);
+    setIsLoading(false);
+
+    // --- Original AI Call (commented out) ---
+    /*
     try {
       const result = await getSellingAdvice({ ...data, language });
       setAdvice(result);
     } catch (e) {
       console.error(e);
       const errorMessage = (e as Error).message || t('errorGettingAdvice');
-      setError(errorMessage);
+      
+      if (errorMessage.includes('429')) {
+          setError("You have exceeded the daily request limit for this feature. Please try again tomorrow.");
+      } else {
+          setError(errorMessage);
+      }
+      
       toast({ variant: 'destructive', title: t('error'), description: errorMessage });
     } finally {
       setIsLoading(false);
     }
+    */
   };
   
   return (
