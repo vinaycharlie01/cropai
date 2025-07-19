@@ -72,15 +72,14 @@ export default function SellingAdvicePage() {
     await new Promise(resolve => setTimeout(resolve, 1500));
     
     // --- MOCK DATA WORKAROUND for 429 Quota Error ---
-    // In a real scenario, we would call the AI. For the demo, we use pre-written text.
+    const mockAdviceText = t('sellingAdviceMock')
+      .replace('{quantity}', data.quantity)
+      .replace('{cropType}', data.cropType)
+      .replace('{location}', data.location)
+      .replace('{desiredSellTime}', data.desiredSellTime);
+
     const mockAdvice: SellingAdviceOutput = {
-        advice: `Based on your request to sell ${data.quantity} of ${data.cropType} in ${data.location} ${data.desiredSellTime}, here is our recommendation:
-
-The primary market in your region is currently offering strong prices due to seasonal demand. Given you want to sell ${data.desiredSellTime}, this is your best option for maximizing profit.
-
-Alternative markets in nearby districts are also viable, though transportation costs may reduce your net profit slightly. Consider these if you have existing transport links.
-
-For a quantity of ${data.quantity}, ensure you have graded your produce properly to command the best price. Good luck!`
+        advice: mockAdviceText,
     };
     setAdvice(mockAdvice);
     setIsLoading(false);
