@@ -87,7 +87,7 @@ const carouselSlides = [
         descriptionKey: "diagnoseDescription",
         buttonKey: "diagnose",
         href: "/dashboard/diagnose",
-        imgSrc: "https://placehold.co/1200x500",
+        imgSrc: "https://placehold.co/1200x500.png",
         imgHint: "farmer inspecting crop"
     },
     {
@@ -95,7 +95,7 @@ const carouselSlides = [
         descriptionKey: "cropInsuranceDesc",
         buttonKey: "registerInsurance",
         href: "/dashboard/insurance",
-        imgSrc: "https://placehold.co/1200x500",
+        imgSrc: "https://placehold.co/1200x500.png",
         imgHint: "farm landscape sunset"
     },
     {
@@ -103,7 +103,7 @@ const carouselSlides = [
         descriptionKey: "aiSellingAdviceDesc",
         buttonKey: "getAdvice",
         href: "/dashboard/selling-advice",
-        imgSrc: "https://placehold.co/1200x500",
+        imgSrc: "https://placehold.co/1200x500.png",
         imgHint: "market stall vegetables"
     },
     
