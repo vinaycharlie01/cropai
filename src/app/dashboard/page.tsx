@@ -87,7 +87,7 @@ const carouselSlides = [
         descriptionKey: "diagnoseDescription",
         buttonKey: "diagnose",
         href: "/dashboard/diagnose",
-        imgSrc: "https://placehold.co/1200x500.png",
+        imgSrc: "https://iili.io/FjhJ7cB.jpg",
         imgHint: "farmer inspecting crop"
     },
     {
