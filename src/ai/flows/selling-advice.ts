@@ -21,19 +21,8 @@ const SellingAdviceInputSchema = z.object({
 });
 export type SellingAdviceInput = z.infer<typeof SellingAdviceInputSchema>;
 
-const AlternativeMarketSchema = z.object({
-  marketName: z.string().describe("The name of the alternative market."),
-  pros: z.string().describe("The potential advantages of selling at this market."),
-  cons: z.string().describe("The potential disadvantages of selling at this market."),
-});
-
 const SellingAdviceOutputSchema = z.object({
-  bestMarket: z.object({
-    name: z.string().describe('The name of the single best market/place to sell for maximum profit right now.'),
-    reason: z.string().describe('A brief reason why this is the best market.'),
-  }),
-  alternativeMarkets: z.array(AlternativeMarketSchema).describe('A list of 2-3 alternative markets with their pros and cons.'),
-  generalAdvice: z.string().describe('General advice based on the quantity and desired sell time (e.g., "For this quantity, it might be better to sell in bulk," or "If you can wait, prices are expected to rise.").'),
+  advice: z.string().describe('A comprehensive paragraph of selling advice. Include the best market, alternative markets, and general tips. This entire field must be in the requested language.'),
 });
 export type SellingAdviceOutput = z.infer<typeof SellingAdviceOutputSchema>;
 
@@ -45,17 +34,18 @@ const prompt = ai.definePrompt({
   name: 'sellingAdvicePrompt',
   input: {schema: SellingAdviceInputSchema},
   output: {schema: SellingAdviceOutputSchema},
-  prompt: `You are an agricultural market expert. Based on the provided crop type, quantity, farmer's location, and desired selling time, provide detailed advice on the best time and place to sell the crop for maximum profit.
+  prompt: `You are an agricultural market expert. Based on the provided crop type, quantity, farmer's location, and desired selling time, provide detailed advice in a single comprehensive paragraph.
 
-Your entire response MUST be in the language specified: **{{{language}}}**.
-Your entire response must conform to the JSON output schema.
+Your response MUST be in the language specified: **{{{language}}}**.
+Your entire response must conform to the JSON output schema, with all advice contained in the single 'advice' field.
 
-Consider factors like current market trends, demand in nearby cities/mandis, off-season advantages, storage options, and transportation costs.
+Consider factors like current market trends, demand in nearby cities/mandis, off-season advantages, storage options, and transportation costs. Provide clear and actionable advice for the farmer.
 
-Crop Type: {{{cropType}}}
-Quantity: {{{quantity}}}
-Location: {{{location}}}
-Desired Sell Time: {{{desiredSellTime}}}
+**Farmer's Details:**
+*   Crop Type: {{{cropType}}}
+*   Quantity: {{{quantity}}}
+*   Location: {{{location}}}
+*   Desired Sell Time: {{{desiredSellTime}}}
 
 Provide your structured JSON response now.
 `,
