@@ -23,6 +23,7 @@ import { db, storage } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, GeoPoint } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 
 type WeatherFormInputs = {
