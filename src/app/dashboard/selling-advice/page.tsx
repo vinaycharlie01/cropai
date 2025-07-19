@@ -4,12 +4,12 @@
 import { useState, useCallback } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Lightbulb, Loader2, Search, Mic } from 'lucide-react';
+import { Bot, Lightbulb, Loader2, Search, Mic, TrendingUp, ThumbsDown, ThumbsUp } from 'lucide-react';
 
 import { getSellingAdvice, SellingAdviceOutput } from '@/ai/flows/selling-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -78,6 +78,19 @@ export default function SellingAdvicePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+    }
+  };
+
+  const itemVariants = {
+      hidden: { y: 20, opacity: 0 },
+      visible: { y: 0, opacity: 1 }
   };
 
   return (
@@ -186,24 +199,70 @@ export default function SellingAdvicePage() {
       <AnimatePresence>
         {advice && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
           >
-            <Card className="bg-background">
+            <motion.div variants={itemVariants}>
+                <Card className="bg-background">
+                    <CardHeader>
+                        <div className="flex items-center gap-2">
+                            <Bot />
+                            <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
+                        </div>
+                    </CardHeader>
+                </Card>
+            </motion.div>
+            
+            <motion.div variants={itemVariants}>
+              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                 <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Bot />
-                        <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
-                    </div>
+                    <CardTitle className="flex items-center gap-2 text-lg"><TrendingUp /> Best Market to Sell</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="flex items-start gap-4 p-4 bg-muted/50 rounded-lg">
-                        <Lightbulb className="h-6 w-6 text-primary mt-1 shrink-0" />
-                        <p className="whitespace-pre-wrap">{advice.advice}</p>
-                    </div>
+                <CardContent>
+                    <h3 className="text-xl font-bold text-green-800 dark:text-green-300">{advice.bestMarket.name}</h3>
+                    <p className="text-muted-foreground">{advice.bestMarket.reason}</p>
                 </CardContent>
-            </Card>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg">Alternative Markets</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {advice.alternativeMarkets.map((market, index) => (
+                            <div key={index} className="p-4 border rounded-lg">
+                                <h4 className="font-semibold">{market.marketName}</h4>
+                                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                    <div className="flex items-start gap-2 text-green-600">
+                                        <ThumbsUp className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span>{market.pros}</span>
+                                    </div>
+                                    <div className="flex items-start gap-2 text-red-600">
+                                        <ThumbsDown className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span>{market.cons}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </motion.div>
+            
+            <motion.div variants={itemVariants}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-lg flex items-center gap-2"><Lightbulb /> General Advice</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p>{advice.generalAdvice}</p>
+                    </CardContent>
+                </Card>
+            </motion.div>
+            
           </motion.div>
         )}
       </AnimatePresence>

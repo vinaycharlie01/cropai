@@ -21,8 +21,19 @@ const SellingAdviceInputSchema = z.object({
 });
 export type SellingAdviceInput = z.infer<typeof SellingAdviceInputSchema>;
 
+const AlternativeMarketSchema = z.object({
+  marketName: z.string().describe("The name of the alternative market."),
+  pros: z.string().describe("The potential advantages of selling at this market."),
+  cons: z.string().describe("The potential disadvantages of selling at this market."),
+});
+
 const SellingAdviceOutputSchema = z.object({
-  advice: z.string().describe('Detailed advice on the best time and place to sell the crop for maximum profit, including potential markets and pricing strategies.'),
+  bestMarket: z.object({
+    name: z.string().describe('The name of the single best market/place to sell for maximum profit right now.'),
+    reason: z.string().describe('A brief reason why this is the best market.'),
+  }),
+  alternativeMarkets: z.array(AlternativeMarketSchema).describe('A list of 2-3 alternative markets with their pros and cons.'),
+  generalAdvice: z.string().describe('General advice based on the quantity and desired sell time (e.g., "For this quantity, it might be better to sell in bulk," or "If you can wait, prices are expected to rise.").'),
 });
 export type SellingAdviceOutput = z.infer<typeof SellingAdviceOutputSchema>;
 
@@ -36,6 +47,9 @@ const prompt = ai.definePrompt({
   output: {schema: SellingAdviceOutputSchema},
   prompt: `You are an agricultural market expert. Based on the provided crop type, quantity, farmer's location, and desired selling time, provide detailed advice on the best time and place to sell the crop for maximum profit.
 
+Your entire response MUST be in the language specified: **{{{language}}}**.
+Your entire response must conform to the JSON output schema.
+
 Consider factors like current market trends, demand in nearby cities/mandis, off-season advantages, storage options, and transportation costs.
 
 Crop Type: {{{cropType}}}
@@ -43,12 +57,7 @@ Quantity: {{{quantity}}}
 Location: {{{location}}}
 Desired Sell Time: {{{desiredSellTime}}}
 
-Your response MUST be in the following language: {{{language}}}.
-
-Provide actionable advice. Specifically include:
-1.  The single best market/place to sell for maximum profit right now.
-2.  A few alternative markets with their potential pros and cons.
-3.  General advice based on the quantity and desired sell time (e.g., "For this quantity, it might be better to sell in bulk at a larger mandi," or "If you can wait, prices are expected to rise in a month.").
+Provide your structured JSON response now.
 `,
 });
 
@@ -60,6 +69,9 @@ const sellingAdviceFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("The AI model did not return a valid selling advice.");
+    }
+    return output;
   }
 );
