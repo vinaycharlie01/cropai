@@ -55,27 +55,25 @@ export default function DiagnosePage() {
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
       setValue(activeSttField, result, { shouldValidate: true });
-      setActiveSttField(null);
     }
   }, [activeSttField, setValue]);
 
   const onRecognitionError = useCallback((err: string) => {
       console.error(err);
       toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
-      setActiveSttField(null);
   }, [t, toast]);
 
 
-  const { transcript, isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
     onResult: onRecognitionResult,
     onError: onRecognitionError,
+    onEnd: () => setActiveSttField(null),
   });
 
 
   const handleSttToggle = (field: SttField) => {
-    if (isListening && activeSttField === field) {
+    if (isListening) {
         stopListening();
-        setActiveSttField(null);
     } else {
         setActiveSttField(field);
         const ttsLang = getTtsLanguageCode(language);
