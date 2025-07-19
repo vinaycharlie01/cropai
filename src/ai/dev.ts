@@ -12,3 +12,4 @@ import '@/ai/flows/crop-health-analytics.ts';
 import '@/ai/flows/daily-crop-growth.ts';
 import '@/ai/flows/insurance-advice.ts';
 import '@/ai/flows/assess-loan-eligibility.ts';
+import '@/ai/flows/get-risk-alerts.ts';
