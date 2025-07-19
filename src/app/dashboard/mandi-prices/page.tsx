@@ -34,7 +34,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { PredictMandiPriceOutput } from "@/ai/flows/predict-mandi-price";
 import type { TranslationKeys } from "@/lib/translations";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { getTtsLanguageCode } from "@/lib/translations";
@@ -66,7 +65,7 @@ export default function MandiPricesPage() {
   const { toast } = useToast();
   const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
 
-  const [prediction, setPrediction] = useState<PredictMandiPriceOutput | null>(null);
+  const [prediction, setPrediction] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
@@ -97,6 +96,7 @@ export default function MandiPricesPage() {
     }
   };
 
+
   const TrendArrow = ({ trend }: { trend: string }) => {
     if (trend === 'up') return <span className="text-green-500">▲</span>
     if (trend === 'down') return <span className="text-red-500">▼</span>
@@ -118,8 +118,7 @@ export default function MandiPricesPage() {
 
     const currentPrice = parseInt(prices.find(p => p.key === data.crop)!.price.replace('₹', '').replace(',', ''));
     
-    // --- MOCK DATA WORKAROUND for 429 Quota Error ---
-    const mockPrediction: PredictMandiPriceOutput = {
+    const mockPrediction = {
       predictions: [
         { week: t('week1'), price: Math.round(currentPrice * 1.02) },
         { week: t('week2'), price: Math.round(currentPrice * 1.05) },
@@ -127,7 +126,7 @@ export default function MandiPricesPage() {
         { week: t('week4'), price: Math.round(currentPrice * 1.06) },
       ],
       analysis: t('mandiAnalysisMock')
-          .replace('{cropType}', t(selectedCrop.cropKey))
+          .replace('{cropType}', t(selectedCrop.cropKey as any))
           .replace('{location}', data.location)
     };
     
