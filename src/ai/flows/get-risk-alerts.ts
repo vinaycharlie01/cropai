@@ -12,13 +12,13 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-export const RiskAlertInputSchema = z.object({
+const RiskAlertInputSchema = z.object({
   location: z.string().describe('The geographical location (e.g., district, state) for the risk assessment.'),
   cropType: z.string().describe('The primary crop being grown in the location.'),
 });
 export type RiskAlertInput = z.infer<typeof RiskAlertInputSchema>;
 
-export const RiskAlertSchema = z.object({
+const RiskAlertSchema = z.object({
   riskType: z.enum(['pest', 'weather']).describe('The type of risk.'),
   riskLevel: z.enum(['low', 'medium', 'high']).describe('The severity of the risk.'),
   predictedDate: z.string().describe('The ISO 8601 date when the risk is predicted to be highest.'),
