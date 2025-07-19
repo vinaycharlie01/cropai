@@ -267,7 +267,7 @@ export default function MandiPricesPage() {
                     <div className="flex items-center gap-2 font-medium leading-none">
                       <Bot className="h-4 w-4" /> Analyst's Summary
                     </div>
-                    <div className="leading-none text-muted-foreground">
+                    <div className="mt-1 leading-relaxed text-muted-foreground">
                       {prediction.analysis}
                     </div>
                   </CardFooter>
