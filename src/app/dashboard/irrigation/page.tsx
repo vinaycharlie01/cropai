@@ -1,9 +1,10 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Droplets, Loader2, Search, Wind, Sun, Cloud, CloudRain } from 'lucide-react';
+import { Bot, Droplets, Loader2, Search, Wind, Sun, Cloud, CloudRain, Mic } from 'lucide-react';
 
 import { getIrrigationAdvice, IrrigationAdviceOutput } from '@/ai/flows/irrigation-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,6 +15,8 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 type FormInputs = {
   cropType: string;
@@ -22,16 +25,47 @@ type FormInputs = {
   currentWeather: string;
 };
 
+type SttField = 'cropType' | 'location';
+
 const soilTypes = ['sandy', 'clay', 'loam', 'silt', 'peat'];
 const weatherConditions = ['sunny', 'cloudy', 'windy', 'recentRain'];
 
 export default function IrrigationPage() {
   const { t, language } = useLanguage();
-  const { register, handleSubmit, control, formState: { errors } } = useForm<FormInputs>();
+  const { register, handleSubmit, control, setValue, formState: { errors } } = useForm<FormInputs>();
   const [advice, setAdvice] = useState<IrrigationAdviceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+
+  const onRecognitionResult = useCallback((result: string) => {
+    if (activeSttField) {
+      setValue(activeSttField, result, { shouldValidate: true });
+    }
+  }, [activeSttField, setValue]);
+
+  const onRecognitionError = useCallback((err: string) => {
+      console.error(err);
+      toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+  }, [t, toast]);
+
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: onRecognitionResult,
+    onError: onRecognitionError,
+    onEnd: () => setActiveSttField(null),
+  });
+
+  const handleSttToggle = (field: SttField) => {
+    if (isListening && activeSttField === field) {
+        stopListening();
+    } else {
+        setActiveSttField(field);
+        const ttsLang = getTtsLanguageCode(language);
+        startListening(ttsLang);
+    }
+  };
+
 
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     setIsLoading(true);
@@ -77,12 +111,36 @@ export default function IrrigationPage() {
              <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="cropType">{t('cropType')}</Label>
-                    <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                    <div className="relative">
+                      <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                       <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleSttToggle('cropType')}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                          disabled={!isSupported}
+                      >
+                          <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                      </Button>
+                    </div>
                     {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="location">{t('location')}</Label>
-                    <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                     <div className="relative">
+                      <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                       <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => handleSttToggle('location')}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                          disabled={!isSupported}
+                      >
+                          <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                      </Button>
+                    </div>
                     {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
                 </div>
                  <div className="space-y-2">

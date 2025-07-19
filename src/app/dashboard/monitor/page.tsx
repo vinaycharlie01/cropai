@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Bot, Loader2, Activity, Sprout, Video, Camera, SwitchCamera } from 'lucide-react';
+import { Upload, Bot, Loader2, Activity, Sprout, Video, Camera, SwitchCamera, Mic } from 'lucide-react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,8 @@ import { monitorCropGrowth, CropGrowthOutput } from '@/ai/flows/daily-crop-growt
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TranslationKeys } from '@/lib/translations';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 type FormInputs = {
   cropType: string;
@@ -24,6 +26,7 @@ type FormInputs = {
   image: FileList;
 };
 
+type SttField = 'cropType';
 type FacingMode = 'user' | 'environment';
 
 // Mock data for growth history timeline
@@ -48,10 +51,39 @@ export default function MonitorPage() {
   const [activeTab, setActiveTab] = useState('upload');
   const [facingMode, setFacingMode] = useState<FacingMode>('environment');
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  const onRecognitionResult = useCallback((result: string) => {
+    if (activeSttField) {
+      setValue(activeSttField, result, { shouldValidate: true });
+    }
+  }, [activeSttField, setValue]);
+
+  const onRecognitionError = useCallback((err: string) => {
+      console.error(err);
+      toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+  }, [t, toast]);
+
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: onRecognitionResult,
+    onError: onRecognitionError,
+    onEnd: () => setActiveSttField(null),
+  });
+
+  const handleSttToggle = (field: SttField) => {
+    if (isListening) {
+        stopListening();
+    } else {
+        setActiveSttField(field);
+        const ttsLang = getTtsLanguageCode(language);
+        startListening(ttsLang);
+    }
+  };
+
 
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
@@ -210,7 +242,19 @@ export default function MonitorPage() {
               <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                       <Label htmlFor="cropType">{t('cropType')}</Label>
-                      <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                      <div className="relative">
+                        <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                        <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => handleSttToggle('cropType')}
+                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                            disabled={!isSupported}
+                        >
+                            <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </div>
                       {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
                   </div>
                   <div className="space-y-2">

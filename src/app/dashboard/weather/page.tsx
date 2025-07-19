@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic } from 'lucide-react';
 
 import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
@@ -24,6 +24,8 @@ import { collection, addDoc, serverTimestamp, GeoPoint } from "firebase/firestor
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 
 type WeatherFormInputs = {
@@ -37,6 +39,8 @@ type PestReportInputs = {
   description: string;
   image?: FileList;
 };
+
+type SttField = 'location' | 'cropType' | 'pestName' | 'description';
 
 const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
   const lowerCaseCondition = condition.toLowerCase();
@@ -56,7 +60,7 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
 };
 
 export default function WeatherPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
@@ -68,9 +72,39 @@ export default function WeatherPage() {
   const [submittedLocation, setSubmittedLocation] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmittingPest, setIsSubmittingPest] = useState(false);
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  const onRecognitionResult = useCallback((result: string) => {
+    if (activeSttField === 'location') {
+      weatherForm.setValue('location', result, { shouldValidate: true });
+    } else {
+      pestReportForm.setValue(activeSttField as keyof PestReportInputs, result, { shouldValidate: true });
+    }
+  }, [activeSttField, weatherForm, pestReportForm]);
+
+  const onRecognitionError = useCallback((err: string) => {
+      console.error(err);
+      toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+  }, [t, toast]);
+
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: onRecognitionResult,
+    onError: onRecognitionError,
+    onEnd: () => setActiveSttField(null),
+  });
+
+  const handleSttToggle = (field: SttField) => {
+    if (isListening && activeSttField === field) {
+        stopListening();
+    } else {
+        setActiveSttField(field);
+        const ttsLang = getTtsLanguageCode(language);
+        startListening(ttsLang);
+    }
+  };
 
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
@@ -193,9 +227,19 @@ export default function WeatherPage() {
                   <Input
                     id="location"
                     placeholder={t('egAndhraPradesh')}
-                    className="pl-10"
+                    className="pl-10 pr-12"
                     {...weatherForm.register('location', { required: t('locationRequired') })}
                   />
+                   <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => handleSttToggle('location')}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      disabled={!isSupported}
+                  >
+                      <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                  </Button>
                 </div>
                 {weatherForm.formState.errors.location && <p className="text-destructive text-sm">{weatherForm.formState.errors.location.message}</p>}
               </div>
@@ -317,12 +361,22 @@ export default function WeatherPage() {
                 <form onSubmit={pestReportForm.handleSubmit(onPestSubmit)}>
                     <CardContent className="space-y-4">
                          <div className="space-y-1">
-                            <Label htmlFor="cropType">Crop Affected</Label>
-                            <Input id="cropType" {...pestReportForm.register('cropType', { required: true })} placeholder="e.g., Cotton" />
+                            <Label htmlFor="cropTypePest">Crop Affected</Label>
+                            <div className="relative">
+                                <Input id="cropTypePest" {...pestReportForm.register('cropType', { required: true })} placeholder="e.g., Cotton" />
+                                <Button type="button" size="icon" variant="ghost" onClick={() => handleSttToggle('cropType')} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" disabled={!isSupported}>
+                                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                                </Button>
+                            </div>
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="pestName">Pest Name</Label>
-                            <Input id="pestName" {...pestReportForm.register('pestName', { required: true })} placeholder="e.g., Pink Bollworm"/>
+                            <div className="relative">
+                                <Input id="pestName" {...pestReportForm.register('pestName', { required: true })} placeholder="e.g., Pink Bollworm"/>
+                                <Button type="button" size="icon" variant="ghost" onClick={() => handleSttToggle('pestName')} className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" disabled={!isSupported}>
+                                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'pestName' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                                </Button>
+                            </div>
                         </div>
                         <div className="space-y-1">
                             <Label htmlFor="severity">Severity</Label>
@@ -344,7 +398,12 @@ export default function WeatherPage() {
                         </div>
                          <div className="space-y-1">
                             <Label htmlFor="description">Description (Optional)</Label>
-                            <Textarea id="description" {...pestReportForm.register('description')} placeholder="Describe what you see..."/>
+                             <div className="relative">
+                                <Textarea id="description" {...pestReportForm.register('description')} placeholder="Describe what you see..."/>
+                                <Button type="button" size="icon" variant="ghost" onClick={() => handleSttToggle('description')} className="absolute right-1 top-2 h-8 w-8" disabled={!isSupported}>
+                                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'description' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                                </Button>
+                            </div>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="image">Upload Photo (Optional)</Label>

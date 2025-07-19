@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Landmark, Loader2, Bot, Lightbulb, Info, AlertTriangle, FileText, CheckCircle2 } from 'lucide-react';
+import { Landmark, Loader2, Bot, Lightbulb, Info, AlertTriangle, FileText, CheckCircle2, Mic } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { assessLoanEligibility, LoanEligibilityOutput } from '@/ai/flows/assess-loan-eligibility';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 
 type LoanFormInputs = {
@@ -21,6 +23,8 @@ type LoanFormInputs = {
   amountRequired: number;
   document: FileList;
 };
+
+type SttField = 'amountRequired';
 
 const loanPurposes = [
     { key: 'loanPurposeSeeds' },
@@ -34,13 +38,40 @@ export default function SmartCapitalPage() {
     const { t, language } = useLanguage();
     const { toast } = useToast();
     const { user } = useAuth();
-    const { register, handleSubmit, control, watch, formState: { errors } } = useForm<LoanFormInputs>();
+    const { register, handleSubmit, control, watch, setValue, formState: { errors } } = useForm<LoanFormInputs>();
 
     const [isLoading, setIsLoading] = useState(false);
     const [eligibilityResult, setEligibilityResult] = useState<LoanEligibilityOutput | null>(null);
+    const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
-    const amountRequired = watch('amountRequired');
-    const loanPurpose = watch('loanPurpose');
+    const onRecognitionResult = useCallback((result: string) => {
+      if (activeSttField) {
+        // Remove non-numeric characters for amount
+        const numericResult = result.replace(/[^0-9]/g, '');
+        setValue(activeSttField, Number(numericResult), { shouldValidate: true });
+      }
+    }, [activeSttField, setValue]);
+
+    const onRecognitionError = useCallback((err: string) => {
+        console.error(err);
+        toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+    }, [t, toast]);
+
+    const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+      onResult: onRecognitionResult,
+      onError: onRecognitionError,
+      onEnd: () => setActiveSttField(null),
+    });
+
+    const handleSttToggle = (field: SttField) => {
+      if (isListening) {
+          stopListening();
+      } else {
+          setActiveSttField(field);
+          const ttsLang = getTtsLanguageCode(language);
+          startListening(ttsLang);
+      }
+    };
     
     const onSubmit: SubmitHandler<LoanFormInputs> = async (data) => {
         setIsLoading(true);
@@ -112,7 +143,19 @@ export default function SmartCapitalPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="amountRequired">{t('amountRequired')} (₹)</Label>
-                                    <Input id="amountRequired" type="number" {...register('amountRequired', { required: t('fieldRequired'), valueAsNumber: true })} />
+                                    <div className="relative">
+                                        <Input id="amountRequired" type="number" {...register('amountRequired', { required: t('fieldRequired'), valueAsNumber: true })} />
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            onClick={() => handleSttToggle('amountRequired')}
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                                            disabled={!isSupported}
+                                        >
+                                            <Mic className={`h-5 w-5 ${isListening && activeSttField === 'amountRequired' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                                        </Button>
+                                    </div>
                                     {errors.amountRequired && <p className="text-destructive text-sm">{errors.amountRequired.message}</p>}
                                 </div>
                             </div>
@@ -180,4 +223,3 @@ export default function SmartCapitalPage() {
         </motion.div>
     );
 }
-

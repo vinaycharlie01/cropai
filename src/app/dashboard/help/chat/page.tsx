@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Loader2, Mic } from 'lucide-react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,9 @@ import { chatWithSupport } from '@/ai/flows/support-chat';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode } from '@/lib/translations';
+import { useToast } from '@/hooks/use-toast';
 
 type Message = {
     role: 'user' | 'model';
@@ -21,10 +24,35 @@ type Message = {
 
 export default function ChatPage() {
     const { t, language } = useLanguage();
+    const { toast } = useToast();
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+    const onRecognitionResult = useCallback((result: string) => {
+      setInput(result);
+    }, []);
+
+    const onRecognitionError = useCallback((err: string) => {
+        console.error(err);
+        toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+    }, [t, toast]);
+
+    const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+      onResult: onRecognitionResult,
+      onError: onRecognitionError,
+    });
+
+    const handleSttToggle = () => {
+        if (isListening) {
+            stopListening();
+        } else {
+            const ttsLang = getTtsLanguageCode(language);
+            startListening(ttsLang);
+        }
+    };
+
 
     useEffect(() => {
         if(messages.length === 0) {
@@ -140,12 +168,25 @@ export default function ChatPage() {
                 </CardContent>
                 <CardFooter className="pt-4 border-t">
                     <form onSubmit={handleSendMessage} className="w-full flex items-center gap-2">
-                        <Input
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder={t('chatPlaceholder')}
-                            disabled={isLoading}
-                        />
+                        <div className="relative w-full">
+                            <Input
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                placeholder={t('chatPlaceholder')}
+                                disabled={isLoading}
+                                className="pr-12"
+                            />
+                             <Button
+                                type="button"
+                                size="icon"
+                                variant="ghost"
+                                onClick={handleSttToggle}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                                disabled={!isSupported || isLoading}
+                            >
+                                <Mic className={`h-5 w-5 ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                            </Button>
+                        </div>
                         <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
                             <Send className="h-4 w-4" />
                         </Button>

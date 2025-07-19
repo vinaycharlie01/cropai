@@ -95,7 +95,7 @@ const carouselSlides = [
         descriptionKey: "cropInsuranceDesc",
         buttonKey: "registerInsurance",
         href: "/dashboard/insurance",
-        imgSrc: "https://placehold.co/1200x500.png",
+        imgSrc: "https://iili.io/FjhJ7cB.jpg",
         imgHint: "farm landscape sunset"
     },
     {
@@ -103,7 +103,7 @@ const carouselSlides = [
         descriptionKey: "aiSellingAdviceDesc",
         buttonKey: "getAdvice",
         href: "/dashboard/selling-advice",
-        imgSrc: "https://placehold.co/1200x500.png",
+        imgSrc: "https://iili.io/FjhJ7cB.jpg",
         imgHint: "market stall vegetables"
     },
     
