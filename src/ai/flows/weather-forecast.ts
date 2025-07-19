@@ -11,6 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { genkit } from 'genkit';
 
 // Input and Output Schemas remain the same for the frontend
 const WeatherForecastInputSchema = z.object({
@@ -40,7 +41,8 @@ const geocodeTool = ai.defineTool(
     outputSchema: z.object({ lat: z.number(), lon: z.number() }),
   },
   async ({ location }) => {
-    const response = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${location}&limit=1&appid=${process.env.OPENWEATHERMAP_API_KEY}`);
+    const apiKey = await genkit.getSecret("OPENWEATHERMAP_API_KEY");
+    const response = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${location}&limit=1&appid=${apiKey}`);
     if (!response.ok) {
       throw new Error('Failed to fetch geocoding data.');
     }
@@ -60,7 +62,8 @@ const getWeatherTool = ai.defineTool(
     outputSchema: z.any(), // Allow any JSON structure from the API
   },
   async ({ lat, lon }) => {
-    const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${process.env.OPENWEATHERMAP_API_KEY}`);
+    const apiKey = await genkit.getSecret("OPENWEATHERMAP_API_KEY");
+    const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`);
     if (!response.ok) {
       throw new Error('Failed to fetch weather forecast data.');
     }
