@@ -10,8 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
-import { usePathname } from 'next/navigation';
+import { chatWithSupport, SupportChatOutput } from '@/ai/flows/support-chat';
 import { cn } from '@/lib/utils';
 import { getTtsLanguageCode } from '@/lib/translations';
 
@@ -23,7 +22,6 @@ interface Message {
 export default function KisanSaathiChatPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const pathname = usePathname();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -37,17 +35,47 @@ export default function KisanSaathiChatPage() {
 
   useEffect(scrollToBottom, [messages]);
   
-  const handleAiResponse = useCallback((response: AgriGptOutput) => {
-    setMessages(prev => [...prev, { role: 'model', text: response.kisanMitraResponse.localized }]);
-    // In a real app, you would handle navigation or other actions here
+  const handleAiResponse = useCallback((response: SupportChatOutput) => {
+    setMessages(prev => [...prev, { role: 'model', text: response.reply }]);
   }, []);
+
+  const handleSubmit = useCallback(async (query?: string) => {
+    const userMessage = query || input;
+    if (!userMessage.trim()) return;
+
+    setIsLoading(true);
+    setInput('');
+    const newMessages: Message[] = [...messages, { role: 'user', text: userMessage }];
+    setMessages(newMessages);
+    
+    try {
+        const conversationHistory = newMessages.slice(0, -1).map(msg => ({
+            role: msg.role,
+            parts: [{ text: msg.text }]
+        }));
+
+        const response = await chatWithSupport({
+            message: userMessage,
+            history: conversationHistory,
+            language: language,
+        });
+        handleAiResponse(response);
+    } catch (e) {
+        console.error("AI chat error:", e);
+        toast({ variant: 'destructive', title: t('error'), description: t('chatError') });
+         setMessages(prev => [...prev, { role: 'model', text: t('chatError') }]);
+    } finally {
+        setIsLoading(false);
+    }
+  }, [input, messages, language, handleAiResponse, t, toast]);
+
 
   const onRecognitionResult = useCallback((result: string) => {
     if (result) {
       setInput(result);
       handleSubmit(result);
     }
-  }, []); // We'll define handleSubmit inside the component render scope
+  }, [handleSubmit]);
 
   const onRecognitionError = useCallback((err: string) => {
       console.error(err);
@@ -65,36 +93,6 @@ export default function KisanSaathiChatPage() {
       } else {
           startListening(getTtsLanguageCode(language));
       }
-  };
-
-  const handleSubmit = async (query?: string) => {
-    const userMessage = query || input;
-    if (!userMessage.trim()) return;
-
-    setIsLoading(true);
-    setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
-    
-    try {
-        const conversationHistory = messages.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.text }]
-        }));
-
-        const response = await processAgriGptCommand({
-            transcribedQuery: userMessage,
-            conversationHistory: conversationHistory,
-            currentScreen: pathname,
-            language: language,
-        });
-        handleAiResponse(response);
-    } catch (e) {
-        console.error("AI chat error:", e);
-        toast({ variant: 'destructive', title: t('error'), description: t('chatError') });
-         setMessages(prev => [...prev, { role: 'model', text: t('chatError') }]);
-    } finally {
-        setIsLoading(false);
-    }
   };
 
   return (
