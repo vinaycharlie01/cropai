@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
 import { usePathname, useRouter } from 'next/navigation';
+import { getTtsLanguageCode } from '@/lib/translations';
 
 export function AgriGptDialog() {
   const { t, language } = useLanguage();
@@ -85,7 +86,7 @@ export function AgriGptDialog() {
       stopListening();
     } else {
       setAiResponse(null);
-      startListening(language);
+      startListening(getTtsLanguageCode(language));
     }
   };
 
