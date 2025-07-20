@@ -7,8 +7,6 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed, Info } from 'lucide-react';
 
-import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
-import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -25,7 +23,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 
 
 type WeatherFormInputs = {
@@ -39,6 +37,26 @@ type PestReportInputs = {
   description: string;
   image?: FileList;
 };
+
+interface DailyForecast {
+    day: string;
+    temperature: string;
+    condition: string;
+    humidity: string;
+}
+
+interface WeatherForecastOutput {
+    forecast: DailyForecast[];
+    location: string;
+}
+
+interface RiskAlert {
+    riskType: 'pest' | 'weather';
+    riskLevel: 'low' | 'medium' | 'high';
+    predictedDate: string;
+    advisory: string;
+    cropAffected: string;
+}
 
 type SttField = 'location' | 'cropType' | 'pestName' | 'description';
 
@@ -70,7 +88,6 @@ export default function WeatherPage() {
   const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isAlertsLoading, setIsAlertsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmittingPest, setIsSubmittingPest] = useState(false);
@@ -108,29 +125,56 @@ export default function WeatherPage() {
     }
   };
 
-  const fetchWeatherAndAlerts = useCallback(async ({ locationName }: { locationName: string }) => {
+  const getMockForecast = (location: string): WeatherForecastOutput => {
+      const days = [t('day1' as TranslationKeys) || 'Mon', t('day2' as TranslationKeys) || 'Tue', t('day3' as TranslationKeys) || 'Wed', t('day4' as TranslationKeys) || 'Thu', t('day5' as TranslationKeys) || 'Fri'];
+      const conditions = ['Sunny', 'Partly Cloudy', 'Showers', 'Sunny', 'Thunderstorm'];
+      return {
+          location: location,
+          forecast: days.map((day, i) => ({
+              day,
+              temperature: `${28 + i - Math.floor(Math.random() * 3)}°C`,
+              condition: conditions[i],
+              humidity: `${60 + i * 2 - Math.floor(Math.random() * 5)}%`,
+          }))
+      };
+  };
+
+  const getMockAlerts = (location: string): RiskAlert[] => {
+      const today = new Date();
+      const futureDate1 = new Date(today.setDate(today.getDate() + 3)).toISOString().split('T')[0];
+      const futureDate2 = new Date(today.setDate(today.getDate() + 5)).toISOString().split('T')[0];
+      return [
+          {
+              riskType: 'weather',
+              riskLevel: 'medium',
+              predictedDate: futureDate1,
+              advisory: t('mockAlertAdvisory1' as TranslationKeys),
+              cropAffected: t('mockAlertCrop1' as TranslationKeys)
+          },
+          {
+              riskType: 'pest',
+              riskLevel: 'high',
+              predictedDate: futureDate2,
+              advisory: t('mockAlertAdvisory2' as TranslationKeys),
+              cropAffected: t('mockAlertCrop2' as TranslationKeys)
+          }
+      ];
+  };
+
+  const fetchWeatherAndAlerts = useCallback(async (locationName: string) => {
     setIsLoading(true);
-    setIsAlertsLoading(true);
     setError(null);
     setForecastData(null);
     setAlerts([]);
 
-    try {
-        const weatherResult = await getWeatherForecast({ location: locationName });
-        setForecastData(weatherResult);
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setForecastData(getMockForecast(locationName));
+    setAlerts(getMockAlerts(locationName));
 
-        const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
-        setAlerts(alertsResult);
-    } catch (e) {
-        console.error("Weather/Alert fetch error:", e);
-        const errorMessage = t('errorWeather');
-        setError(errorMessage);
-        toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-    } finally {
-        setIsLoading(false);
-        setIsAlertsLoading(false);
-    }
-  }, [t, toast]);
+    setIsLoading(false);
+  }, [t]);
 
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
@@ -138,14 +182,13 @@ export default function WeatherPage() {
         toast({ variant: 'destructive', title: t('error'), description: 'Please enter a location.'});
         return;
     }
-    fetchWeatherAndAlerts({ locationName: data.location });
+    await fetchWeatherAndAlerts(data.location);
   };
   
    useEffect(() => {
     // Automatically fetch weather for a default location on initial load
-    fetchWeatherAndAlerts({ locationName: 'Hyderabad' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
+    fetchWeatherAndAlerts('Hyderabad');
+  }, [fetchWeatherAndAlerts]);
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,7 +216,6 @@ export default function WeatherPage() {
             imageUrl = await getDownloadURL(storageRef);
         }
 
-        // Mock geopoint for now
         const location = new GeoPoint(17.3850, 78.4867);
 
         await addDoc(collection(db, 'pestReports'), {
@@ -346,7 +388,7 @@ export default function WeatherPage() {
                         <CardDescription>AI-powered pest and weather risk predictions for your location.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {isAlertsLoading ? (
+                        {isLoading ? (
                             <div className="flex justify-center items-center h-40">
                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                             </div>
@@ -464,3 +506,5 @@ export default function WeatherPage() {
     </motion.div>
   );
 }
+
+    

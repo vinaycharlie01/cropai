@@ -278,7 +278,16 @@ export const translations = {
     loanPurposeLabor: "Labor Costs",
     search: "Search",
     useCurrentLocation: "Use Current Location",
-    weatherIsSimulated: "Please note: The weather forecast feature is currently being simulated by our AI model."
+    weatherIsSimulated: "Please note: The weather forecast feature is currently being simulated by our AI model.",
+    day1: "Mon",
+    day2: "Tue",
+    day3: "Wed",
+    day4: "Thu",
+    day5: "Fri",
+    mockAlertAdvisory1: "Expect moderate rainfall. Ensure proper drainage for standing crops.",
+    mockAlertCrop1: "All Crops",
+    mockAlertAdvisory2: "High probability of Aphid outbreak. Monitor leafy vegetables closely.",
+    mockAlertCrop2: "Vegetables"
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -558,7 +567,16 @@ export const translations = {
     loanPurposeLabor: "श्रम लागत",
     search: "खोज",
     useCurrentLocation: "वर्तमान स्थान का उपयोग करें",
-    weatherIsSimulated: "कृपया ध्यान दें: मौसम पूर्वानुमान सुविधा वर्तमान में हमारे एआई मॉडल द्वारा नकली है।"
+    weatherIsSimulated: "कृपया ध्यान दें: मौसम पूर्वानुमान सुविधा वर्तमान में हमारे एआई मॉडल द्वारा नकली है।",
+    day1: "सोम",
+    day2: "मंगल",
+    day3: "बुध",
+    day4: "गुरु",
+    day5: "शुक्र",
+    mockAlertAdvisory1: "मध्यम वर्षा की अपेक्षा करें। खड़ी फसलों के लिए उचित जल निकासी सुनिश्चित करें।",
+    mockAlertCrop1: "सभी फसलें",
+    mockAlertAdvisory2: "एफिड प्रकोप की उच्च संभावना। पत्तेदार सब्जियों पर कड़ी नजर रखें।",
+    mockAlertCrop2: "सब्जियां"
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -838,7 +856,16 @@ export const translations = {
     loanPurposeLabor: "కార్మిక ఖర్చులు",
     search: "వెతకండి",
     useCurrentLocation: "ప్రస్తుత స్థానాన్ని ఉపయోగించండి",
-    weatherIsSimulated: "దయచేసి గమనించండి: వాతావరణ సూచన ఫీచర్ ప్రస్తుతం మా AI మోడల్ ద్వారా అనుకరించబడుతోంది."
+    weatherIsSimulated: "దయచేసి గమనించండి: వాతావరణ సూచన ఫీచర్ ప్రస్తుతం మా AI మోడల్ ద్వారా అనుకరించబడుతోంది.",
+    day1: "సోమ",
+    day2: "మంగళ",
+    day3: "బుధ",
+    day4: "గురు",
+    day5: "శుక్ర",
+    mockAlertAdvisory1: "మోస్తరు వర్షపాతం எதிர்பார்க்கండి. నిలబడిన పంటలకు సరైన డ్రైనేజీని నిర్ధారించుకోండి.",
+    mockAlertCrop1: "అన్ని పంటలు",
+    mockAlertAdvisory2: "అఫిడ్ వ్యాప్తికి అధిక సంభావ్యత. ఆకు కూరగాయలను నిశితంగా పరిశీలించండి.",
+    mockAlertCrop2: "కూరగాయలు"
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -1118,7 +1145,16 @@ export const translations = {
     loanPurposeLabor: "ಕಾರ್ಮಿಕ ವೆಚ್ಚಗಳು",
     search: "ಹುಡುಕಿ",
     useCurrentLocation: "ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ",
-    weatherIsSimulated: "ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಪ್ರಸ್ತುತ ನಮ್ಮ AI ಮಾದರಿಯಿಂದ ಅನುಕರಿಸಲಾಗುತ್ತಿದೆ."
+    weatherIsSimulated: "ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಪ್ರಸ್ತುತ ನಮ್ಮ AI ಮಾದರಿಯಿಂದ ಅನುಕರಿಸಲಾಗುತ್ತಿದೆ.",
+    day1: "ಸೋಮ",
+    day2: "ಮಂಗಳ",
+    day3: "ಬುಧ",
+    day4: "ಗುರು",
+    day5: "ಶುಕ್ರ",
+    mockAlertAdvisory1: "ಮಧ್ಯಮ ಮಳೆಯನ್ನು ನಿರೀಕ್ಷಿಸಿ. ನಿಂತಿರುವ ಬೆಳೆಗಳಿಗೆ ಸರಿಯಾದ ಒಳಚರಂಡಿಯನ್ನು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
+    mockAlertCrop1: "ಎಲ್ಲಾ ಬೆಳೆಗಳು",
+    mockAlertAdvisory2: "ಅಫಿಡ್ ಹರಡುವಿಕೆಯ ಹೆಚ್ಚಿನ ಸಂಭವನೀಯತೆ. ಎಲೆ ತರಕಾರಿಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ.",
+    mockAlertCrop2: "ತರಕಾರಿಗಳು"
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -1398,7 +1434,16 @@ export const translations = {
     loanPurposeLabor: "തൊഴിൽ ചെലവുകൾ",
     search: "തിരയുക",
     useCurrentLocation: "നിലവിലെ സ്ഥാനം ഉപയോഗിക്കുക",
-    weatherIsSimulated: "ദയവായി ശ്രദ്ധിക്കുക: കാലാവസ്ഥാ പ്രവചന ഫീച്ചർ നിലവിൽ ഞങ്ങളുടെ AI മോഡൽ വഴി സിമുലേറ്റ് ചെയ്യുകയാണ്."
+    weatherIsSimulated: "ദയവായി ശ്രദ്ധിക്കുക: കാലാവസ്ഥാ പ്രവചന ഫീച്ചർ നിലവിൽ ഞങ്ങളുടെ AI മോഡൽ വഴി സിമുലേറ്റ് ചെയ്യുകയാണ്.",
+    day1: "തിങ്കൾ",
+    day2: "ചൊവ്വ",
+    day3: "ബുധൻ",
+    day4: "വ്യാഴം",
+    day5: "വെള്ളി",
+    mockAlertAdvisory1: "മിതമായ മഴ പ്രതീക്ഷിക്കുക. നിൽക്കുന്ന വിളകൾക്ക് ശരിയായ ഡ്രെയിനേജ് ഉറപ്പാക്കുക.",
+    mockAlertCrop1: "എല്ലാ വിളകളും",
+    mockAlertAdvisory2: "അഫിഡ് ബാധയ്ക്ക് ഉയർന്ന സാധ്യത. ഇലക്കറികൾ അടുത്തു നിരീക്ഷിക്കുക.",
+    mockAlertCrop2: "പച്ചക്കറികൾ"
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -1678,7 +1723,16 @@ export const translations = {
     loanPurposeLabor: "தொழிலாளர் செலவுகள்",
     search: "தேடு",
     useCurrentLocation: "தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்",
-    weatherIsSimulated: "தயவுசெயಟ್ಟು கவனிக்கவும்: வானிலை முன்னறிவிப்பு அம்சம் தற்போது எங்கள் AI மாதிரியால் உருவகப்படுத்தப்படுகிறது."
+    weatherIsSimulated: "தயவுசெயಟ್ಟು கவனிக்கவும்: வானிலை முன்னறிவிப்பு அம்சம் தற்போது எங்கள் AI மாதிரியால் உருவகப்படுத்தப்படுகிறது.",
+    day1: "திங்கள்",
+    day2: "செவ்வாய்",
+    day3: "புதன்",
+    day4: "வியாழன்",
+    day5: "வெள்ளி",
+    mockAlertAdvisory1: "மிதமான மழையை எதிர்பார்க்கலாம். நிற்கும் பயிர்களுக்கு சரியான வடிகால் வசதியை உறுதி செய்யவும்.",
+    mockAlertCrop1: "அனைத்து பயிர்களும்",
+    mockAlertAdvisory2: "அசுவினி தாக்குதலுக்கு அதிக வாய்ப்பு. இலை காய்கறிகளை உன்னிப்பாகக் கண்காணிக்கவும்.",
+    mockAlertCrop2: "காய்கறிகள்"
   },
 };
 
@@ -1696,3 +1750,5 @@ const ttsLanguageMap: Record<string, string> = {
 export function getTtsLanguageCode(appLanguageCode: string): string {
   return ttsLanguageMap[appLanguageCode] || 'en-US';
 }
+
+    
