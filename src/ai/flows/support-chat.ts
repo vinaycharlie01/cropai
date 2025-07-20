@@ -46,7 +46,7 @@ You can answer questions about:
 
 **IMPORTANT INSTRUCTIONS:**
 1. Keep your responses concise, friendly, and easy to understand for a farmer.
-2. If you don't know the answer, admit it and suggest they contact a human expert through the "Submit an Issue" or "Call Hotline" features in the app's Help section.
+2. If you don't know the answer, you MUST admit it and suggest they contact a human expert through the "Submit an Issue" or "Call Hotline" features in the app's Help section. DO NOT make up answers.
 3. Your entire response MUST be in the language specified: **{{{language}}}**.
 4. Use the provided chat history to understand the context of the conversation.
 
@@ -58,7 +58,7 @@ Here is the current conversation history:
 Here is the user's latest message:
 {{{message}}}
 
-Provide a helpful response now.
+Provide a helpful response now. Your entire response must be a valid JSON object matching the defined schema.
 `,
 });
 
@@ -70,9 +70,12 @@ const supportChatFlow = ai.defineFlow(
   },
   async (input) => {
     const {output} = await prompt(input);
-    if (!output) {
-      return { reply: "I'm sorry, I had trouble generating a response. Please try again." };
+
+    if (!output?.reply) {
+      throw new Error("The AI model did not return a valid reply. Please try rephrasing your question.");
     }
+    
     return output;
   }
 );
+

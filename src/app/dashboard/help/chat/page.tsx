@@ -61,9 +61,10 @@ export default function KisanSaathiChatPage() {
         });
         handleAiResponse(response);
     } catch (e) {
+        const errorMessage = (e as Error)?.message || t('chatError');
         console.error("AI chat error:", e);
-        toast({ variant: 'destructive', title: t('error'), description: t('chatError') });
-         setMessages(prev => [...prev, { role: 'model', text: t('chatError') }]);
+        toast({ variant: 'destructive', title: t('error'), description: errorMessage });
+         setMessages(prev => [...prev, { role: 'model', text: errorMessage }]);
     } finally {
         setIsLoading(false);
     }
