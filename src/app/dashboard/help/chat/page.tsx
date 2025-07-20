@@ -10,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { chatWithSupport, SupportChatOutput } from '@/ai/flows/support-chat';
 import { cn } from '@/lib/utils';
 import { getTtsLanguageCode } from '@/lib/translations';
 
@@ -35,7 +34,7 @@ export default function KisanSaathiChatPage() {
 
   useEffect(scrollToBottom, [messages]);
   
-  const handleAiResponse = useCallback((response: SupportChatOutput) => {
+  const handleAiResponse = useCallback((response: { reply: string }) => {
     setMessages(prev => [...prev, { role: 'model', text: response.reply }]);
   }, []);
 
@@ -48,26 +47,16 @@ export default function KisanSaathiChatPage() {
     const newMessages: Message[] = [...messages, { role: 'user', text: userMessage }];
     setMessages(newMessages);
     
-    try {
-        const conversationHistory = newMessages.slice(0, -1).map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.text }]
-        }));
+    // --- MOCK DATA WORKAROUND for 429 Quota Error ---
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const mockResponse = {
+      reply: t('chatMockResponse')
+    };
+    handleAiResponse(mockResponse);
+    setIsLoading(false);
+    // --- END MOCK ---
 
-        const response = await chatWithSupport({
-            message: userMessage,
-            history: conversationHistory,
-            language: language,
-        });
-        handleAiResponse(response);
-    } catch (e) {
-        const errorMessage = (e as Error)?.message || t('chatError');
-        console.error("AI chat error:", e);
-        toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-         setMessages(prev => [...prev, { role: 'model', text: errorMessage }]);
-    } finally {
-        setIsLoading(false);
-    }
   }, [input, messages, language, handleAiResponse, t, toast]);
 
 
