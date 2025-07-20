@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -23,9 +24,12 @@ const DailyForecastSchema = z.object({
   condition: z.string().describe("The weather condition (e.g., 'Sunny', 'Partly Cloudy', 'Rain')."),
   humidity: z.string().describe("The humidity percentage (e.g., '60%')."),
 });
+export type DailyForecast = z.infer<typeof DailyForecastSchema>;
+
 
 const WeatherForecastOutputSchema = z.object({
   forecast: z.array(DailyForecastSchema).describe('A 5-day weather forecast.'),
+  location: z.string().describe('The name of the location for the forecast (e.g., "Hyderabad, IN").')
 });
 export type WeatherForecastOutput = z.infer<typeof WeatherForecastOutputSchema>;
 
@@ -46,11 +50,12 @@ const prompt = ai.definePrompt({
     
     **Instructions:**
     1.  Create a 5-day forecast starting from today.
-    2.  For each day, provide the day of the week (e.g., "Monday").
+    2.  For each day, provide the day of the week (e.g., "Monday", "Tuesday").
     3.  Provide a plausible temperature in Celsius (e.g., "28°C").
-    4.  Provide a common weather condition (e.g., "Sunny", "Partly Cloudy", "Showers").
+    4.  Provide a common weather condition (e.g., "Sunny", "Partly Cloudy", "Showers", "Thunderstorm").
     5.  Provide a realistic humidity percentage (e.g., "65%").
-    6.  Ensure the output is a valid JSON object that matches the specified schema.
+    6.  Return the original location name in the 'location' field of the output.
+    7.  Ensure the output is a valid JSON object that matches the specified schema.
     
     Generate the forecast now.`,
 });
@@ -61,8 +66,8 @@ const weatherForecastFlow = ai.defineFlow(
     inputSchema: WeatherForecastInputSchema,
     outputSchema: WeatherForecastOutputSchema,
   },
-  async ({ location }) => {
-    const { output } = await prompt({ location });
+  async (input) => {
+    const { output } = await prompt(input);
     if (!output) {
       throw new Error("The AI model did not return a valid forecast.");
     }
