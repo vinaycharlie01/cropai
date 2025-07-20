@@ -19,7 +19,7 @@ const HistoryPartSchema = z.object({
 });
 
 // Define the input schema for the AgriGPT flow
-export const AgriGptInputSchema = z.object({
+const AgriGptInputSchema = z.object({
   transcribedQuery: z.string().describe("The user's transcribed voice query."),
   conversationHistory: z.array(HistoryPartSchema).describe('The history of the current conversation for context.'),
   currentScreen: z.string().describe('The current screen the user is on, to provide context for the query.'),
@@ -28,7 +28,7 @@ export const AgriGptInputSchema = z.object({
 export type AgriGptInput = z.infer<typeof AgriGptInputSchema>;
 
 // Define the output schema for the AgriGPT flow
-export const AgriGptOutputSchema = z.object({
+const AgriGptOutputSchema = z.object({
   intent: z.string().describe('The recognized intent from the user query (e.g., GET_MANDI_PRICE, DIAGNOSE_DISEASE).'),
   parameters: z.record(z.any()).describe('A map of extracted parameters from the query (e.g., {"crop_type": "tomato"}).'),
   actionCode: z.enum(['SPEAK_ONLY', 'SPEAK_AND_NAVIGATE', 'REQUEST_IMAGE', 'CLARIFY']).describe('The action the app should take.'),
