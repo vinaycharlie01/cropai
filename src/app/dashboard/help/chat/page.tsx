@@ -10,7 +10,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
+import { chatWithSupport, SupportChatOutput } from '@/ai/flows/support-chat';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -88,22 +88,17 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const result: AgriGptOutput = await processAgriGptCommand({
-                transcribedQuery: input,
-                conversationHistory: updatedMessages.map(m => ({
+            const result: SupportChatOutput = await chatWithSupport({
+                message: input,
+                history: updatedMessages.map(m => ({
                     role: m.role,
                     parts: m.parts.map(p => ({text: p.text}))
                 })),
-                currentScreen: pathname,
                 language: language,
             });
             
-            const newBotMessage: Message = { role: 'model', parts: [{ text: result.kisanMitraResponse.localized }] };
+            const newBotMessage: Message = { role: 'model', parts: [{ text: result.reply }] };
             setMessages(prev => [...prev, newBotMessage]);
-
-            if (result.actionCode === 'SPEAK_AND_NAVIGATE' && result.navigationTarget) {
-                router.push(result.navigationTarget);
-            }
 
         } catch (error) {
             console.error("Chat error:", error);
