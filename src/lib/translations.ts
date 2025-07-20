@@ -58,7 +58,7 @@ export const translations = {
     cameraAccessDeniedTitle: "Camera Access Denied",
     cameraAccessDeniedDesc: "Please enable camera permissions in your browser settings to use this app.",
     weatherForecast: "Weather Forecast",
-    weatherInstruction: "Enter your location to get the 5-day weather forecast.",
+    weatherInstruction: "Use your current location or enter one to get the 5-day weather forecast.",
     getForecast: "Get Forecast",
     forecastFor: "Forecast for",
     errorWeather: "Could not fetch weather data. Please check the location and try again.",
@@ -276,6 +276,8 @@ export const translations = {
     loanPurposePesticides: "Pesticides",
     loanPurposeEquipment: "Small Equipment",
     loanPurposeLabor: "Labor Costs",
+    search: "Search",
+    useCurrentLocation: "Use Current Location"
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -335,7 +337,7 @@ export const translations = {
     cameraAccessDeniedTitle: "कैमरा एक्सेस अस्वीकृत",
     cameraAccessDeniedDesc: "इस ऐप का उपयोग करने के लिए कृपया अपनी ब्राउज़र सेटिंग्स में कैमरा अनुमतियों को सक्षम करें।",
     weatherForecast: "मौसम पूर्वानुमान",
-    weatherInstruction: "5-दिन का मौसम पूर्वानुमान प्राप्त करने के लिए अपना स्थान दर्ज करें।",
+    weatherInstruction: "5-दिन का मौसम पूर्वानुमान प्राप्त करने के लिए अपने वर्तमान स्थान का उपयोग करें या एक दर्ज करें।",
     getForecast: "पूर्वानुमान प्राप्त करें",
     forecastFor: "के लिए पूर्वानुमान",
     errorWeather: "मौसम डेटा प्राप्त नहीं हो सका। कृपया स्थान की जांच करें और पुनः प्रयास करें।",
@@ -553,6 +555,8 @@ export const translations = {
     loanPurposePesticides: "कीटनाशक",
     loanPurposeEquipment: "छोटे उपकरण",
     loanPurposeLabor: "श्रम लागत",
+    search: "खोज",
+    useCurrentLocation: "वर्तमान स्थान का उपयोग करें"
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -612,7 +616,7 @@ export const translations = {
     cameraAccessDeniedTitle: "కెమెరా యాక్సెస్ నిరాకరించబడింది",
     cameraAccessDeniedDesc: "ఈ యాప్‌ను ఉపయోగించడానికి దయచేసి మీ బ్రౌజర్ సెట్టింగ్‌లలో కెమెరా అనుమతులను ప్రారంభించండి.",
     weatherForecast: "వాతావరణ సూచన",
-    weatherInstruction: "5-రోజుల వాతావరణ సూచనను పొందడానికి మీ స్థానాన్ని నమోదు చేయండి.",
+    weatherInstruction: "5-రోజుల వాతావరణ సూచనను పొందడానికి మీ ప్రస్తుత స్థానాన్ని ఉపయోగించండి లేదా ఒకదాన్ని నమోదు చేయండి.",
     getForecast: "సూచనను పొందండి",
     forecastFor: "కోసం సూచన",
     errorWeather: "వాతావరణ డేటాను పొందలేకపోయాము. దయచేసి స్థానాన్ని తనిఖీ చేసి మళ్లీ ప్రయత్నించండి.",
@@ -649,9 +653,9 @@ export const translations = {
     schemePmKisanTitle: "పీఎం-కిసాన్ పథకం",
     schemePmKisanDesc: "సరైన పంట ఆరోగ్యం మరియు ఊహించిన వ్యవసాయ ఆదాయానికి అనుగుణంగా తగిన దిగుబడిని నిర్ధారించడానికి వివిధ ఇన్‌పుట్‌లను సేకరించడంలో భూమి ఉన్న రైతుల కుటుంబాల ఆర్థిక అవసరాలను భర్తీ చేసే లక్ష్యంతో ఒక ప్రభుత్వ పథకం.",
     schemePmKisanElig: "తమ పేరు మీద సాగు చేయదగిన భూమిని కలిగి ఉన్న భూ యజమాని రైతు కుటుంబాలందరూ ఈ పథకం కింద ప్రయోజనం పొందడానికి అర్హులు.",
-    schemePmfbyTitle: "ప్రధాన మంత్రి ఫసల్ బీమా యోజన (PMFBY)",
-    schemePmfbyDesc: "ఈ పథకం పంట వైఫల్యానికి వ్యతిరేకంగా సమగ్ర బీమా కవరేజీని అందిస్తుంది, తద్వారా రైతుల ఆదాయాన్ని స్థిరీకరించడంలో సహాయపడుతుంది.",
-    schemePmfbyElig: "నోటిఫైడ్ ప్రాంతాలలో నోటిఫైడ్ పంటలను పండించే కౌలుదారులు మరియు కౌలు రైతులతో సహా రైతులందరూ కవరేజీకి అర్హులు.",
+    pmfbyTitle: "ప్రధాన మంత్రి ఫసల్ బీమా యోజన (PMFBY)",
+    pmfbyDesc: "ఈ పథకం పంట వైఫల్యానికి వ్యతిరేకంగా సమగ్ర బీమా కవరేజీని అందిస్తుంది, తద్వారా రైతుల ఆదాయాన్ని స్థిరీకరించడంలో సహాయపడుతుంది.",
+    pmfbyElig: "నోటిఫైడ్ ప్రాంతాలలో నోటిఫైడ్ పంటలను పండించే కౌలుదారులు మరియు కౌలు రైతులతో సహా రైతులందరూ కవరేజీకి అర్హులు.",
     schemePmksyTitle: "ప్రధాన మంత్రి కృషి సించయీ యోజన (PMKSY)",
     schemePmksyDesc: "'హర్ ఖేత్ కో పానీ' అనే నినాదంతో ప్రారంభించబడిన ఈ పథకం, సాగునీటితో సాగు విస్తీర్ణం పెంచడానికి, నీటి వృధాను తగ్గించడానికి మరియు నీటి వినియోగ సామర్థ్యాన్ని మెరుగుపరచడానికి అమలు చేయబడుతోంది.",
     schemePmksyElig: "భాగాలను బట్టి మారుతుంది, కానీ సాధారణంగా రైతులు మరియు రైతు బృందాలందరికీ అందుబాటులో ఉంటుంది.",
@@ -830,6 +834,8 @@ export const translations = {
     loanPurposePesticides: "పురుగుమందులు",
     loanPurposeEquipment: "చిన్న పరికరాలు",
     loanPurposeLabor: "కార్మిక ఖర్చులు",
+    search: "వెతకండి",
+    useCurrentLocation: "ప్రస్తుత స్థానాన్ని ఉపయోగించండి"
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -880,8 +886,8 @@ export const translations = {
     pmfbyTitle: "ಪ್ರಧಾನ ಮಂತ್ರಿ ಫಸಲ್ ಬಿಮಾ ಯೋಜನೆ (PMFBY)",
     pmfbyDesc: "ಈ ಯೋಜನೆಯು ಬೆಳೆಗೆ ವಿಫಲವಾದರೆ ಸಮಗ್ರ ವಿಮಾ ರಕ್ಷಣೆಯನ್ನು ಒದಗಿಸುತ್ತದೆ, ಇದರಿಂದಾಗಿ ರೈತರ ಆದಾಯವನ್ನು ಸ್ಥಿರಗೊಳಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.",
     pmfbyElig: "ಅಧಿಸೂಚಿತ ಪ್ರದೇಶಗಳಲ್ಲಿ ಅಧಿಸೂಚಿತ ಬೆಳೆಗಳನ್ನು ಬೆಳೆಯುವ ಪಾಲುದಾರರು ಮತ್ತು ಹಿಡುವಳಿದಾರರು ಸೇರಿದಂತೆ ಎಲ್ಲಾ ರೈತರು ವ್ಯಾಪ್ತಿಗೆ ಅರ್ಹರಾಗಿರುತ್ತಾರೆ.",
-    pmksyTitle: "ಪ್ರಧಾನ ಮಂತ್ರಿ ಕೃಷಿ ಸಿಂಚಾಯಿ ಯೋಜನೆ (PMKSY)",
-    pmksyDesc: "'हर खೇತ್ ಕೋ ಪಾನಿ' ಎಂಬ ಧ್ಯೇಯವಾಕ್ಯದೊಂದಿಗೆ ಪ್ರಾರಂಭಿಸಲಾದ ಈ ಯೋಜನೆಯು, ಖಚಿತವಾದ ನೀರಾವರಿಯೊಂದಿಗೆ ಸಾಗುವಳಿ ಪ್ರದೇಶವನ್ನು ವಿಸ್ತರಿಸಲು, ನೀರಿನ ವ್ಯರ್ಥವನ್ನು ಕಡಿಮೆ ಮಾಡಲು ಮತ್ತು ನೀರಿನ ಬಳಕೆಯ ದಕ್ಷತೆಯನ್ನು ಸುಧಾರಿಸಲು ಜಾರಿಗೆ ತರಲಾಗುತ್ತಿದೆ.",
+    schemePmksyTitle: "ಪ್ರಧಾನ ಮಂತ್ರಿ ಕೃಷಿ ಸಿಂಚಾಯಿ ಯೋಜನೆ (PMKSY)",
+    schemePmksyDesc: "'हर खೇತ್ ಕೋ ಪಾನಿ' ಎಂಬ ಧ್ಯೇಯವಾಕ್ಯದೊಂದಿಗೆ ಪ್ರಾರಂಭಿಸಲಾದ ಈ ಯೋಜನೆಯು, ಖಚಿತವಾದ ನೀರಾವರಿಯೊಂದಿಗೆ ಸಾಗುವಳಿ ಪ್ರದೇಶವನ್ನು ವಿಸ್ತರಿಸಲು, ನೀರಿನ ವ್ಯರ್ಥವನ್ನು ಕಡಿಮೆ ಮಾಡಲು ಮತ್ತು ನೀರಿನ ಬಳಕೆಯ ದಕ್ಷತೆಯನ್ನು ಸುಧಾರಿಸಲು ಜಾರಿಗೆ ತರಲಾಗುತ್ತಿದೆ.",
     schemePmksyElig: "ಘಟಕದಿಂದ ಬದಲಾಗುತ್ತದೆ, ಆದರೆ ಸಾಮಾನ್ಯವಾಗಿ ಎಲ್ಲಾ ರೈತರು ಮತ್ತು ರೈತ ಗುಂಪುಗಳಿಗೆ ಮುಕ್ತವಾಗಿದೆ.",
     uploadOrDrag: "ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಕ್ಲಿಕ್ ಮಾಡಿ ಅಥವಾ ಎಳೆದು ಬಿಡಿ",
     cropTypeRequired: "ಬೆಳೆ ಪ್ರಕಾರ ಅಗತ್ಯವಿದೆ.",
@@ -889,7 +895,7 @@ export const translations = {
     cameraAccessDeniedTitle: "ಕ್ಯಾಮೆರಾ ಪ್ರವೇಶವನ್ನು ನಿರಾಕರಿಸಲಾಗಿದೆ",
     cameraAccessDeniedDesc: "ಈ ಅಪ್ಲಿಕೇಶನ್ ಬಳಸಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಬ್ರೌಸರ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ ಕ್ಯಾಮೆರಾ ಅನುಮತಿಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ.",
     weatherForecast: "ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ",
-    weatherInstruction: "5-ದಿನದ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ ಪಡೆಯಲು ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ನಮೂದಿಸಿ.",
+    weatherInstruction: "5-ದಿನದ ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ ಪಡೆಯಲು ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ ಅಥವಾ ಒಂದನ್ನು ನಮೂದಿಸಿ.",
     getForecast: "ಮುನ್ಸೂಚನೆ ಪಡೆಯಿರಿ",
     forecastFor: "ಗಾಗಿ ಮುನ್ಸೂಚನೆ",
     errorWeather: "ಹವಾಮಾನ ಡೇಟಾವನ್ನು ಪಡೆಯಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಸ್ಥಳವನ್ನು ಪರಿಶೀಲಿಸಿ ಮತ್ತು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
@@ -1107,6 +1113,8 @@ export const translations = {
     loanPurposePesticides: "ಕೀಟನಾಶಕಗಳು",
     loanPurposeEquipment: "ಸಣ್ಣ ಉಪಕರಣಗಳು",
     loanPurposeLabor: "ಕಾರ್ಮಿಕ ವೆಚ್ಚಗಳು",
+    search: "ಹುಡುಕಿ",
+    useCurrentLocation: "ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ"
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -1166,7 +1174,7 @@ export const translations = {
     cameraAccessDeniedTitle: "ക്യാമറ ആക്‌സസ്സ് നിഷേധിച്ചു",
     cameraAccessDeniedDesc: "ഈ ആപ്പ് ഉപയോഗിക്കുന്നതിന് ദയവായി നിങ്ങളുടെ ബ്രൗസർ ക്രമീകരണങ്ങളിൽ ക്യാമറ അനുമതികൾ പ്രവർത്തനക്ഷമമാക്കുക.",
     weatherForecast: "കാലാവസ്ഥാ പ്രവചനം",
-    weatherInstruction: "5 ദിവസത്തെ കാലാവസ്ഥാ പ്രവചനം ലഭിക്കാൻ നിങ്ങളുടെ സ്ഥലം നൽകുക.",
+    weatherInstruction: "5 ദിവസത്തെ കാലാവസ്ഥാ പ്രവചനം ലഭിക്കാൻ നിങ്ങളുടെ നിലവിലെ സ്ഥാനം ഉപയോഗിക്കുക അല്ലെങ്കിൽ ഒരെണ്ണം നൽകുക.",
     getForecast: "പ്രവചനം നേടുക",
     forecastFor: "ക്കായുള്ള പ്രവചനം",
     errorWeather: "കാലാവസ്ഥാ ഡാറ്റ ലഭ്യമാക്കാൻ കഴിഞ്ഞില്ല. ദയവായി സ്ഥലം പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.",
@@ -1384,6 +1392,8 @@ export const translations = {
     loanPurposePesticides: "കീടനാശിനികൾ",
     loanPurposeEquipment: "ചെറിയ ഉപകരണങ്ങൾ",
     loanPurposeLabor: "തൊഴിൽ ചെലവുകൾ",
+    search: "തിരയുക",
+    useCurrentLocation: "നിലവിലെ സ്ഥാനം ഉപയോഗിക്കുക"
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -1443,7 +1453,7 @@ export const translations = {
     cameraAccessDeniedTitle: "கேமரா அணுகல் மறுக்கப்பட்டது",
     cameraAccessDeniedDesc: "இந்த பயன்பாட்டைப் பயன்படுத்த, உங்கள் உலாவி அமைப்புகளில் கேமரா அனுமதிகளை இயக்கவும்.",
     weatherForecast: "வானிலை முன்னறிவிப்பு",
-    weatherInstruction: "5 நாள் வானிலை முன்னறிவிப்பைப் பெற உங்கள் இருப்பிடத்தை உள்ளிடவும்.",
+    weatherInstruction: "5 நாள் வானிலை முன்னறிவிப்பைப் பெற உங்கள் தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும் அல்லது ஒன்றை உள்ளிடவும்.",
     getForecast: "முன்னறிவிப்பைப் பெறு",
     forecastFor: "க்கான முன்னறிவிப்பு",
     errorWeather: "வானிலை தரவைப் பெற முடியவில்லை. இருப்பிடத்தைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.",
@@ -1661,6 +1671,8 @@ export const translations = {
     loanPurposePesticides: "பூச்சிக்கொல்லிகள்",
     loanPurposeEquipment: "சிறிய உபகரணங்கள்",
     loanPurposeLabor: "தொழிலாளர் செலவுகள்",
+    search: "தேடு",
+    useCurrentLocation: "தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்"
   },
 };
 

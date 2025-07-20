@@ -1,6 +1,6 @@
 
 import { config } from 'dotenv';
-config();
+config({ path: require('path').resolve(__dirname, '../../../../workspace/.env') });
 
 import '@/ai/flows/diagnose-crop-disease.ts';
 import '@/ai/flows/weather-forecast.ts';

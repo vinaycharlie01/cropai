@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
 
-import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
+import { getWeatherForecast, WeatherForecastOutput, DailyForecast } from '@/ai/flows/weather-forecast';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -47,10 +47,13 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
   if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
     return <Sun className={className} />;
   }
-  if (lowerCaseCondition.includes('rain')) {
+  if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle')) {
     return <CloudRain className={className} />;
   }
-  if (lowerCaseCondition.includes('fog') || lowerCaseCondition.includes('mist')) {
+   if (lowerCaseCondition.includes('thunderstorm')) {
+    return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21.73 18a2.73 2.73 0 0 0-2.43-1.5H16.5A4.5 4.5 0 0 0 12 12V8.27a4.5 4.5 0 0 0-4.5-4.5H7.1a4.5 4.5 0 0 0-4.32 3.53"/><path d="M16 16.5a2.5 2.5 0 1 1 0 5H18"/><path d="m13 19.5-2-4.5 4.5-2.5-2 4.5Z"/></svg>;
+  }
+  if (lowerCaseCondition.includes('fog') || lowerCaseCondition.includes('mist') || lowerCaseCondition.includes('haze') ) {
     return <CloudFog className={className} />;
   }
   if (lowerCaseCondition.includes('wind')) {
@@ -64,7 +67,7 @@ export default function WeatherPage() {
   const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
-  const [forecast, setForecast] = useState<WeatherForecastOutput | null>(null);
+  const [forecast, setForecast] = useState<DailyForecast[] | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAlertsLoading, setIsAlertsLoading] = useState(false);
@@ -106,29 +109,30 @@ export default function WeatherPage() {
     }
   };
 
-
-  const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
+  const fetchWeatherAndAlerts = useCallback(async ({ lat, lon, locationName }: { lat?: number; lon?: number; locationName?: string }) => {
     setIsLoading(true);
     setIsAlertsLoading(true);
     setError(null);
     setForecast(null);
     setAlerts([]);
-    setSubmittedLocation(data.location);
+    setSubmittedLocation(locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`);
 
     try {
-      const forecastResult = await getWeatherForecast({ location: data.location });
-      setForecast(forecastResult);
+      const forecastResult = await getWeatherForecast({ lat, lon, location: locationName });
+      setForecast(forecastResult.forecast);
+      setSubmittedLocation(forecastResult.location); // Use the location name from the response
     } catch (e) {
       console.error(e);
-      setError(t('errorWeather'));
-      toast({ variant: 'destructive', title: t('error'), description: t('errorWeather') });
+      const errorMessage = t('errorWeather');
+      setError(errorMessage);
+      toast({ variant: 'destructive', title: t('error'), description: errorMessage });
     } finally {
       setIsLoading(false);
     }
 
     try {
-      // Assuming the user's primary crop for alerts. In a real app, this could be from user profile.
-      const alertsResult = await getRiskAlerts({ location: data.location, cropType: 'various' });
+      const finalLocation = locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`;
+      const alertsResult = await getRiskAlerts({ location: finalLocation, cropType: 'various' });
       setAlerts(alertsResult);
     } catch (e) {
       console.error("Error fetching risk alerts:", e);
@@ -136,7 +140,35 @@ export default function WeatherPage() {
     } finally {
       setIsAlertsLoading(false);
     }
+  }, [t, toast]);
+
+
+  const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
+    fetchWeatherAndAlerts({ locationName: data.location });
   };
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+        toast({ variant: 'destructive', title: 'Geolocation Not Supported', description: 'Your browser does not support geolocation.' });
+        return;
+    }
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            fetchWeatherAndAlerts({ lat: position.coords.latitude, lon: position.coords.longitude });
+        },
+        (error) => {
+            setIsLoading(false);
+            toast({ variant: 'destructive', title: 'Location Error', description: 'Could not retrieve your location. Please enter it manually.' });
+            console.error(error);
+        }
+    );
+  };
+  
+   useEffect(() => {
+    handleUseCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on initial load
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -219,8 +251,8 @@ export default function WeatherPage() {
             <CardDescription>{t('weatherInstruction')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={weatherForm.handleSubmit(onWeatherSubmit)} className="flex items-start gap-4">
-              <div className="flex-grow space-y-2">
+            <form onSubmit={weatherForm.handleSubmit(onWeatherSubmit)} className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="w-full flex-grow space-y-2">
                 <Label htmlFor="location" className="sr-only">{t('location')}</Label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -228,7 +260,7 @@ export default function WeatherPage() {
                     id="location"
                     placeholder={t('egAndhraPradesh')}
                     className="pl-10 pr-12"
-                    {...weatherForm.register('location', { required: t('locationRequired') })}
+                    {...weatherForm.register('location')}
                   />
                    <Button
                       type="button"
@@ -243,10 +275,16 @@ export default function WeatherPage() {
                 </div>
                 {weatherForm.formState.errors.location && <p className="text-destructive text-sm">{weatherForm.formState.errors.location.message}</p>}
               </div>
-              <Button type="submit" disabled={isLoading} className="h-10">
-                {isLoading ? <Loader2 className="animate-spin" /> : <Search />}
-                <span className="ml-2 hidden md:inline">{t('getForecast')}</span>
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                 <Button type="submit" disabled={isLoading} className="flex-1">
+                    <Search className="h-4 w-4" />
+                    <span className="ml-2 hidden md:inline">{t('search')}</span>
+                </Button>
+                 <Button type="button" onClick={handleUseCurrentLocation} disabled={isLoading} variant="outline" className="flex-1">
+                    <LocateFixed className="h-4 w-4" />
+                    <span className="ml-2 hidden md:inline">{t('useCurrentLocation')}</span>
+                 </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -265,8 +303,24 @@ export default function WeatherPage() {
       
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
-            <AnimatePresence>
-            {forecast && (
+             {isLoading ? (
+                 <Card>
+                    <CardHeader>
+                        <div className="h-6 w-1/2 bg-muted rounded animate-pulse"></div>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {[...Array(5)].map((_, i) => (
+                             <Card key={i} className="bg-muted/30 text-center h-full flex flex-col justify-between p-2">
+                                <div className="h-5 w-1/2 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="w-16 h-16 mx-auto bg-muted rounded-full animate-pulse mb-2"></div>
+                                <div className="h-8 w-1/3 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="h-4 w-2/3 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="h-4 w-1/2 mx-auto bg-muted rounded animate-pulse"></div>
+                             </Card>
+                        ))}
+                    </CardContent>
+                 </Card>
+            ) : forecast && (
               <motion.div variants={itemVariants}>
                 <Card className="bg-background">
                     <CardHeader>
@@ -274,7 +328,7 @@ export default function WeatherPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                          {forecast.forecast.map((day, index) => (
+                          {forecast.map((day, index) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, y: 20 }}
@@ -288,7 +342,7 @@ export default function WeatherPage() {
                                     <CardContent className="flex flex-col items-center gap-2 p-2 md:p-6">
                                       <WeatherIcon condition={day.condition} className="w-12 h-12 md:w-16 md:h-16 text-primary" />
                                       <p className="text-2xl md:text-3xl font-bold">{day.temperature}</p>
-                                      <p className="text-muted-foreground text-xs md:text-sm">{day.condition}</p>
+                                      <p className="text-muted-foreground text-xs md:text-sm capitalize">{day.condition}</p>
                                       <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                           <Droplets className="w-4 h-4" />
                                           <span>{day.humidity}</span>
@@ -302,7 +356,7 @@ export default function WeatherPage() {
                 </Card>
               </motion.div>
             )}
-            </AnimatePresence>
+            
 
              <motion.div variants={itemVariants}>
                 <Card>
