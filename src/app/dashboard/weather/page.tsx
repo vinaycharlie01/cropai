@@ -67,12 +67,11 @@ export default function WeatherPage() {
   const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
-  const [forecast, setForecast] = useState<DailyForecast[] | null>(null);
+  const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAlertsLoading, setIsAlertsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submittedLocation, setSubmittedLocation] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmittingPest, setIsSubmittingPest] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
@@ -113,35 +112,42 @@ export default function WeatherPage() {
     setIsLoading(true);
     setIsAlertsLoading(true);
     setError(null);
-    setForecast(null);
+    setForecastData(null);
     setAlerts([]);
-    setSubmittedLocation(locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`);
 
-    try {
-      const forecastResult = await getWeatherForecast({ lat, lon, location: locationName });
-      setForecast(forecastResult.forecast);
-      setSubmittedLocation(forecastResult.location); // Use the location name from the response
-    } catch (e) {
-      console.error(e);
-      const errorMessage = t('errorWeather');
-      setError(errorMessage);
-      toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-    } finally {
-      setIsLoading(false);
-    }
+    let weatherResult: WeatherForecastOutput | null = null;
 
+    // Fetch Weather
     try {
-      // Use the location name returned by the weather API for more accurate risk alerts
-      const finalLocation = submittedLocation || locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`;
-      const alertsResult = await getRiskAlerts({ location: finalLocation, cropType: 'various' });
-      setAlerts(alertsResult);
+        weatherResult = await getWeatherForecast({ lat, lon, location: locationName });
+        setForecastData(weatherResult);
     } catch (e) {
-      console.error("Error fetching risk alerts:", e);
-      toast({ variant: 'destructive', title: t('error'), description: "Could not fetch risk alerts." });
+        console.error("Weather fetch error:", e);
+        const errorMessage = t('errorWeather');
+        setError(errorMessage);
+        toast({ variant: 'destructive', title: t('error'), description: errorMessage });
+        setIsLoading(false);
+        setIsAlertsLoading(false);
+        return; // Stop if weather fails
     } finally {
-      setIsAlertsLoading(false);
+        setIsLoading(false);
     }
-  }, [t, toast, submittedLocation]);
+    
+    // Fetch Alerts using location from weather result
+    if (weatherResult?.location) {
+        try {
+            const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
+            setAlerts(alertsResult);
+        } catch (e) {
+            console.error("Risk alerts fetch error:", e);
+            toast({ variant: 'destructive', title: t('error'), description: "Could not fetch risk alerts." });
+        } finally {
+            setIsAlertsLoading(false);
+        }
+    } else {
+        setIsAlertsLoading(false);
+    }
+  }, [t, toast]);
 
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
@@ -153,7 +159,7 @@ export default function WeatherPage() {
         toast({ variant: 'destructive', title: 'Geolocation Not Supported', description: 'Your browser does not support geolocation.' });
         return;
     }
-    setIsLoading(true);
+    fetchWeatherAndAlerts({ lat: undefined, lon: undefined, locationName: undefined }); // Clear previous data
     navigator.geolocation.getCurrentPosition(
         (position) => {
             fetchWeatherAndAlerts({ lat: position.coords.latitude, lon: position.coords.longitude });
@@ -167,8 +173,10 @@ export default function WeatherPage() {
   }, [fetchWeatherAndAlerts, toast]);
   
    useEffect(() => {
+    // Automatically fetch weather for current location on initial load
     handleUseCurrentLocation();
-  }, [handleUseCurrentLocation]); // Run once on initial load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run only once on mount
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -320,15 +328,15 @@ export default function WeatherPage() {
                         ))}
                     </CardContent>
                  </Card>
-            ) : forecast && (
+            ) : forecastData && (
               <motion.div variants={itemVariants}>
                 <Card className="bg-background">
                     <CardHeader>
-                        <CardTitle className="font-headline text-xl">{t('forecastFor')} {submittedLocation}</CardTitle>
+                        <CardTitle className="font-headline text-xl">{t('forecastFor')} {forecastData.location}</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                          {forecast.map((day, index) => (
+                          {forecastData.forecast.map((day, index) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, y: 20 }}
