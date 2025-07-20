@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
 
-import { getWeatherForecast, WeatherForecastOutput, DailyForecast } from '@/ai/flows/weather-forecast';
+import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -47,7 +47,7 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
   if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
     return <Sun className={className} />;
   }
-  if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle')) {
+  if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle') || lowerCaseCondition.includes('shower')) {
     return <CloudRain className={className} />;
   }
    if (lowerCaseCondition.includes('thunderstorm')) {
@@ -64,7 +64,7 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
 
 export default function WeatherPage() {
   const { t, language } = useLanguage();
-  const weatherForm = useForm<WeatherFormInputs>();
+  const weatherForm = useForm<WeatherFormInputs>({ defaultValues: { location: 'Hyderabad' } });
   const pestReportForm = useForm<PestReportInputs>();
   
   const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
@@ -108,73 +108,42 @@ export default function WeatherPage() {
     }
   };
 
-  const fetchWeatherAndAlerts = useCallback(async ({ lat, lon, locationName }: { lat?: number; lon?: number; locationName?: string }) => {
+  const fetchWeatherAndAlerts = useCallback(async ({ locationName }: { locationName: string }) => {
     setIsLoading(true);
     setIsAlertsLoading(true);
     setError(null);
     setForecastData(null);
     setAlerts([]);
 
-    let weatherResult: WeatherForecastOutput | null = null;
-
-    // Fetch Weather
     try {
-        weatherResult = await getWeatherForecast({ lat, lon, location: locationName });
+        const weatherResult = await getWeatherForecast({ location: locationName });
         setForecastData(weatherResult);
+
+        const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
+        setAlerts(alertsResult);
     } catch (e) {
-        console.error("Weather fetch error:", e);
+        console.error("Weather/Alert fetch error:", e);
         const errorMessage = t('errorWeather');
         setError(errorMessage);
         toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-        setIsLoading(false);
-        setIsAlertsLoading(false);
-        return; // Stop if weather fails
     } finally {
         setIsLoading(false);
-    }
-    
-    // Fetch Alerts using location from weather result
-    if (weatherResult?.location) {
-        try {
-            const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
-            setAlerts(alertsResult);
-        } catch (e) {
-            console.error("Risk alerts fetch error:", e);
-            toast({ variant: 'destructive', title: t('error'), description: "Could not fetch risk alerts." });
-        } finally {
-            setIsAlertsLoading(false);
-        }
-    } else {
         setIsAlertsLoading(false);
     }
   }, [t, toast]);
 
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
-    fetchWeatherAndAlerts({ locationName: data.location });
-  };
-
-  const handleUseCurrentLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-        toast({ variant: 'destructive', title: 'Geolocation Not Supported', description: 'Your browser does not support geolocation.' });
+    if (!data.location) {
+        toast({ variant: 'destructive', title: t('error'), description: 'Please enter a location.'});
         return;
     }
-    fetchWeatherAndAlerts({ lat: undefined, lon: undefined, locationName: undefined }); // Clear previous data
-    navigator.geolocation.getCurrentPosition(
-        (position) => {
-            fetchWeatherAndAlerts({ lat: position.coords.latitude, lon: position.coords.longitude });
-        },
-        (error) => {
-            setIsLoading(false);
-            toast({ variant: 'destructive', title: 'Location Error', description: 'Could not retrieve your location. Please enter it manually.' });
-            console.error(error);
-        }
-    );
-  }, [fetchWeatherAndAlerts, toast]);
+    fetchWeatherAndAlerts({ locationName: data.location });
+  };
   
    useEffect(() => {
-    // Automatically fetch weather for current location on initial load
-    handleUseCurrentLocation();
+    // Automatically fetch weather for a default location on initial load
+    fetchWeatherAndAlerts({ locationName: 'Hyderabad' });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run only once on mount
 
@@ -283,16 +252,10 @@ export default function WeatherPage() {
                 </div>
                 {weatherForm.formState.errors.location && <p className="text-destructive text-sm">{weatherForm.formState.errors.location.message}</p>}
               </div>
-              <div className="flex gap-2 w-full sm:w-auto">
-                 <Button type="submit" disabled={isLoading} className="flex-1">
-                    <Search className="h-4 w-4" />
-                    <span className="ml-2 hidden md:inline">{t('search')}</span>
-                </Button>
-                 <Button type="button" onClick={handleUseCurrentLocation} disabled={isLoading} variant="outline" className="flex-1">
-                    <LocateFixed className="h-4 w-4" />
-                    <span className="ml-2 hidden md:inline">{t('useCurrentLocation')}</span>
-                 </Button>
-              </div>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span className="ml-2">{t('search')}</span>
+              </Button>
             </form>
           </CardContent>
         </Card>
