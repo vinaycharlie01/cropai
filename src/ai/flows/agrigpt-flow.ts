@@ -19,15 +19,16 @@ const HistoryPartSchema = z.object({
 });
 
 // Define the input schema for the AgriGPT flow
+export type AgriGptInput = z.infer<typeof AgriGptInputSchema>;
 const AgriGptInputSchema = z.object({
   transcribedQuery: z.string().describe("The user's transcribed voice query."),
   conversationHistory: z.array(HistoryPartSchema).describe('The history of the current conversation for context.'),
   currentScreen: z.string().describe('The current screen the user is on, to provide context for the query.'),
   language: z.string().describe('The preferred language for the response (e.g., "English", "Hindi").'),
 });
-export type AgriGptInput = z.infer<typeof AgriGptInputSchema>;
 
 // Define the output schema for the AgriGPT flow
+export type AgriGptOutput = z.infer<typeof AgriGptOutputSchema>;
 const AgriGptOutputSchema = z.object({
   intent: z.string().describe('The recognized intent from the user query (e.g., GET_MANDI_PRICE, DIAGNOSE_DISEASE).'),
   parameters: z.record(z.any()).describe('A map of extracted parameters from the query (e.g., {"crop_type": "tomato"}).'),
@@ -40,7 +41,6 @@ const AgriGptOutputSchema = z.object({
   status: z.enum(['success', 'clarification_needed', 'error']).describe('The status of the processing.'),
   followUpQuestionLocalized: z.string().optional().describe('A question to ask the user if more information is needed.'),
 });
-export type AgriGptOutput = z.infer<typeof AgriGptOutputSchema>;
 
 
 /**
@@ -85,19 +85,18 @@ You can understand requests related to these features:
 3.  **Determine Action:** Decide the 'actionCode'.
     - If you can answer directly, use 'SPEAK_ONLY'.
     - If the user asks to go to a feature, use 'SPEAK_AND_NAVIGATE' and provide the 'navigationTarget'.
-    - If you need a photo for diagnosis, use 'REQUEST_IMAGE'.
-    - If you need more information, use 'CLARIFY' and formulate a 'followUpQuestionLocalized'.
+    - **CRITICAL**: If the intent is 'diagnose_disease', you MUST use 'REQUEST_IMAGE'. Your response should confirm you can help and that you need a photo.
+    - If you need more information for any other intent, use 'CLARIFY' and formulate a 'followUpQuestionLocalized'.
 4.  **Formulate Response:** Craft a helpful 'kisanMitraResponse'. It must be simple, empathetic, and directly answer the farmer's question. First write it in English, then translate it to the farmer's preferred language.
 5.  **Provide Structured JSON Output:** Your entire response must be a single, valid JSON object matching the output schema. Do not add any text before or after it.
 
-**Example Scenario:**
-- Query: "టమోటా ధర ఎంత ఉంది?" (What is the price of tomato?)
+**Example Scenario (Diagnosis):**
+- Query: "నా పంటకు ఏదో సమస్య ఉంది, నేను ఏమి చేయాలి?" (My crop has some problem, what should I do?)
 - Language: Telugu
-- Expected Intent: "get_mandi_price"
-- Expected Parameters: {"crop_type": "tomato"}
-- Expected Action: "SPEAK_AND_NAVIGATE"
-- Expected Navigation Target: "/dashboard/mandi-prices"
-- Expected Response (Localized): "మీరు టమోటా ధరను తనిఖీ చేయాలనుకుంటున్నారా? నేను మిమ్మల్ని మండీ ధరల పేజీకి తీసుకెళ్తున్నాను."
+- Expected Intent: "diagnose_disease"
+- Expected Action: "REQUEST_IMAGE"
+- Expected Navigation Target: "/dashboard/diagnose" (optional, but good practice)
+- Expected Response (Localized): "తప్పకుండా, నేను సహాయం చేయగలను. దయచేసి సమస్య ఉన్న మొక్క యొక్క ఫోటో తీసి చూపండి."
 
 Now, process the provided query and generate the JSON response.
 `,
