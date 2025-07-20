@@ -131,7 +131,8 @@ export default function WeatherPage() {
     }
 
     try {
-      const finalLocation = locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`;
+      // Use the location name returned by the weather API for more accurate risk alerts
+      const finalLocation = submittedLocation || locationName || `Lat: ${lat?.toFixed(2)}, Lon: ${lon?.toFixed(2)}`;
       const alertsResult = await getRiskAlerts({ location: finalLocation, cropType: 'various' });
       setAlerts(alertsResult);
     } catch (e) {
@@ -140,14 +141,14 @@ export default function WeatherPage() {
     } finally {
       setIsAlertsLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, submittedLocation]);
 
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
     fetchWeatherAndAlerts({ locationName: data.location });
   };
 
-  const handleUseCurrentLocation = () => {
+  const handleUseCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
         toast({ variant: 'destructive', title: 'Geolocation Not Supported', description: 'Your browser does not support geolocation.' });
         return;
@@ -163,12 +164,11 @@ export default function WeatherPage() {
             console.error(error);
         }
     );
-  };
+  }, [fetchWeatherAndAlerts, toast]);
   
    useEffect(() => {
     handleUseCurrentLocation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on initial load
+  }, [handleUseCurrentLocation]); // Run once on initial load
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
