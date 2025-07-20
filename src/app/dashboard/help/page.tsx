@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Phone, HelpCircle, FileText, ArrowRight } from 'lucide-react';
+import { Phone, HelpCircle, FileText, ArrowRight, MessageSquareHeart } from 'lucide-react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -33,6 +33,13 @@ export default function HelpPage() {
             icon: FileText,
             titleKey: "submitIssue",
             descriptionKey: "submitIssueDesc",
+            isExternal: false,
+        },
+        {
+            href: "/dashboard/help/chat",
+            icon: MessageSquareHeart,
+            titleKey: "chatWithSupport",
+            descriptionKey: "chatWithSupportDesc",
             isExternal: false,
         },
     ];
