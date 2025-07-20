@@ -4,12 +4,13 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Loader2, Mic } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { chatWithSupport } from '@/ai/flows/support-chat';
+import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -25,6 +26,9 @@ type Message = {
 export default function ChatPage() {
     const { t, language } = useLanguage();
     const { toast } = useToast();
+    const router = useRouter();
+    const pathname = usePathname();
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -84,13 +88,23 @@ export default function ChatPage() {
         setIsLoading(true);
 
         try {
-            const result = await chatWithSupport({
-                message: input,
-                history: updatedMessages,
+            const result: AgriGptOutput = await processAgriGptCommand({
+                transcribedQuery: input,
+                conversationHistory: updatedMessages.map(m => ({
+                    role: m.role,
+                    parts: m.parts.map(p => ({text: p.text}))
+                })),
+                currentScreen: pathname,
                 language: language,
             });
-            const newBotMessage: Message = { role: 'model', parts: [{ text: result.reply }] };
+            
+            const newBotMessage: Message = { role: 'model', parts: [{ text: result.kisanMitraResponse.localized }] };
             setMessages(prev => [...prev, newBotMessage]);
+
+            if (result.actionCode === 'SPEAK_AND_NAVIGATE' && result.navigationTarget) {
+                router.push(result.navigationTarget);
+            }
+
         } catch (error) {
             console.error("Chat error:", error);
             const errorMessage: Message = { role: 'model', parts: [{ text: t('chatError') }] };
