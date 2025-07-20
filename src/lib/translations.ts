@@ -277,7 +277,8 @@ export const translations = {
     loanPurposeEquipment: "Small Equipment",
     loanPurposeLabor: "Labor Costs",
     search: "Search",
-    useCurrentLocation: "Use Current Location"
+    useCurrentLocation: "Use Current Location",
+    weatherIsSimulated: "Please note: The weather forecast feature is currently being simulated by our AI model."
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -556,7 +557,8 @@ export const translations = {
     loanPurposeEquipment: "छोटे उपकरण",
     loanPurposeLabor: "श्रम लागत",
     search: "खोज",
-    useCurrentLocation: "वर्तमान स्थान का उपयोग करें"
+    useCurrentLocation: "वर्तमान स्थान का उपयोग करें",
+    weatherIsSimulated: "कृपया ध्यान दें: मौसम पूर्वानुमान सुविधा वर्तमान में हमारे एआई मॉडल द्वारा नकली है।"
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -652,13 +654,13 @@ export const translations = {
     schemeEligibility: "అర్హత",
     schemePmKisanTitle: "పీఎం-కిసాన్ పథకం",
     schemePmKisanDesc: "సరైన పంట ఆరోగ్యం మరియు ఊహించిన వ్యవసాయ ఆదాయానికి అనుగుణంగా తగిన దిగుబడిని నిర్ధారించడానికి వివిధ ఇన్‌పుట్‌లను సేకరించడంలో భూమి ఉన్న రైతుల కుటుంబాల ఆర్థిక అవసరాలను భర్తీ చేసే లక్ష్యంతో ఒక ప్రభుత్వ పథకం.",
-    schemePmKisanElig: "తమ పేరు మీద సాగు చేయదగిన భూమిని కలిగి ఉన్న భూ యజమాని రైతు కుటుంబాలందరూ ఈ పథకం కింద ప్రయోజనం పొందడానికి అర్హులు.",
+    pmKisanElig: "తమ పేరు మీద సాగు చేయదగిన భూమిని కలిగి ఉన్న భూ యజమాని రైతు కుటుంబాలందరూ ఈ పథకం కింద ప్రయోజనం పొందడానికి అర్హులు.",
     pmfbyTitle: "ప్రధాన మంత్రి ఫసల్ బీమా యోజన (PMFBY)",
     pmfbyDesc: "ఈ పథకం పంట వైఫల్యానికి వ్యతిరేకంగా సమగ్ర బీమా కవరేజీని అందిస్తుంది, తద్వారా రైతుల ఆదాయాన్ని స్థిరీకరించడంలో సహాయపడుతుంది.",
     pmfbyElig: "నోటిఫైడ్ ప్రాంతాలలో నోటిఫైడ్ పంటలను పండించే కౌలుదారులు మరియు కౌలు రైతులతో సహా రైతులందరూ కవరేజీకి అర్హులు.",
     schemePmksyTitle: "ప్రధాన మంత్రి కృషి సించయీ యోజన (PMKSY)",
     schemePmksyDesc: "'హర్ ఖేత్ కో పానీ' అనే నినాదంతో ప్రారంభించబడిన ఈ పథకం, సాగునీటితో సాగు విస్తీర్ణం పెంచడానికి, నీటి వృధాను తగ్గించడానికి మరియు నీటి వినియోగ సామర్థ్యాన్ని మెరుగుపరచడానికి అమలు చేయబడుతోంది.",
-    schemePmksyElig: "భాగాలను బట్టి మారుతుంది, కానీ సాధారణంగా రైతులు మరియు రైతు బృందాలందరికీ అందుబాటులో ఉంటుంది.",
+    pmksyElig: "భాగాలను బట్టి మారుతుంది, కానీ సాధారణంగా రైతులు మరియు రైతు బృందాలందరికీ అందుబాటులో ఉంటుంది.",
     buyNow: "ఇప్పుడే కొనండి",
     smartIrrigation: "స్మార్ట్ నీటిపారుదల",
     irrigationDescription: "మీ పంటలకు ఎప్పుడు మరియు ఎంత నీరు పెట్టాలనే దానిపై AI-ఆధారిత సలహా పొందండి.",
@@ -835,7 +837,8 @@ export const translations = {
     loanPurposeEquipment: "చిన్న పరికరాలు",
     loanPurposeLabor: "కార్మిక ఖర్చులు",
     search: "వెతకండి",
-    useCurrentLocation: "ప్రస్తుత స్థానాన్ని ఉపయోగించండి"
+    useCurrentLocation: "ప్రస్తుత స్థానాన్ని ఉపయోగించండి",
+    weatherIsSimulated: "దయచేసి గమనించండి: వాతావరణ సూచన ఫీచర్ ప్రస్తుతం మా AI మోడల్ ద్వారా అనుకరించబడుతోంది."
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -1114,7 +1117,8 @@ export const translations = {
     loanPurposeEquipment: "ಸಣ್ಣ ಉಪಕರಣಗಳು",
     loanPurposeLabor: "ಕಾರ್ಮಿಕ ವೆಚ್ಚಗಳು",
     search: "ಹುಡುಕಿ",
-    useCurrentLocation: "ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ"
+    useCurrentLocation: "ಪ್ರಸ್ತುತ ಸ್ಥಳವನ್ನು ಬಳಸಿ",
+    weatherIsSimulated: "ದಯವಿಟ್ಟು ಗಮನಿಸಿ: ಹವಾಮಾನ ಮುನ್ಸೂಚನೆ ವೈಶಿಷ್ಟ್ಯವನ್ನು ಪ್ರಸ್ತುತ ನಮ್ಮ AI ಮಾದರಿಯಿಂದ ಅನುಕರಿಸಲಾಗುತ್ತಿದೆ."
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -1393,7 +1397,8 @@ export const translations = {
     loanPurposeEquipment: "ചെറിയ ഉപകരണങ്ങൾ",
     loanPurposeLabor: "തൊഴിൽ ചെലവുകൾ",
     search: "തിരയുക",
-    useCurrentLocation: "നിലവിലെ സ്ഥാനം ഉപയോഗിക്കുക"
+    useCurrentLocation: "നിലവിലെ സ്ഥാനം ഉപയോഗിക്കുക",
+    weatherIsSimulated: "ദയവായി ശ്രദ്ധിക്കുക: കാലാവസ്ഥാ പ്രവചന ഫീച്ചർ നിലവിൽ ഞങ്ങളുടെ AI മോഡൽ വഴി സിമുലേറ്റ് ചെയ്യുകയാണ്."
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -1672,7 +1677,8 @@ export const translations = {
     loanPurposeEquipment: "சிறிய உபகரணங்கள்",
     loanPurposeLabor: "தொழிலாளர் செலவுகள்",
     search: "தேடு",
-    useCurrentLocation: "தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்"
+    useCurrentLocation: "தற்போதைய இருப்பிடத்தைப் பயன்படுத்தவும்",
+    weatherIsSimulated: "தயவுசெயಟ್ಟು கவனிக்கவும்: வானிலை முன்னறிவிப்பு அம்சம் தற்போது எங்கள் AI மாதிரியால் உருவகப்படுத்தப்படுகிறது."
   },
 };
 

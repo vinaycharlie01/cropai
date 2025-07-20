@@ -5,7 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed, Info } from 'lucide-react';
 
 import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
@@ -221,6 +221,16 @@ export default function WeatherPage() {
       animate="visible"
       className="space-y-6"
     >
+      <motion.div variants={itemVariants}>
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertTitle>Please Note</AlertTitle>
+          <AlertDescription>
+            {t('weatherIsSimulated')}
+          </AlertDescription>
+        </Alert>
+      </motion.div>
+
       <motion.div variants={itemVariants}>
         <Card className="bg-background">
           <CardHeader>
