@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { cn } from '@/lib/utils';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 
 interface Message {
   role: 'user' | 'model';
@@ -34,6 +34,20 @@ export default function KisanSaathiChatPage() {
 
   useEffect(scrollToBottom, [messages]);
   
+  const getMockReply = (userMessage: string): string => {
+    const lowerCaseMessage = userMessage.toLowerCase();
+    if (lowerCaseMessage.includes(t('price').toLowerCase()) || lowerCaseMessage.includes('mandi')) {
+        return t('chatMockPrice');
+    }
+    if (lowerCaseMessage.includes(t('disease').toLowerCase()) || lowerCaseMessage.includes('sick')) {
+        return t('chatMockDisease');
+    }
+    if (lowerCaseMessage.includes('scheme')) {
+        return t('chatMockScheme');
+    }
+    return t('chatMockResponse');
+  }
+
   const handleAiResponse = useCallback((response: { reply: string }) => {
     setMessages(prev => [...prev, { role: 'model', text: response.reply }]);
   }, []);
@@ -51,8 +65,9 @@ export default function KisanSaathiChatPage() {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     const mockResponse = {
-      reply: t('chatMockResponse')
+      reply: getMockReply(userMessage)
     };
+
     handleAiResponse(mockResponse);
     setIsLoading(false);
     // --- END MOCK ---
