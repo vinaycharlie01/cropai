@@ -3,11 +3,10 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Phone, MessageSquare, HelpCircle, FileText, ArrowRight } from 'lucide-react';
+import { Phone, HelpCircle, FileText, ArrowRight } from 'lucide-react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { translations } from '@/lib/translations';
 
 export default function HelpPage() {
