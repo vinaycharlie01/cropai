@@ -7,8 +7,8 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
 
-import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-api';
-import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
+import { getWeatherAction, type WeatherOutput } from '@/ai/flows/weather-api';
+import { getRiskAlerts, type RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
