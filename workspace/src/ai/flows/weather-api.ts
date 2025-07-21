@@ -1,0 +1,63 @@
+'use server';
+
+/**
+ * @fileOverview A Genkit tool for fetching real-time weather data from WeatherAPI.com.
+ */
+
+import { ai } from '@/ai/genkit';
+import { WeatherInput, WeatherInputSchema, WeatherOutput, WeatherOutputSchema } from '@/types/weather';
+
+/**
+ * A server action to be called from client components to fetch weather data.
+ * @param input The latitude and longitude.
+ * @returns A structured weather forecast.
+ */
+export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
+  return getWeatherTool(input);
+}
+
+const getWeatherTool = ai.defineTool(
+  {
+    name: 'getWeatherTool',
+    description: 'Fetches the current weather and a 5-day forecast from WeatherAPI.com.',
+    inputSchema: WeatherInputSchema,
+    outputSchema: WeatherOutputSchema,
+  },
+  async ({ lat, lon }) => {
+    const apiKey = process.env.WEATHERAPI_API_KEY;
+    if (!apiKey) {
+      throw new Error('WEATHERAPI_API_KEY is not set in the environment variables.');
+    }
+
+    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=5&aqi=no&alerts=no`;
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`WeatherAPI request failed with status ${response.status}`);
+      }
+      const data = await response.json();
+
+      const formattedForecast = data.forecast.forecastday.map((day: any) => ({
+        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        temperature: `${Math.round(day.day.avgtemp_c)}°C`,
+        condition: day.day.condition.text,
+        humidity: `${day.day.avghumidity}%`,
+      }));
+
+      return {
+        location: `${data.location.name}, ${data.location.region}`,
+        current: {
+          temp_c: data.current.temp_c,
+          condition: data.current.condition.text,
+          humidity: data.current.humidity,
+          wind_kph: data.current.wind_kph,
+        },
+        forecast: formattedForecast,
+      };
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+      throw new Error('Failed to fetch weather data from WeatherAPI.com.');
+    }
+  }
+);
