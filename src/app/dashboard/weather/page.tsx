@@ -2,12 +2,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
 
-import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-tool';
+import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 
 
 type WeatherFormInputs = {
@@ -67,7 +67,7 @@ export default function WeatherPage() {
   const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
-  const [forecastData, setForecastData] = useState<WeatherOutput | null>(null);
+  const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAlertsLoading, setIsAlertsLoading] = useState(false);
@@ -108,7 +108,7 @@ export default function WeatherPage() {
     }
   };
 
-  const fetchWeatherAndAlerts = useCallback(async (lat: number, lon: number) => {
+  const fetchWeatherAndAlerts = useCallback(async (location: string) => {
     setIsLoading(true);
     setIsAlertsLoading(true);
     setError(null);
@@ -116,10 +116,11 @@ export default function WeatherPage() {
     setAlerts([]);
 
     try {
-        const weatherResult = await getWeatherAction({ lat, lon });
+        const weatherResult = await getWeatherForecast({ location });
         setForecastData(weatherResult);
         weatherForm.setValue('location', weatherResult.location);
 
+        // Assuming cropType 'various' for general alerts
         const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
         setAlerts(alertsResult);
     } catch (e) {
@@ -134,22 +135,10 @@ export default function WeatherPage() {
   }, [t, toast, weatherForm]);
   
   const getLocation = useCallback(() => {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                fetchWeatherAndAlerts(position.coords.latitude, position.coords.longitude);
-            },
-            (error) => {
-                console.error("Geolocation error:", error);
-                toast({ variant: 'destructive', title: 'Location Error', description: 'Could not get your location. Please enter one manually or enable location services.' });
-                fetchWeatherAndAlerts(17.3850, 78.4867); // Fallback to Hyderabad
-            }
-        );
-    } else {
-        toast({ variant: 'destructive', title: 'Location Error', description: 'Geolocation is not supported by your browser.' });
-        fetchWeatherAndAlerts(17.3850, 78.4867); // Fallback to Hyderabad
-    }
-  }, [fetchWeatherAndAlerts, toast]);
+    // This is a mock function for now since we're using simulated data
+    // In a real scenario, this would use navigator.geolocation
+    fetchWeatherAndAlerts("Hyderabad");
+  }, [fetchWeatherAndAlerts]);
 
 
   useEffect(() => {
@@ -157,8 +146,7 @@ export default function WeatherPage() {
   }, [getLocation]);
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
-    toast({ title: 'Notice', description: 'Manual location search is not implemented. Using Geolocation.' });
-    getLocation();
+    fetchWeatherAndAlerts(data.location);
   };
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -186,8 +174,9 @@ export default function WeatherPage() {
             await uploadBytes(storageRef, file);
             imageUrl = await getDownloadURL(storageRef);
         }
-
-        const location = forecastData ? new GeoPoint(parseFloat(forecastData.location.split(',')[0]), parseFloat(forecastData.location.split(',')[1])) : new GeoPoint(17.3850, 78.4867);
+        
+        // Using a placeholder GeoPoint as location might not be available
+        const location = new GeoPoint(17.3850, 78.4867);
 
         await addDoc(collection(db, 'pestReports'), {
             userId: user.uid,
