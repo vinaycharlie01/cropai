@@ -5,9 +5,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed, Info } from 'lucide-react';
 
-import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
+import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-tool';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 
 
 type WeatherFormInputs = {
@@ -64,10 +64,10 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
 
 export default function WeatherPage() {
   const { t, language } = useLanguage();
-  const weatherForm = useForm<WeatherFormInputs>({ defaultValues: { location: 'Hyderabad' } });
+  const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
-  const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
+  const [forecastData, setForecastData] = useState<WeatherOutput | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isAlertsLoading, setIsAlertsLoading] = useState(false);
@@ -108,7 +108,7 @@ export default function WeatherPage() {
     }
   };
 
-  const fetchWeatherAndAlerts = useCallback(async ({ locationName }: { locationName: string }) => {
+  const fetchWeatherAndAlerts = useCallback(async (lat: number, lon: number) => {
     setIsLoading(true);
     setIsAlertsLoading(true);
     setError(null);
@@ -116,8 +116,9 @@ export default function WeatherPage() {
     setAlerts([]);
 
     try {
-        const weatherResult = await getWeatherForecast({ location: locationName });
+        const weatherResult = await getWeatherAction({ lat, lon });
         setForecastData(weatherResult);
+        weatherForm.setValue('location', weatherResult.location);
 
         const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
         setAlerts(alertsResult);
@@ -130,22 +131,36 @@ export default function WeatherPage() {
         setIsLoading(false);
         setIsAlertsLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, weatherForm]);
+  
+  const getLocation = useCallback(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                fetchWeatherAndAlerts(position.coords.latitude, position.coords.longitude);
+            },
+            (error) => {
+                console.error("Geolocation error:", error);
+                toast({ variant: 'destructive', title: 'Location Error', description: 'Could not get your location. Please enter one manually or enable location services.' });
+                // Fallback to a default location
+                fetchWeatherAndAlerts(17.3850, 78.4867); // Hyderabad
+            }
+        );
+    } else {
+        toast({ variant: 'destructive', title: 'Location Error', description: 'Geolocation is not supported by your browser.' });
+        fetchWeatherAndAlerts(17.3850, 78.4867); // Hyderabad
+    }
+  }, [fetchWeatherAndAlerts, toast]);
 
+
+  useEffect(() => {
+    getLocation();
+  }, [getLocation]);
 
   const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
-    if (!data.location) {
-        toast({ variant: 'destructive', title: t('error'), description: 'Please enter a location.'});
-        return;
-    }
-    fetchWeatherAndAlerts({ locationName: data.location });
+    toast({ title: 'Manual Search', description: 'Manual location search is not yet implemented. Using geolocation.' });
+    getLocation();
   };
-  
-   useEffect(() => {
-    // Automatically fetch weather for a default location on initial load
-    fetchWeatherAndAlerts({ locationName: 'Hyderabad' });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only once on mount
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -173,7 +188,6 @@ export default function WeatherPage() {
             imageUrl = await getDownloadURL(storageRef);
         }
 
-        // Mock geopoint for now
         const location = new GeoPoint(17.3850, 78.4867);
 
         await addDoc(collection(db, 'pestReports'), {
@@ -235,20 +249,25 @@ export default function WeatherPage() {
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     id="location"
-                    placeholder={t('egAndhraPradesh')}
-                    className="pl-10 pr-12"
+                    placeholder="Getting location..."
+                    className="pl-10 pr-20"
                     {...weatherForm.register('location')}
                   />
-                   <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => handleSttToggle('location')}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                      disabled={!isSupported}
-                  >
-                      <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-                  </Button>
+                  <div className='absolute right-1 top-1/2 -translate-y-1/2 flex items-center'>
+                     <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleSttToggle('location')}
+                        className="h-8 w-8"
+                        disabled={!isSupported}
+                    >
+                        <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    </Button>
+                    <Button type='button' variant='ghost' size='icon' className='h-8 w-8' onClick={getLocation}>
+                        <LocateFixed className='h-5 w-5 text-muted-foreground'/>
+                    </Button>
+                  </div>
                 </div>
                 {weatherForm.formState.errors.location && <p className="text-destructive text-sm">{weatherForm.formState.errors.location.message}</p>}
               </div>
@@ -299,7 +318,7 @@ export default function WeatherPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                          {forecastData.forecast.map((day, index) => (
+                          {forecastData.forecast.slice(0, 5).map((day, index) => (
                             <motion.div
                                 key={index}
                                 initial={{ opacity: 0, y: 20 }}
