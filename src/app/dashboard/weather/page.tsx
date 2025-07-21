@@ -1,164 +1,227 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Loader2, LocateFixed } from 'lucide-react';
-
-import { useLanguage } from '@/contexts/LanguageContext';
+import React, { useState, useEffect, memo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Sun,
+  Cloud,
+  CloudRain,
+  Thermometer,
+  Wind,
+  Sunrise,
+  Sunset,
+  Loader2,
+  MapPin,
+  CloudLightning,
+  Snowflake,
+  Search
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-api';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getWeatherAction } from '@/ai/flows/weather-tool';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { WeatherOutput } from '@/ai/schemas/weather-schemas';
+import { Input } from '@/components/ui/input';
 
-const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
-  const lowerCaseCondition = condition?.toLowerCase() || '';
-  if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
-    return <Sun className={className} />;
-  }
-  if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle') || lowerCaseCondition.includes('shower')) {
-    return <CloudRain className={className} />;
-  }
-  if (lowerCaseCondition.includes('wind')) {
-    return <Wind className={className} />;
-  }
-  return <Cloud className={className} />;
+const weatherIcons: { [key: string]: React.ReactNode } = {
+  Sunny: <Sun className="w-16 h-16 text-yellow-400" />,
+  Cloudy: <Cloud className="w-16 h-16 text-gray-400" />,
+  Rainy: <CloudRain className="w-16 h-16 text-blue-400" />,
+  Thunderstorm: <CloudLightning className="w-16 h-16 text-gray-600" />,
+  Snowy: <Snowflake className="w-16 h-16 text-blue-200" />,
 };
 
-export default function WeatherPage() {
-  const { t } = useLanguage();
-  const { toast } = useToast();
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [forecastData, setForecastData] = useState<WeatherOutput | null>(null);
-
-  const fetchWeather = useCallback(async (lat: number, lon: number) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const result = await getWeatherAction({ lat, lon });
-      setForecastData(result);
-    } catch (e) {
-      const errorMessage = (e as Error).message || t('errorWeather');
-      setError(errorMessage);
-      toast({ variant: 'destructive', title: t('error'), description: errorMessage });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [t, toast]);
-
-  const handleGetLocation = useCallback(() => {
-    setIsLoading(true);
-    setError(null);
-    setForecastData(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        fetchWeather(position.coords.latitude, position.coords.longitude);
-      },
-      (geoError) => {
-        console.error("Geolocation error:", geoError);
-        setError("Could not get your location. Please enable location services in your browser and try again.");
-        toast({ variant: 'destructive', title: 'Location Error', description: "Could not get your location. Please enable location services." });
-        setIsLoading(false);
-      }
-    );
-  }, [fetchWeather, toast]);
-
-  useEffect(() => {
-    handleGetLocation();
-  }, [handleGetLocation]);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
-      <Card className="bg-background">
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle className="font-headline text-2xl">{t('weatherForecast')}</CardTitle>
-            <CardDescription>{t('weatherInstruction')}</CardDescription>
-          </div>
-          <Button onClick={handleGetLocation} variant="outline" size="icon" disabled={isLoading}>
-            <LocateFixed className="h-5 w-5" />
-          </Button>
+const WeatherCardSkeleton = () => (
+    <Card className="shadow-lg h-full">
+        <CardHeader>
+            <Skeleton className="h-6 w-3/4" />
         </CardHeader>
-      </Card>
-
-      <AnimatePresence>
-        {isLoading ? (
-          <div className="flex justify-center items-center py-10">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-        ) : error ? (
-            <Alert variant="destructive">
-              <AlertTitle>{t('error')}</AlertTitle>
-              <AlertDescription>
-                {error}
-                <Button onClick={handleGetLocation} variant="link" className="p-0 h-auto ml-2">Try Again</Button>
-              </AlertDescription>
-            </Alert>
-        ) : forecastData && (
-          <motion.div
-            key={forecastData.location}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4" /> Location</p>
-                            <h2 className="text-2xl font-bold">{forecastData.location}</h2>
-                        </div>
-                        <div className="text-right">
-                             <p className="text-muted-foreground">Current</p>
-                             <p className="text-2xl font-bold">{forecastData.current.temp_c}°C</p>
-                        </div>
-                    </div>
-                </CardHeader>
-            </Card>
-
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle className="font-headline text-xl">5-Day Forecast</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                  {forecastData.forecast.map((day, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                    >
-                      <Card className="bg-muted/30 text-center hover:shadow-lg transition-shadow h-full flex flex-col justify-between p-2">
-                        <CardHeader className="p-2 pb-0">
-                          <CardTitle className="text-base font-semibold">{day.day}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col items-center gap-1 p-2">
-                          <WeatherIcon condition={day.condition} className="w-12 h-12 text-primary" />
-                          <p className="text-2xl font-bold">{day.temperature}</p>
-                          <p className="text-muted-foreground text-xs text-center line-clamp-1">{day.condition}</p>
-                          <div className="flex items-center gap-1 text-muted-foreground text-xs">
-                            <Droplets className="w-3 h-3" />
-                            <span>{day.humidity}</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  ))}
+        <CardContent className="space-y-4">
+            <div className="flex items-center justify-center space-x-4">
+                <Skeleton className="w-16 h-16 rounded-full" />
+                <div className="space-y-2">
+                    <Skeleton className="h-12 w-24" />
+                    <Skeleton className="h-4 w-20" />
                 </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+            </div>
+            <div className="flex justify-around">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-16" />
+            </div>
+             <div className="mt-6">
+                 <Skeleton className="h-6 w-1/2 mb-2" />
+                 <div className="flex justify-between">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-10 h-20" />)}
+                 </div>
+            </div>
+        </CardContent>
+    </Card>
+);
+
+
+const WeatherPage = () => {
+    const [weatherData, setWeatherData] = useState<WeatherOutput | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const { toast } = useToast();
+
+    const fetchWeather = useCallback(async (params: { latitude?: number, longitude?: number, city?: string }) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await getWeatherAction(params);
+            if (data?.error) {
+              setError(data.error);
+              setWeatherData(null);
+              return;
+            }
+            
+            if(data?.location){
+                data.location = data.location.split(',')[0]; // Just take the city part.
+            }
+            setWeatherData(data);
+        } catch (err) {
+            console.error(err);
+            const description = err instanceof Error ? err.message : 'Could not fetch weather data from the server.';
+            setError(description);
+            setWeatherData(null);
+            toast({
+                variant: 'destructive',
+                title: 'Weather Error',
+                description,
+            });
+        } finally {
+            setLoading(false);
+        }
+    }, [toast]);
+
+    const getLocation = useCallback(() => {
+        if (!navigator.geolocation) {
+            setError("Geolocation is not supported by your browser.");
+            setLoading(false);
+            // Fallback to a default location
+            fetchWeather({ city: 'Nagpur' });
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                fetchWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+            },
+            () => {
+                setError("Unable to retrieve your location. Please grant permission or search for a city.");
+                // Fallback to a default location if geolocation fails
+                fetchWeather({ city: 'Nagpur' });
+            }
+        );
+    }, [fetchWeather]);
+
+    useEffect(() => {
+        getLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            fetchWeather({ city: searchQuery.trim() });
+        }
+    };
+    
+    if (loading) {
+        return <WeatherCardSkeleton />;
+    }
+    
+    return (
+    <Card className="shadow-lg h-full">
+      <CardHeader className="pb-2">
+         <form onSubmit={handleSearch} className="flex items-center gap-2 mb-2">
+            <Input 
+                placeholder="Search city..." 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9"
+            />
+            <Button type="submit" size="icon" variant="ghost" className="h-9 w-9">
+                <Search className="h-4 w-4"/>
+            </Button>
+            <Button type="button" size="icon" variant="ghost" onClick={getLocation} title="Get Current Location" className="h-9 w-9">
+                <MapPin className="h-4 w-4"/>
+            </Button>
+         </form>
+         {weatherData && weatherData.location && (
+             <CardTitle className="flex items-center justify-between font-headline">
+              <span>{weatherData.location}</span>
+              <Thermometer className="w-6 h-6 text-primary" />
+            </CardTitle>
+         )}
+      </CardHeader>
+      <CardContent>
+        {error && !weatherData && (
+            <div className="flex flex-col items-center justify-center text-center p-4 h-full">
+                 <MapPin className="w-12 h-12 text-destructive mb-4"/>
+                 <CardTitle className="mb-2">Location Error</CardTitle>
+                 <p className="text-muted-foreground mb-4">{error}</p>
+                 <Button onClick={getLocation}>
+                    Try Again
+                 </Button>
+            </div>
         )}
-      </AnimatePresence>
-    </motion.div>
+        {weatherData && weatherData.condition && weatherData.temperature && weatherData.forecast && (
+            <>
+                <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex items-center justify-center space-x-4">
+                    {weatherIcons[weatherData.condition]}
+                    <div>
+                    <p className="text-6xl font-bold">{weatherData.temperature}</p>
+                    <p className="text-muted-foreground">{weatherData.condition}</p>
+                    </div>
+                </div>
+                <div className="flex justify-around w-full text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                    <Wind size={16} /> {weatherData.wind}
+                    </div>
+                    <div className="flex items-center gap-1">
+                    <Sunrise size={16} /> {weatherData.sunrise}
+                    </div>
+                    <div className="flex items-center gap-1">
+                    <Sunset size={16} /> {weatherData.sunset}
+                    </div>
+                </div>
+                </div>
+                <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-2 text-primary">
+                    5-Day Forecast
+                </h3>
+                <div className="flex justify-between text-center">
+                    {weatherData.forecast.map((item) => (
+                    <div
+                        key={item.day}
+                        className="flex flex-col items-center space-y-1"
+                    >
+                        <p className="font-medium">{item.day}</p>
+                        <div className="text-2xl">
+                        {weatherIcons[item.condition] &&
+                            (
+                            <div className="w-8 h-8 flex items-center justify-center">
+                                {React.cloneElement(weatherIcons[item.condition] as React.ReactElement, { className: "w-8 h-8" })}
+                            </div>
+                            )
+                        }
+                        </div>
+                        <p className="text-sm">{item.temp}</p>
+                    </div>
+                    ))}
+                </div>
+                </div>
+            </>
+        )}
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default memo(WeatherPage);
