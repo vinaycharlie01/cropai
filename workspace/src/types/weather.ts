@@ -7,11 +7,12 @@ export const WeatherInputSchema = z.object({
 export type WeatherInput = z.infer<typeof WeatherInputSchema>;
 
 export const DailyForecastSchema = z.object({
-    day: z.string().describe("The day of the week (e.g., Monday)."),
+    day: z.string().describe("The day of the week (e.g., 'Mon')."),
     temperature: z.string().describe("The predicted temperature in Celsius (e.g., '25°C')."),
     condition: z.string().describe("The weather condition (e.g., 'Sunny', 'Partly Cloudy', 'Rain')."),
     humidity: z.string().describe("The humidity percentage (e.g., '60%')."),
 });
+export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 
 export const WeatherOutputSchema = z.object({
   location: z.string().describe('The name of the location for the forecast (e.g., "Hyderabad, IN").'),

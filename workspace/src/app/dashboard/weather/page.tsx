@@ -2,29 +2,18 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, MapPin, Search, Loader2, LocateFixed, Mic, Droplets } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Loader2, LocateFixed } from 'lucide-react';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode } from '@/lib/translations';
-import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-api';
+import { getWeatherAction, type WeatherOutput } from '@/ai/flows/weather-api';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
-type WeatherFormInputs = {
-  location: string;
-};
-
-type SttField = 'location';
-
 const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
-  const lowerCaseCondition = condition.toLowerCase();
+  const lowerCaseCondition = condition?.toLowerCase() || '';
   if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
     return <Sun className={className} />;
   }
@@ -39,14 +28,11 @@ const WeatherIcon = ({ condition, className }: { condition: string; className?: 
 
 export default function WeatherPage() {
   const { t } = useLanguage();
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<WeatherFormInputs>();
+  const { toast } = useToast();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [forecastData, setForecastData] = useState<WeatherOutput | null>(null);
-  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
-
-  const { toast } = useToast();
 
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
     setIsLoading(true);
@@ -54,60 +40,36 @@ export default function WeatherPage() {
     try {
       const result = await getWeatherAction({ lat, lon });
       setForecastData(result);
-      setValue('location', result.location);
     } catch (e) {
-      console.error("Weather fetch error:", e);
       const errorMessage = (e as Error).message || t('errorWeather');
       setError(errorMessage);
       toast({ variant: 'destructive', title: t('error'), description: errorMessage });
     } finally {
       setIsLoading(false);
     }
-  }, [t, toast, setValue]);
+  }, [t, toast]);
 
-  const getLocation = useCallback(() => {
+  const handleGetLocation = useCallback(() => {
     setIsLoading(true);
+    setError(null);
+    setForecastData(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         fetchWeather(position.coords.latitude, position.coords.longitude);
       },
       (geoError) => {
         console.error("Geolocation error:", geoError);
-        toast({ variant: 'destructive', title: 'Location Error', description: 'Could not get your location. Defaulting to Hyderabad.' });
-        fetchWeather(17.3850, 78.4867); // Fallback to Hyderabad
+        const errorMessage = "Could not get your location. Please enable location services and try again.";
+        setError(errorMessage);
+        toast({ variant: 'destructive', title: 'Location Error', description: errorMessage });
+        setIsLoading(false);
       }
     );
   }, [fetchWeather, toast]);
 
   useEffect(() => {
-    getLocation();
-  }, [getLocation]);
-
-  const onRecognitionResult = useCallback((result: string) => {
-    if (activeSttField === 'location') {
-      setValue('location', result, { shouldValidate: true });
-    }
-  }, [activeSttField, setValue]);
-
-  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
-    onResult: onRecognitionResult,
-    onError: (err) => toast({ variant: 'destructive', title: 'Speech Error', description: err }),
-    onEnd: () => setActiveSttField(null),
-  });
-
-  const handleSttToggle = (field: SttField) => {
-    if (isListening) {
-      stopListening();
-    } else {
-      setActiveSttField(field);
-      startListening(getTtsLanguageCode(t('en'))); // Assuming 'en' is a valid key
-    }
-  };
-
-  const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = (data) => {
-    toast({ title: 'Manual Search', description: 'Manual text search is not implemented. Please use the geolocation button.' });
-    getLocation();
-  };
+    handleGetLocation();
+  }, [handleGetLocation]);
 
   return (
     <motion.div
@@ -117,39 +79,15 @@ export default function WeatherPage() {
       className="space-y-6"
     >
       <Card className="bg-background">
-        <CardHeader>
-          <CardTitle className="font-headline text-2xl">{t('weatherForecast')}</CardTitle>
-          <CardDescription>{t('weatherInstruction')}</CardDescription>
+        <CardHeader className="flex-row items-center justify-between">
+          <div>
+            <CardTitle className="font-headline text-2xl">{t('weatherForecast')}</CardTitle>
+            <CardDescription>{t('weatherInstruction')}</CardDescription>
+          </div>
+          <Button onClick={handleGetLocation} variant="outline" size="icon" disabled={isLoading}>
+            <LocateFixed className="h-5 w-5" />
+          </Button>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onWeatherSubmit)} className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="w-full flex-grow space-y-2">
-              <Label htmlFor="location" className="sr-only">{t('location')}</Label>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id="location"
-                  placeholder={isLoading ? "Getting location..." : "Enter location"}
-                  className="pl-10 pr-20"
-                  {...register('location')}
-                  disabled
-                />
-                <div className='absolute right-1 top-1/2 -translate-y-1/2 flex items-center'>
-                  <Button type="button" size="icon" variant="ghost" onClick={() => handleSttToggle('location')} className="h-8 w-8" disabled={!isSupported}>
-                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-                  </Button>
-                  <Button type='button' variant='ghost' size='icon' className='h-8 w-8' onClick={getLocation}>
-                    <LocateFixed className='h-5 w-5 text-muted-foreground' />
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-              <Search className="h-4 w-4" />
-              <span className="ml-2">{t('search')}</span>
-            </Button>
-          </form>
-        </CardContent>
       </Card>
 
       <AnimatePresence>
@@ -160,17 +98,36 @@ export default function WeatherPage() {
         ) : error ? (
             <Alert variant="destructive">
               <AlertTitle>{t('error')}</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>
+                {error}
+                <Button onClick={handleGetLocation} variant="link" className="p-0 h-auto ml-2">Try Again</Button>
+              </AlertDescription>
             </Alert>
         ) : forecastData && (
           <motion.div
             key={forecastData.location}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
           >
+            <Card>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <p className="text-muted-foreground flex items-center gap-2"><MapPin className="h-4 w-4" /> Location</p>
+                            <h2 className="text-2xl font-bold">{forecastData.location}</h2>
+                        </div>
+                        <div className="text-right">
+                             <p className="text-muted-foreground">Current</p>
+                             <p className="text-2xl font-bold">{forecastData.current.temp_c}°C</p>
+                        </div>
+                    </div>
+                </CardHeader>
+            </Card>
+
             <Card className="bg-background">
               <CardHeader>
-                <CardTitle className="font-headline text-xl">{t('forecastFor')} {forecastData.location}</CardTitle>
+                <CardTitle className="font-headline text-xl">5-Day Forecast</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
