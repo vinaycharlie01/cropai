@@ -4,9 +4,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import Image from 'next/image';
-import Script from 'next/script';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed, Info } from 'lucide-react';
+import { Sun, Cloud, CloudRain, Wind, Droplets, MapPin, Search, Loader2, ShieldAlert, Bug, Leaf, AlertTriangle, CloudFog, Upload, Mic, LocateFixed } from 'lucide-react';
 
 import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-tool';
 import { getRiskAlerts, RiskAlert } from '@/ai/flows/get-risk-alerts';
@@ -26,8 +25,12 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
+import { getTtsLanguageCode } from '@/lib/translations';
 
+
+type WeatherFormInputs = {
+  location: string;
+};
 
 type PestReportInputs = {
   cropType: string;
@@ -39,13 +42,34 @@ type PestReportInputs = {
 
 type SttField = 'location' | 'cropType' | 'pestName' | 'description';
 
+const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
+  const lowerCaseCondition = condition.toLowerCase();
+  if (lowerCaseCondition.includes('sun') || lowerCaseCondition.includes('clear')) {
+    return <Sun className={className} />;
+  }
+  if (lowerCaseCondition.includes('rain') || lowerCaseCondition.includes('drizzle') || lowerCaseCondition.includes('shower')) {
+    return <CloudRain className={className} />;
+  }
+   if (lowerCaseCondition.includes('thunder')) {
+    return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cn("lucide lucide-cloud-lightning", className)}><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>;
+  }
+  if (lowerCaseCondition.includes('fog') || lowerCaseCondition.includes('mist') || lowerCaseCondition.includes('haze') ) {
+    return <CloudFog className={className} />;
+  }
+  if (lowerCaseCondition.includes('wind')) {
+    return <Wind className={className} />;
+  }
+  return <Cloud className={className} />;
+};
 
 export default function WeatherPage() {
   const { t, language } = useLanguage();
+  const weatherForm = useForm<WeatherFormInputs>();
   const pestReportForm = useForm<PestReportInputs>();
   
+  const [forecastData, setForecastData] = useState<WeatherOutput | null>(null);
   const [alerts, setAlerts] = useState<RiskAlert[]>([]);
-  const [locationName, setLocationName] = useState('New Delhi');
+  const [isLoading, setIsLoading] = useState(false);
   const [isAlertsLoading, setIsAlertsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -56,10 +80,12 @@ export default function WeatherPage() {
   const { user } = useAuth();
   
   const onRecognitionResult = useCallback((result: string) => {
-    if (activeSttField) {
-        pestReportForm.setValue(activeSttField as keyof PestReportInputs, result, { shouldValidate: true });
+    if (activeSttField === 'location') {
+      weatherForm.setValue('location', result, { shouldValidate: true });
+    } else {
+      pestReportForm.setValue(activeSttField as keyof PestReportInputs, result, { shouldValidate: true });
     }
-  }, [activeSttField, pestReportForm]);
+  }, [activeSttField, weatherForm, pestReportForm]);
 
   const onRecognitionError = useCallback((err: string) => {
       console.error(err);
@@ -82,26 +108,58 @@ export default function WeatherPage() {
     }
   };
 
-  const fetchRiskAlerts = useCallback(async (location: string) => {
+  const fetchWeatherAndAlerts = useCallback(async (lat: number, lon: number) => {
+    setIsLoading(true);
     setIsAlertsLoading(true);
+    setError(null);
+    setForecastData(null);
     setAlerts([]);
+
     try {
-        const alertsResult = await getRiskAlerts({ location: location, cropType: 'various' });
+        const weatherResult = await getWeatherAction({ lat, lon });
+        setForecastData(weatherResult);
+        weatherForm.setValue('location', weatherResult.location);
+
+        const alertsResult = await getRiskAlerts({ location: weatherResult.location, cropType: 'various' });
         setAlerts(alertsResult);
     } catch (e) {
-        console.error("Alert fetch error:", e);
+        console.error("Weather/Alert fetch error:", e);
         const errorMessage = t('errorWeather');
         setError(errorMessage);
         toast({ variant: 'destructive', title: t('error'), description: errorMessage });
     } finally {
+        setIsLoading(false);
         setIsAlertsLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, weatherForm]);
+  
+  const getLocation = useCallback(() => {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                fetchWeatherAndAlerts(position.coords.latitude, position.coords.longitude);
+            },
+            (error) => {
+                console.error("Geolocation error:", error);
+                toast({ variant: 'destructive', title: 'Location Error', description: 'Could not get your location. Please enter one manually or enable location services.' });
+                fetchWeatherAndAlerts(17.3850, 78.4867); // Fallback to Hyderabad
+            }
+        );
+    } else {
+        toast({ variant: 'destructive', title: 'Location Error', description: 'Geolocation is not supported by your browser.' });
+        fetchWeatherAndAlerts(17.3850, 78.4867); // Fallback to Hyderabad
+    }
+  }, [fetchWeatherAndAlerts, toast]);
+
 
   useEffect(() => {
-    fetchRiskAlerts(locationName);
-  }, [locationName, fetchRiskAlerts]);
+    getLocation();
+  }, [getLocation]);
 
+  const onWeatherSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
+    toast({ title: 'Notice', description: 'Manual location search is not implemented. Using Geolocation.' });
+    getLocation();
+  };
 
    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -129,7 +187,7 @@ export default function WeatherPage() {
             imageUrl = await getDownloadURL(storageRef);
         }
 
-        const location = new GeoPoint(17.3850, 78.4867);
+        const location = forecastData ? new GeoPoint(parseFloat(forecastData.location.split(',')[0]), parseFloat(forecastData.location.split(',')[1])) : new GeoPoint(17.3850, 78.4867);
 
         await addDoc(collection(db, 'pestReports'), {
             userId: user.uid,
@@ -176,29 +234,117 @@ export default function WeatherPage() {
       animate="visible"
       className="space-y-6"
     >
+      <motion.div variants={itemVariants}>
+        <Card className="bg-background">
+          <CardHeader>
+            <CardTitle className="font-headline text-2xl">{t('weatherForecast')}</CardTitle>
+            <CardDescription>{t('weatherInstruction')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={weatherForm.handleSubmit(onWeatherSubmit)} className="flex flex-col sm:flex-row items-start gap-4">
+              <div className="w-full flex-grow space-y-2">
+                <Label htmlFor="location" className="sr-only">{t('location')}</Label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    id="location"
+                    placeholder="Getting location..."
+                    className="pl-10 pr-20"
+                    {...weatherForm.register('location')}
+                  />
+                  <div className='absolute right-1 top-1/2 -translate-y-1/2 flex items-center'>
+                     <Button
+                        type="button"
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => handleSttToggle('location')}
+                        className="h-8 w-8"
+                        disabled={!isSupported}
+                    >
+                        <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    </Button>
+                    <Button type='button' variant='ghost' size='icon' className='h-8 w-8' onClick={getLocation}>
+                        <LocateFixed className='h-5 w-5 text-muted-foreground'/>
+                    </Button>
+                  </div>
+                </div>
+                {weatherForm.formState.errors.location && <p className="text-destructive text-sm">{weatherForm.formState.errors.location.message}</p>}
+              </div>
+              <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                <span className="ml-2">{t('search')}</span>
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <AnimatePresence>
+        {error && (
+          <motion.div variants={itemVariants} initial="hidden" animate="visible" exit="hidden">
+            <Alert variant="destructive">
+              <AlertTitle>{t('error')}</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
       <div className="grid lg:grid-cols-5 gap-6">
         <div className="lg:col-span-3 space-y-6">
-            <motion.div variants={itemVariants}>
-                <Card>
+             {isLoading ? (
+                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl">{t('weatherForecast')}</CardTitle>
-                        <CardDescription>{t('weatherInstruction')}</CardDescription>
+                        <div className="h-6 w-1/2 bg-muted rounded animate-pulse"></div>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {[...Array(5)].map((_, i) => (
+                             <Card key={i} className="bg-muted/30 text-center h-full flex flex-col justify-between p-2">
+                                <div className="h-5 w-1/2 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="w-16 h-16 mx-auto bg-muted rounded-full animate-pulse mb-2"></div>
+                                <div className="h-8 w-1/3 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="h-4 w-2/3 mx-auto bg-muted rounded animate-pulse mb-2"></div>
+                                <div className="h-4 w-1/2 mx-auto bg-muted rounded animate-pulse"></div>
+                             </Card>
+                        ))}
+                    </CardContent>
+                 </Card>
+            ) : forecastData && (
+              <motion.div variants={itemVariants}>
+                <Card className="bg-background">
+                    <CardHeader>
+                        <CardTitle className="font-headline text-xl">{t('forecastFor')} {forecastData.location}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div id="weatherapi-weather-widget-3"></div>
-                        <Script
-                          id="weatherapi-widget-script"
-                          strategy="afterInteractive"
-                          src={`https://www.weatherapi.com/weather/widget.ashx?loc=${locationName}&wid=3&tu=1&div=weatherapi-weather-widget-3`}
-                        />
-                        <noscript>
-                          <a href={`https://www.weatherapi.com/weather/q/${locationName}`} alt={`Hour by hour ${locationName} weather`}>
-                            10 day hour by hour {locationName} weather
-                          </a>
-                        </noscript>
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                          {forecastData.forecast.slice(0, 5).map((day, index) => (
+                            <motion.div
+                                key={index}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                            >
+                                <Card className="bg-muted/30 text-center hover:shadow-lg transition-shadow h-full flex flex-col justify-between">
+                                    <CardHeader className="pb-2">
+                                      <CardTitle className="text-base md:text-lg">{day.day}</CardTitle>
+                                    </CardHeader>
+                                    <CardContent className="flex flex-col items-center gap-2 p-2 md:p-6">
+                                      <WeatherIcon condition={day.condition} className="w-12 h-12 md:w-16 md:h-16 text-primary" />
+                                      <p className="text-2xl md:text-3xl font-bold">{day.temperature}</p>
+                                      <p className="text-muted-foreground text-xs md:text-sm capitalize">{day.condition}</p>
+                                      <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                          <Droplets className="w-4 h-4" />
+                                          <span>{day.humidity}</span>
+                                      </div>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                          ))}
+                        </div>
                     </CardContent>
                 </Card>
-            </motion.div>
+              </motion.div>
+            )}
             
              <motion.div variants={itemVariants}>
                 <Card>
