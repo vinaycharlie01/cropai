@@ -25,8 +25,8 @@ type WeatherFormInputs = {
 type SttField = 'location';
 
 // Mock data to ensure page stability
-const mockForecastData: WeatherForecastOutput = {
-    location: "Hyderabad, IN",
+const createMockForecastData = (location: string): WeatherForecastOutput => ({
+    location: location,
     forecast: [
         { day: "Mon", temperature: "32°C", condition: "Sunny", humidity: "45%" },
         { day: "Tue", temperature: "34°C", condition: "Sunny", humidity: "48%" },
@@ -34,7 +34,7 @@ const mockForecastData: WeatherForecastOutput = {
         { day: "Thu", temperature: "31°C", condition: "Showers", humidity: "65%" },
         { day: "Fri", temperature: "30°C", condition: "Thunderstorm", humidity: "70%" },
     ]
-};
+});
 
 const WeatherIcon = ({ condition, className }: { condition: string; className?: string }) => {
   const lowerCaseCondition = condition.toLowerCase();
@@ -55,7 +55,7 @@ export default function WeatherPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<WeatherFormInputs>();
   
   const [forecastData, setForecastData] = useState<WeatherForecastOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
@@ -63,7 +63,8 @@ export default function WeatherPage() {
 
   const onRecognitionResult = useCallback((result: string) => {
     setValue('location', result, { shouldValidate: true });
-  }, [setValue]);
+    handleSubmit(onSubmit)();
+  }, [setValue, handleSubmit]);
 
   const onRecognitionError = useCallback((err: string) => {
       console.error(err);
@@ -90,20 +91,28 @@ export default function WeatherPage() {
     setError(null);
     setForecastData(null);
 
-    // Using mock data to avoid API failures
     await new Promise(resolve => setTimeout(resolve, 500)); // Simulate loading
-    setForecastData(mockForecastData);
-    setValue('location', mockForecastData.location);
+    const mockData = createMockForecastData(location);
+    setForecastData(mockData);
+    setValue('location', location);
     setIsLoading(false);
   }, [setValue]);
 
   useEffect(() => {
+    // Set initial location
     fetchWeather("Hyderabad");
   }, [fetchWeather]);
 
   const onSubmit: SubmitHandler<WeatherFormInputs> = async (data) => {
-    fetchWeather(data.location);
+    if(data.location){
+        fetchWeather(data.location);
+    }
   };
+  
+  const handleCurrentLocation = () => {
+      fetchWeather("My Current Location"); // Simulate getting current location
+      toast({title: "Location Updated", description: "Using your current location for the forecast."});
+  }
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -151,7 +160,7 @@ export default function WeatherPage() {
                     >
                         <Mic className={`h-5 w-5 ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                     </Button>
-                    <Button type='button' variant='ghost' size='icon' className='h-8 w-8' onClick={() => fetchWeather("Hyderabad")}>
+                    <Button type='button' variant='ghost' size='icon' className='h-8 w-8' onClick={handleCurrentLocation}>
                         <LocateFixed className='h-5 w-5 text-muted-foreground'/>
                     </Button>
                   </div>
