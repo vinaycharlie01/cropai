@@ -48,7 +48,7 @@ export type WeatherOutput = z.infer<typeof WeatherOutputSchema>;
  * @returns A structured weather forecast.
  */
 export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
-  return getWeatherTool.run(input);
+  return getWeatherTool(input);
 }
 
 
