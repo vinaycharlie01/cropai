@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -6,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import {
   Activity,
   BarChartBig,
-  CloudSun,
   Droplets,
   HeartPulse,
   Landmark,
@@ -35,7 +33,6 @@ const navItems = [
     { href: '/dashboard/insurance', icon: Shield, labelKey: 'cropInsurance' },
     { href: '/dashboard/capital', icon: Landmark, labelKey: 'smartCapitalAccess' },
     { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
-    { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
     { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },
     { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
     { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },

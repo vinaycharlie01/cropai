@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, BarChartBig, CloudSun, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity, Shield, Landmark } from "lucide-react";
+import { ArrowRight, BarChartBig, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity, Shield, Landmark } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -54,12 +54,6 @@ const featureCards = [
     icon: BarChartBig,
     titleKey: "aiSellingAdvice",
     descriptionKey: "aiSellingAdviceDesc",
-  },
-  {
-    href: "/dashboard/weather",
-    icon: CloudSun,
-    titleKey: "weatherForecast",
-    descriptionKey: "weatherInstruction",
   },
   {
     href: "/dashboard/irrigation",
@@ -233,7 +227,3 @@ export default function DashboardPage() {
                         </Link>
                     </motion.div>
                 ))}
-            </motion.div>
-        </motion.div>
-    );
-}
