@@ -2,9 +2,9 @@
 'use server';
 
 /**
- * @fileOverview A weather forecast tool that fetches live data from WeatherAPI.com.
+ * @fileOverview A weather forecast AI agent that simulates weather data.
  *
- * - getWeatherForecast - A function that fetches and formats real-time weather data.
+ * - getWeatherForecast - A function that handles generating a simulated weather forecast.
  * - WeatherForecastInput - The input type for the getWeatherForecast function.
  * - WeatherForecastOutput - The return type for the getWeatherForecast function.
  */
@@ -12,61 +12,65 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-// Input and Output Schemas
+// Input and Output Schemas for the frontend
 const WeatherForecastInputSchema = z.object({
-  lat: z.number().describe('The latitude for the weather forecast.'),
-  lon: z.number().describe('The longitude for the weather forecast.'),
+  location: z.string().describe('The location for which to get the weather forecast.'),
 });
 export type WeatherForecastInput = z.infer<typeof WeatherForecastInputSchema>;
 
 const DailyForecastSchema = z.object({
-  day: z.string().describe("The day of the week (e.g., 'Mon')."),
+  day: z.string().describe("The day of the week (e.g., Monday)."),
   temperature: z.string().describe("The predicted temperature in Celsius (e.g., '25°C')."),
   condition: z.string().describe("The weather condition (e.g., 'Sunny', 'Partly Cloudy', 'Rain')."),
   humidity: z.string().describe("The humidity percentage (e.g., '60%')."),
 });
 export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 
+
 const WeatherForecastOutputSchema = z.object({
-  location: z.string().describe('The name of the location for the forecast (e.g., "Hyderabad, IN").'),
   forecast: z.array(DailyForecastSchema).describe('A 5-day weather forecast.'),
+  location: z.string().describe('The name of the location for the forecast (e.g., "Hyderabad, IN").')
 });
 export type WeatherForecastOutput = z.infer<typeof WeatherForecastOutputSchema>;
 
-/**
- * A server action to be called from client components to fetch weather data.
- * @param input The latitude and longitude.
- * @returns A structured weather forecast.
- */
+
+// --- Main Exported Function and Flow ---
+
 export async function getWeatherForecast(input: WeatherForecastInput): Promise<WeatherForecastOutput> {
-  const apiKey = process.env.WEATHERAPI_API_KEY;
-  if (!apiKey) {
-    throw new Error('WEATHERAPI_API_KEY is not set in the environment variables.');
-  }
-
-  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${input.lat},${input.lon}&days=5&aqi=no&alerts=no`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`WeatherAPI request failed with status ${response.status}: ${errorData.error.message}`);
-    }
-    const data = await response.json();
-
-    const formattedForecast = data.forecast.forecastday.map((day: any) => ({
-      day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
-      temperature: `${Math.round(day.day.avgtemp_c)}°C`,
-      condition: day.day.condition.text,
-      humidity: `${day.day.avghumidity}%`,
-    }));
-
-    return {
-      location: `${data.location.name}, ${data.location.region}`,
-      forecast: formattedForecast,
-    };
-  } catch (error) {
-    console.error('Error fetching weather data:', error);
-    throw new Error('Failed to fetch weather data from WeatherAPI.com.');
-  }
+  return weatherForecastFlow(input);
 }
+
+const prompt = ai.definePrompt({
+    name: 'weatherForecastPrompt',
+    input: { schema: WeatherForecastInputSchema },
+    output: { schema: WeatherForecastOutputSchema },
+    prompt: `You are a weather forecasting expert. Based on the provided location, generate a realistic-looking 5-day weather forecast.
+
+    **Location:** {{{location}}}
+    
+    **Instructions:**
+    1.  Create a 5-day forecast starting from today.
+    2.  For each day, provide the day of the week (e.g., "Monday", "Tuesday").
+    3.  Provide a plausible temperature in Celsius (e.g., "28°C").
+    4.  Provide a common weather condition (e.g., "Sunny", "Partly Cloudy", "Showers", "Thunderstorm").
+    5.  Provide a realistic humidity percentage (e.g., "65%").
+    6.  Return the original location name in the 'location' field of the output.
+    7.  Ensure the output is a valid JSON object that matches the specified schema.
+    
+    Generate the forecast now.`,
+});
+
+const weatherForecastFlow = ai.defineFlow(
+  {
+    name: 'weatherForecastFlow',
+    inputSchema: WeatherForecastInputSchema,
+    outputSchema: WeatherForecastOutputSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input);
+    if (!output) {
+      throw new Error("The AI model did not return a valid forecast.");
+    }
+    return output;
+  }
+);

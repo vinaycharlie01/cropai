@@ -1,102 +1,112 @@
-
 'use server';
 
 /**
- * @fileOverview A Genkit tool for fetching real-time weather data from WeatherAPI.com.
- *
- * - getWeatherAction - A server action that can be called from the client to get weather data.
- * - WeatherInputSchema - The input schema for the weather tool, requiring latitude and longitude.
- * - WeatherOutputSchema - The output schema for the weather tool, providing a structured weather forecast.
+ * @fileOverview Provides a Genkit tool to get weather information for a given location using WeatherAPI.com.
+ * 
+ * - getWeatherAction - An exported server action to call the tool from the client.
+ * - getWeatherTool - The Genkit tool definition, callable by other AI flows.
  */
 
 import { ai } from '@/ai/genkit';
+import { WeatherInputSchema, WeatherOutputSchema, type WeatherInput, type WeatherOutput } from '@/ai/schemas/weather-schemas';
 import { z } from 'zod';
 
-// --- Zod Schemas for Input and Output ---
-
-export const WeatherInputSchema = z.object({
-  lat: z.number().describe('The latitude for the weather forecast.'),
-  lon: z.number().describe('The longitude for the weather forecast.'),
-});
-export type WeatherInput = z.infer<typeof WeatherInputSchema>;
-
-export const DailyForecastSchema = z.object({
-    day: z.string().describe("The day of the week (e.g., Monday)."),
-    temperature: z.string().describe("The predicted temperature in Celsius (e.g., '25°C')."),
-    condition: z.string().describe("The weather condition (e.g., 'Sunny', 'Partly Cloudy', 'Rain')."),
-    humidity: z.string().describe("The humidity percentage (e.g., '60%')."),
-});
-
-export const WeatherOutputSchema = z.object({
-  location: z.string().describe('The name of the location for the forecast (e.g., "Hyderabad, IN").'),
-  current: z.object({
-    temp_c: z.number(),
-    condition: z.string(),
-    humidity: z.number(),
-    wind_kph: z.number(),
-  }),
-  forecast: z.array(DailyForecastSchema).describe('A 3-day weather forecast.'),
-});
-export type WeatherOutput = z.infer<typeof WeatherOutputSchema>;
+// Helper function to map WeatherAPI.com condition text to our simplified conditions
+const mapWeatherCondition = (conditionText: string): z.infer<typeof WeatherOutputSchema.shape.condition> => {
+    const text = conditionText.toLowerCase();
+    if (text.includes('thunder')) return 'Thunderstorm';
+    if (text.includes('rain') || text.includes('drizzle')) return 'Rainy';
+    if (text.includes('snow') || text.includes('sleet') || text.includes('ice')) return 'Snowy';
+    if (text.includes('sun') || text.includes('clear')) return 'Sunny';
+    // Defaults to cloudy for mist, fog, overcast, etc.
+    return 'Cloudy';
+};
 
 
-// --- Main Exported Server Action ---
+// This is the Genkit Tool that does the actual work.
+export const getWeatherTool = ai.defineTool(
+    {
+        name: 'getWeather',
+        description: 'Returns the current weather and a 5-day forecast for a given location, specified by either city name or latitude/longitude coordinates.',
+        inputSchema: WeatherInputSchema,
+        outputSchema: WeatherOutputSchema,
+    },
+    async (input) => {
+        const apiKey = process.env.WEATHERAPI_API_KEY;
+        if (!apiKey) {
+            throw new Error("WEATHERAPI_API_KEY is not set in the environment variables.");
+        }
+        
+        const { latitude, longitude, city } = input;
+        
+        // WeatherAPI.com takes a single 'q' parameter which can be city, lat/lon, etc.
+        let query = city;
+        if (latitude !== undefined && longitude !== undefined) {
+            query = `${latitude},${longitude}`;
+        }
 
-/**
- * A server action to be called from client components to fetch weather data.
- * @param input The latitude and longitude.
- * @returns A structured weather forecast.
- */
-export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
-  return getWeatherTool(input);
-}
+        if (!query) {
+             return { error: "Location not specified. Please provide a city or coordinates." };
+        }
+        
+        const fetch = (await import('node-fetch')).default;
+        
+        const forecastUrl = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(query)}&days=5&aqi=no&alerts=no`;
 
+        const response = await fetch(forecastUrl);
+        
+        if (!response.ok) {
+            const errorData = await response.json() as any;
+            const errorMessage = errorData?.error?.message || `Failed to fetch weather data. Status: ${response.status}`;
+            if (response.status === 400 && errorMessage.includes('No matching location found')) {
+                 return { error: `Could not find location for "${query}". Please check the spelling or try a different city.` };
+            }
+            return { error: errorMessage };
+        }
 
-// --- Genkit Tool Definition ---
+        const data = await response.json() as any;
 
-const getWeatherTool = ai.defineTool(
-  {
-    name: 'getWeatherTool',
-    description: 'Fetches the current weather and a 3-day forecast from WeatherAPI.com.',
-    inputSchema: WeatherInputSchema,
-    outputSchema: WeatherOutputSchema,
-  },
-  async ({ lat, lon }) => {
-    const apiKey = process.env.WEATHERAPI_API_KEY;
-    if (!apiKey) {
-      throw new Error('WEATHERAPI_API_KEY is not set in the environment variables.');
+        const currentData = data.current;
+        const locationData = data.location;
+        const forecastData = data.forecast.forecastday;
+
+        const dailyForecasts = forecastData.map((day: any) => {
+            const date = new Date(day.date);
+            // Add time zone offset to get correct weekday in local time.
+            date.setTime(date.getTime() + (date.getTimezoneOffset() * 60000));
+            return {
+                day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                temp: `${Math.round(day.day.avgtemp_c)}°`,
+                condition: mapWeatherCondition(day.day.condition.text),
+            };
+        });
+
+        // Return the data in our clean, predefined format.
+        return {
+            location: locationData.name || "Current Location",
+            temperature: `${Math.round(currentData.temp_c)}°C`,
+            condition: mapWeatherCondition(currentData.condition.text),
+            wind: `${Math.round(currentData.wind_kph)} km/h`,
+            sunrise: forecastData[0].astro.sunrise,
+            sunset: forecastData[0].astro.sunset,
+            forecast: dailyForecasts,
+        };
     }
-
-    const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=5&aqi=no&alerts=no`;
-
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`WeatherAPI request failed with status ${response.status}`);
-      }
-      const data = await response.json();
-
-      // Process and format the data to match our WeatherOutputSchema
-      const formattedForecast = data.forecast.forecastday.map((day: any) => ({
-        day: new Date(day.date).toLocaleDateString('en-US', { weekday: 'short' }),
-        temperature: `${Math.round(day.day.avgtemp_c)}°C`,
-        condition: day.day.condition.text,
-        humidity: `${day.day.avghumidity}%`,
-      }));
-
-      return {
-        location: `${data.location.name}, ${data.location.region}`,
-        current: {
-          temp_c: data.current.temp_c,
-          condition: data.current.condition.text,
-          humidity: data.current.humidity,
-          wind_kph: data.current.wind_kph,
-        },
-        forecast: formattedForecast,
-      };
-    } catch (error) {
-      console.error('Error fetching weather data:', error);
-      throw new Error('Failed to fetch weather data from WeatherAPI.com.');
-    }
-  }
 );
+
+// We define a simple flow that just calls the tool.
+const weatherFlow = ai.defineFlow(
+    {
+        name: 'weatherFlow',
+        inputSchema: WeatherInputSchema,
+        outputSchema: WeatherOutputSchema,
+    },
+    async (input) => {
+        return await getWeatherTool(input);
+    }
+);
+
+// This is the exported server action that the client component will call.
+export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
+    return weatherFlow(input);
+}
