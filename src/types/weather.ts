@@ -12,13 +12,14 @@ export const WeatherInputSchema = z.object({
 export type WeatherInput = z.infer<typeof WeatherInputSchema>;
 
 
-const DailyForecastSchema = z.object({
+export const DailyForecastSchema = z.object({
     day: z.string().describe("The day of the week (e.g., 'Mon')."),
     temp: z.string().describe("The forecasted temperature in Celsius."),
     condition: z.enum(["Sunny", "Cloudy", "Rainy", "Thunderstorm", "Snowy"]).describe("The forecasted weather condition."),
     wind_kph: z.number().describe("The forecasted average wind speed in kilometers per hour."),
     chance_of_rain: z.number().describe("The forecasted chance of rain as a percentage (0-100).")
 });
+export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 
 // Schema for the clean, processed data we want to *receive* from our tool.
 export const WeatherOutputSchema = z.object({
