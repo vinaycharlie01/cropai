@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -37,15 +37,14 @@ import { useToast } from '@/hooks/use-toast';
 import { predictMandiPrice } from "@/ai/flows/predict-mandi-price";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { getTtsLanguageCode } from "@/lib/translations";
+import { getMandiPrices, MandiPriceRecord } from "@/ai/flows/get-mandi-prices";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const mockPrices = [
-  { commodity: 'tomato', price: 2500, region: 'maharashtra', trend: 1 },
-  { commodity: 'onion', price: 1800, region: 'karnataka', trend: -1 },
-  { commodity: 'potato', price: 1500, region: 'uttarPradesh', trend: 0 },
-  { commodity: 'wheat', price: 2200, region: 'punjab', trend: 1 },
-  { commodity: 'riceBasmati', price: 9500, region: 'haryana', trend: -1 },
-  { commodity: 'cotton', price: 7500, region: 'gujarat', trend: 0 },
+const states = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
 ];
+const commodities = ["Potato", "Onion", "Tomato", "Wheat", "Paddy", "Cotton", "Maize"];
+
 
 type PredictionFormInputs = {
   crop: string;
@@ -57,11 +56,42 @@ type SttField = 'location';
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
+  const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>({
+    defaultValues: {
+        location: "Maharashtra",
+        crop: "Onion"
+    }
+  });
 
+  const [livePrices, setLivePrices] = useState<MandiPriceRecord[] | null>(null);
+  const [isLivePricesLoading, setIsLivePricesLoading] = useState(true);
   const [prediction, setPrediction] = useState<any | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPredictionLoading, setIsPredictionLoading] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+
+  const fetchLivePrices = useCallback(async (state: string, commodity: string) => {
+    setIsLivePricesLoading(true);
+    setLivePrices(null);
+    try {
+        const results = await getMandiPrices({ state, commodity });
+        setLivePrices(results);
+    } catch (error) {
+        console.error("Failed to fetch live prices", error);
+        toast({
+            variant: 'destructive',
+            title: t('error'),
+            description: "Could not fetch live market prices."
+        })
+    } finally {
+        setIsLivePricesLoading(false);
+    }
+  }, [t, toast]);
+  
+  // Fetch default prices on initial load
+  useEffect(() => {
+    fetchLivePrices("Maharashtra", "Onion");
+  }, [fetchLivePrices]);
+
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
@@ -96,8 +126,8 @@ export default function MandiPricesPage() {
     return <Minus className="text-gray-500" />
   }
   
-  const onSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
-    setIsLoading(true);
+  const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
+    setIsPredictionLoading(true);
     setPrediction(null);
     
     // This part will call the Genkit flow
@@ -116,9 +146,13 @@ export default function MandiPricesPage() {
             description: "Could not fetch AI price prediction."
          })
     } finally {
-        setIsLoading(false);
+        setIsPredictionLoading(false);
     }
   }
+  
+  const handleFilterChange = (data: PredictionFormInputs) => {
+    fetchLivePrices(data.location, data.crop);
+  };
 
   const chartConfig = {
     price: {
@@ -140,27 +174,76 @@ export default function MandiPricesPage() {
           <CardDescription>{t('mandiPriceInfo')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-semibold">{t('crop')}</TableHead>
-                <TableHead className="font-semibold">{t('price')}</TableHead>
-                <TableHead className="font-semibold text-right">{t('region')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockPrices.map((item) => (
-                <TableRow key={item.commodity} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">{t(item.commodity as any)}</TableCell>
-                  <TableCell className="flex items-center gap-2">
-                    <TrendArrow trend={item.trend} />
-                     ₹{item.price.toLocaleString('en-IN')}
-                  </TableCell>
-                  <TableCell className="text-right text-muted-foreground">{t(item.region as any)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+            <div className="flex gap-4 mb-4 items-end">
+                 <div className="flex-1">
+                    <Label htmlFor="crop-select-live">{t('crop')}</Label>
+                    <Controller
+                        name="crop"
+                        control={control}
+                        render={({ field }) => (
+                          <Select onValueChange={(value) => { field.onChange(value); handleFilterChange({ ...control._formValues, crop: value }) }} defaultValue={field.value}>
+                            <SelectTrigger id="crop-select-live">
+                              <SelectValue placeholder="Select a crop" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {commodities.map(item => (
+                                <SelectItem key={item} value={item}>{item}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                  </div>
+                   <div className="flex-1">
+                    <Label htmlFor="location-select-live">{t('region')}</Label>
+                    <Controller
+                        name="location"
+                        control={control}
+                        render={({ field }) => (
+                            <Select onValueChange={(value) => { field.onChange(value); handleFilterChange({ ...control._formValues, location: value }) }} defaultValue={field.value}>
+                                <SelectTrigger id="location-select-live">
+                                <SelectValue placeholder="Select a state" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {states.map(item => (
+                                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        />
+                   </div>
+            </div>
+            <div className="min-h-[300px]">
+              {isLivePricesLoading ? (
+                <div className="space-y-2 pt-2">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12" />)}
+                </div>
+              ) : livePrices && livePrices.length > 0 ? (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead className="font-semibold">{t('region')}</TableHead>
+                        <TableHead className="font-semibold">{t('price')}</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {livePrices.slice(0, 10).map((item, index) => (
+                        <TableRow key={index} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{item.market}</TableCell>
+                        <TableCell className="flex items-center gap-2">
+                            ₹{item.modal_price.toLocaleString('en-IN')}
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                    No prices found for the selected crop and state.
+                </div>
+              )}
+            </div>
         </CardContent>
       </Card>
 
@@ -169,7 +252,7 @@ export default function MandiPricesPage() {
           <CardTitle className="font-headline text-2xl">AI Price Prediction</CardTitle>
           <CardDescription>Get a 4-week price forecast for a crop.</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onPredictionSubmit)}>
           <CardContent className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4 items-start">
                   <div>
@@ -184,8 +267,8 @@ export default function MandiPricesPage() {
                               <SelectValue placeholder="Select a crop to predict" />
                             </SelectTrigger>
                             <SelectContent>
-                              {mockPrices.map(item => (
-                                <SelectItem key={item.commodity} value={t(item.commodity as any)}>{t(item.commodity as any)}</SelectItem>
+                              {commodities.map(item => (
+                                <SelectItem key={item} value={item}>{item}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -194,25 +277,29 @@ export default function MandiPricesPage() {
                       {errors.crop && <p className="text-destructive text-sm mt-1">{errors.crop.message}</p>}
                   </div>
                    <div>
-                    <Label htmlFor="location">{t('location')}</Label>
-                    <div className="relative">
-                      <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
-                       <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => handleSttToggle('location')}
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                          disabled={!isSupported}
-                      >
-                          <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-                      </Button>
-                    </div>
+                    <Label htmlFor="location">{t('region')}</Label>
+                    <Controller
+                        name="location"
+                        control={control}
+                        rules={{ required: t('locationRequired') }}
+                        render={({ field }) => (
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <SelectTrigger id="location">
+                                <SelectValue placeholder="Select a state" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {states.map(item => (
+                                    <SelectItem key={item} value={item}>{item}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                        />
                     {errors.location && <p className="text-destructive text-sm mt-1">{errors.location.message}</p>}
                 </div>
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full !mt-6">
-                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
+              <Button type="submit" disabled={isPredictionLoading} className="w-full !mt-6">
+                {isPredictionLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
                 Predict
               </Button>
           </CardContent>

@@ -11,10 +11,11 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getMandiPrices } from './get-mandi-prices';
 
 const PredictMandiPriceInputSchema = z.object({
   cropType: z.string().describe('The type of crop for which to predict the price.'),
-  location: z.string().describe('The geographical location (market/mandi) of the crop.'),
+  location: z.string().describe('The geographical location (state) of the crop.'),
   language: z.string().describe('The language for the output.'),
 });
 export type PredictMandiPriceInput = z.infer<typeof PredictMandiPriceInputSchema>;
@@ -37,21 +38,30 @@ export async function predictMandiPrice(input: PredictMandiPriceInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'predictMandiPricePrompt',
-  input: {schema: PredictMandiPriceInputSchema},
+  input: {
+    schema: z.object({
+      currentPrice: z.number(),
+      cropType: z.string(),
+      location: z.string(),
+      language: z.string(),
+    }),
+  },
   output: {schema: PredictMandiPriceOutputSchema},
-  prompt: `You are an expert agricultural market analyst. Your task is to predict the mandi price for a specific crop for the next four weeks.
+  prompt: `You are an expert agricultural market analyst. Your task is to predict the mandi price for a specific crop for the next four weeks based on the provided current price.
 
 **INPUTS:**
 *   Crop: {{{cropType}}}
-*   Location: {{{location}}}
+*   Location (State): {{{location}}}
 *   Language: {{{language}}}
+*   Current Modal Price (per quintal): {{{currentPrice}}}
 
 **INSTRUCTIONS:**
-1.  Analyze historical data, seasonality, weather patterns, and current market sentiment to make your predictions.
-2.  Provide a week-by-week price prediction for the next 4 weeks. The price should be per quintal.
-3.  Provide a brief analysis explaining your prediction (e.g., "Prices are expected to rise due to festive demand," or "Prices may dip as new harvest arrives in the market.").
-4.  The 'analysis' field MUST be in the requested language: **{{{language}}}**.
-5.  Your entire response MUST be a valid JSON object matching the defined schema.
+1.  Use the provided 'Current Modal Price' as the starting point for your week 1 prediction.
+2.  Analyze historical data, seasonality, weather patterns, and current market sentiment to make your predictions for the subsequent 3 weeks.
+3.  Provide a week-by-week price prediction for the next 4 weeks. The price should be per quintal.
+4.  Provide a brief analysis explaining your prediction (e.g., "Prices are expected to rise due to festive demand," or "Prices may dip as new harvest arrives in the market.").
+5.  The 'analysis' field MUST be in the requested language: **{{{language}}}**.
+6.  Your entire response MUST be a valid JSON object matching the defined schema.
 
 Provide the structured JSON output now.
 `,
@@ -64,9 +74,22 @@ const predictMandiPriceFlow = ai.defineFlow(
     outputSchema: PredictMandiPriceOutputSchema,
   },
   async (input) => {
-    // In a real application, you might fetch historical data here.
-    // For this simulation, we'll just pass the input to the prompt.
-    const {output} = await prompt(input);
+    // 1. Get current, real price from the getMandiPrices tool
+    const livePrices = await getMandiPrices({ commodity: input.cropType, state: input.location });
+    
+    let currentPrice = 2000; // Default fallback price
+    if (livePrices && livePrices.length > 0) {
+      // Use the modal price from the most recent record
+      currentPrice = Number(livePrices[0].modal_price);
+    }
+
+    // 2. Pass the live price into the prediction prompt
+    const {output} = await prompt({
+        ...input,
+        currentPrice: currentPrice,
+    });
+    
     return output!;
   }
 );
+
