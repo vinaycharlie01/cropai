@@ -209,7 +209,7 @@ const WeatherPage = () => {
         transition={{ duration: 0.5 }}
         className="space-y-6"
     >
-        <Card className="shadow-lg h-full">
+        <Card className="shadow-lg">
           <CardHeader className="pb-4">
              <form onSubmit={handleSearch} className="flex items-center gap-2 mb-2">
                 <Input 
