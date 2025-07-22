@@ -53,13 +53,11 @@ const getMandiPricesFlow = ai.defineFlow(
     const url = new URL('https://api.data.gov.in/resource/9ef84268-d588-465a-a308-a864a43d0070');
     url.searchParams.append('api-key', apiKey);
     url.searchParams.append('format', 'json');
-    url.searchParams.append('limit', '50'); // Increase limit to get more results
+    url.searchParams.append('limit', '50'); // Fetch a decent number of records to filter
     url.searchParams.append('filters[state]', state);
+    url.searchParams.append('filters[commodity]', commodity);
     
-    // Using a more flexible search for commodity
-    url.searchParams.append('query', commodity);
-    
-    // Sort by latest arrival date
+    // Sort by latest arrival date to get the most recent data
     url.searchParams.append('sort[arrival_date]', 'desc');
     
     const fetch = (await import('node-fetch')).default;
@@ -76,9 +74,13 @@ const getMandiPricesFlow = ai.defineFlow(
         // The API returns prices as strings, so we need to parse them.
         // It also can return "NA" for prices, so we need to handle that.
         const parsedRecords = (data.records || [])
-          .filter((record: any) => record.commodity.toLowerCase().includes(commodity.toLowerCase()))
           .map((record: any) => ({
-            ...record,
+            state: record.state || '',
+            district: record.district || '',
+            market: record.market || '',
+            commodity: record.commodity || '',
+            variety: record.variety || '',
+            arrival_date: record.arrival_date || '',
             min_price: Number(record.min_price) || 0,
             max_price: Number(record.max_price) || 0,
             modal_price: Number(record.modal_price) || 0,

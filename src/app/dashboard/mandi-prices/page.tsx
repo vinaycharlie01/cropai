@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -43,32 +43,62 @@ const states = [
 const commodities = ["Potato", "Onion", "Tomato", "Wheat", "Paddy", "Cotton", "Maize"];
 
 
-type PredictionFormInputs = {
+type FilterFormInputs = {
   crop: string;
-  location: string;
+  state: string;
+  district: string;
+  market: string;
 }
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { control, handleSubmit, formState: { errors } } = useForm<PredictionFormInputs>({
+  const { control, handleSubmit, watch, setValue } = useForm<FilterFormInputs>({
     defaultValues: {
-        location: "Maharashtra",
-        crop: "Onion"
+        state: "Maharashtra",
+        crop: "Onion",
+        district: "All",
+        market: "All",
     }
   });
 
-  const [livePrices, setLivePrices] = useState<MandiPriceRecord[] | null>(null);
+  const [allPricesForState, setAllPricesForState] = useState<MandiPriceRecord[]>([]);
+  const [filteredPrices, setFilteredPrices] = useState<MandiPriceRecord[]>([]);
   const [isLivePricesLoading, setIsLivePricesLoading] = useState(true);
   const [prediction, setPrediction] = useState<any | null>(null);
   const [isPredictionLoading, setIsPredictionLoading] = useState(false);
+
+  const selectedState = watch('state');
+  const selectedCrop = watch('crop');
+  const selectedDistrict = watch('district');
+  const selectedMarket = watch('market');
+
+  const districts = useMemo(() => {
+    if (!allPricesForState) return [];
+    const uniqueDistricts = [...new Set(allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase()).map(p => p.district))];
+    return ["All", ...uniqueDistricts];
+  }, [allPricesForState, selectedCrop]);
+
+  const markets = useMemo(() => {
+    if (!allPricesForState) return [];
+    let filtered = allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase());
+    if (selectedDistrict !== "All") {
+      filtered = filtered.filter(p => p.district === selectedDistrict);
+    }
+    const uniqueMarkets = [...new Set(filtered.map(p => p.market))];
+    return ["All", ...uniqueMarkets];
+  }, [allPricesForState, selectedCrop, selectedDistrict]);
+  
   
   const fetchLivePrices = useCallback(async (state: string, commodity: string) => {
     setIsLivePricesLoading(true);
-    setLivePrices(null);
+    setAllPricesForState([]);
+    setFilteredPrices([]);
+    setValue('district', 'All');
+    setValue('market', 'All');
     try {
         const results = await getMandiPrices({ state, commodity });
-        setLivePrices(results);
+        setAllPricesForState(results);
     } catch (error) {
         console.error("Failed to fetch live prices", error);
         toast({
@@ -79,22 +109,34 @@ export default function MandiPricesPage() {
     } finally {
         setIsLivePricesLoading(false);
     }
-  }, [t, toast]);
+  }, [t, toast, setValue]);
   
-  // Fetch default prices on initial load
+  // Filter prices whenever selections change
   useEffect(() => {
-    fetchLivePrices("Maharashtra", "Onion");
-  }, [fetchLivePrices]);
+    let results = allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase());
+    if (selectedDistrict !== 'All') {
+      results = results.filter(p => p.district === selectedDistrict);
+    }
+    if (selectedMarket !== 'All') {
+      results = results.filter(p => p.market === selectedMarket);
+    }
+    setFilteredPrices(results);
+  }, [selectedDistrict, selectedMarket, selectedCrop, allPricesForState]);
+
+
+  // Fetch default prices on initial load and when state/crop changes
+  useEffect(() => {
+    fetchLivePrices(selectedState, selectedCrop);
+  }, [selectedState, selectedCrop, fetchLivePrices]);
   
-  const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
+  const onPredictionSubmit = useCallback(async (state: string, crop: string) => {
     setIsPredictionLoading(true);
     setPrediction(null);
     
-    // This part will call the Genkit flow
     try {
         const result = await predictMandiPrice({
-            cropType: data.crop,
-            location: data.location,
+            cropType: crop,
+            location: state,
             language: language,
         });
         setPrediction(result);
@@ -108,12 +150,12 @@ export default function MandiPricesPage() {
     } finally {
         setIsPredictionLoading(false);
     }
-  }
+  }, [language, toast, t])
+
+  useEffect(() => {
+    onPredictionSubmit(selectedState, selectedCrop);
+  }, [selectedState, selectedCrop, onPredictionSubmit]);
   
-  const handleFilterChange = (data: PredictionFormInputs) => {
-    fetchLivePrices(data.location, data.crop);
-    onPredictionSubmit(data);
-  };
 
   const chartConfig = {
     price: {
@@ -136,44 +178,42 @@ export default function MandiPricesPage() {
             <CardDescription>{t('mandiPriceInfo')}</CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                    <div className="flex-1 space-y-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div className="space-y-2">
                         <Label htmlFor="crop-select-live">{t('crop')}</Label>
-                        <Controller
-                            name="crop"
-                            control={control}
-                            render={({ field }) => (
-                            <Select onValueChange={(value) => { field.onChange(value); handleFilterChange({ ...control._formValues, crop: value }) }} defaultValue={field.value}>
-                                <SelectTrigger id="crop-select-live">
-                                <SelectValue placeholder="Select a crop" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                {commodities.map(item => (
-                                    <SelectItem key={item} value={item}>{item}</SelectItem>
-                                ))}
-                                </SelectContent>
+                        <Controller name="crop" control={control} render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger id="crop-select-live"><SelectValue /></SelectTrigger>
+                                <SelectContent>{commodities.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
                             </Select>
-                            )}
-                        />
+                        )} />
                     </div>
-                    <div className="flex-1 space-y-2">
-                        <Label htmlFor="location-select-live">{t('region')}</Label>
-                        <Controller
-                            name="location"
-                            control={control}
-                            render={({ field }) => (
-                                <Select onValueChange={(value) => { field.onChange(value); handleFilterChange({ ...control._formValues, location: value }) }} defaultValue={field.value}>
-                                    <SelectTrigger id="location-select-live">
-                                    <SelectValue placeholder="Select a state" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                    {states.map(item => (
-                                        <SelectItem key={item} value={item}>{item}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                            )}
-                            />
+                    <div className="space-y-2">
+                        <Label htmlFor="state-select-live">{t('region')}</Label>
+                        <Controller name="state" control={control} render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <SelectTrigger id="state-select-live"><SelectValue /></SelectTrigger>
+                                <SelectContent>{states.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                            </Select>
+                        )} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="district-select-live">District</Label>
+                        <Controller name="district" control={control} render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value} disabled={districts.length <= 1}>
+                                <SelectTrigger id="district-select-live"><SelectValue /></SelectTrigger>
+                                <SelectContent>{districts.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                            </Select>
+                        )} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="market-select-live">{t('market')}</Label>
+                        <Controller name="market" control={control} render={({ field }) => (
+                            <Select onValueChange={field.onChange} value={field.value} disabled={markets.length <= 1}>
+                                <SelectTrigger id="market-select-live"><SelectValue /></SelectTrigger>
+                                <SelectContent>{markets.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
+                            </Select>
+                        )} />
                     </div>
                 </div>
                 <div className="min-h-[300px]">
@@ -181,7 +221,7 @@ export default function MandiPricesPage() {
                     <div className="space-y-2 pt-2">
                         {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12" />)}
                     </div>
-                ) : livePrices && livePrices.length > 0 ? (
+                ) : filteredPrices && filteredPrices.length > 0 ? (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -192,7 +232,7 @@ export default function MandiPricesPage() {
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {livePrices.slice(0, 10).map((item, index) => (
+                        {filteredPrices.slice(0, 10).map((item, index) => (
                             <TableRow key={index} className="hover:bg-muted/50">
                                 <TableCell className="font-medium">
                                     <p>{item.market}</p>
@@ -209,7 +249,7 @@ export default function MandiPricesPage() {
                     </Table>
                 ) : (
                     <div className="text-center py-10 text-muted-foreground">
-                        No prices found for the selected crop and state.
+                        No prices found for the selected filters.
                     </div>
                 )}
                 </div>
