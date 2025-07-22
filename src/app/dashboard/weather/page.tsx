@@ -16,20 +16,15 @@ import {
   Snowflake,
   Search,
   Loader2,
-  AlertCircle,
-  ShieldCheck,
-  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherAction } from '@/ai/flows/weather-api';
-import { getSprayingAdvice } from '@/ai/flows/spraying-advice';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { WeatherOutput } from '@/types/weather';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
 
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
@@ -38,12 +33,6 @@ const weatherIcons: { [key: string]: React.ReactNode } = {
   Rainy: <CloudRain className="w-10 h-10 text-blue-400" />,
   Thunderstorm: <CloudLightning className="w-10 h-10 text-gray-600" />,
   Snowy: <Snowflake className="w-10 h-10 text-blue-200" />,
-};
-
-const sprayingIndexConfig = {
-    Optimal: { icon: ShieldCheck, color: "text-green-500", bgColor: "bg-green-500/10" },
-    Moderate: { icon: ShieldAlert, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
-    Unfavourable: { icon: AlertCircle, color: "text-red-500", bgColor: "bg-red-500/10" },
 };
 
 
@@ -71,33 +60,25 @@ const WeatherCardSkeleton = () => (
              <div className="mt-6 pt-4 border-t">
                  <Skeleton className="h-6 w-1/3 mb-4" />
                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-36 rounded-lg" />)}
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-28 rounded-lg" />)}
                  </div>
             </div>
         </CardContent>
     </Card>
 );
 
-type SprayingAdvice = {
-    day: string;
-    index: "Optimal" | "Moderate" | "Unfavourable";
-    reasoning: string;
-}
-
 const WeatherPage = () => {
     const [weatherData, setWeatherData] = useState<WeatherOutput | null>(null);
-    const [sprayingAdvice, setSprayingAdvice] = useState<SprayingAdvice[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
-    const { t, language } = useLanguage();
+    const { t } = useLanguage();
 
-    const fetchWeatherAndAdvice = useCallback(async (params: { latitude?: number, longitude?: number, city?: string }) => {
+    const fetchWeather = useCallback(async (params: { latitude?: number, longitude?: number, city?: string }) => {
         setLoading(true);
         setError(null);
         setWeatherData(null);
-        setSprayingAdvice(null);
         
         try {
             const data = await getWeatherAction(params);
@@ -111,11 +92,6 @@ const WeatherPage = () => {
             }
             setWeatherData(data);
 
-            if (data?.forecast) {
-                const advice = await getSprayingAdvice({ forecast: data.forecast, language: language });
-                setSprayingAdvice(advice);
-            }
-
         } catch (err) {
             console.error(err);
             const description = err instanceof Error ? err.message : 'Could not fetch weather data from the server.';
@@ -123,7 +99,7 @@ const WeatherPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [language]);
+    }, []);
 
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -132,13 +108,13 @@ const WeatherPage = () => {
                 title: 'Geolocation Error',
                 description: "Geolocation is not supported by your browser.",
             });
-            fetchWeatherAndAdvice({ city: 'New Delhi' });
+            fetchWeather({ city: 'New Delhi' });
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                fetchWeatherAndAdvice({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+                fetchWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude });
             },
             () => {
                  toast({
@@ -146,10 +122,10 @@ const WeatherPage = () => {
                     title: 'Location Error',
                     description: "Unable to retrieve your location. Searching for a default city.",
                 });
-                fetchWeatherAndAdvice({ city: 'New Delhi' });
+                fetchWeather({ city: 'New Delhi' });
             }
         );
-    }, [fetchWeatherAndAdvice, toast]);
+    }, [fetchWeather, toast]);
 
     useEffect(() => {
         getLocation();
@@ -159,7 +135,7 @@ const WeatherPage = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            fetchWeatherAndAdvice({ city: searchQuery.trim() });
+            fetchWeather({ city: searchQuery.trim() });
         }
     };
     
@@ -228,38 +204,17 @@ const WeatherPage = () => {
                 </div>
 
                 <div className="mt-8 pt-6 border-t">
-                    <CardTitle className="font-headline text-2xl mb-1">Spraying Conditions Forecast</CardTitle>
-                    <CardDescription className="mb-4">AI-powered advice for the best time to spray crops.</CardDescription>
-                    {sprayingAdvice ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                            {weatherData.forecast.map((item, index) => {
-                                const advice = sprayingAdvice.find(a => a.day === item.day);
-                                const config = advice ? sprayingIndexConfig[advice.index] : sprayingIndexConfig["Moderate"];
-                                const Icon = config.icon;
-                                
-                                return (
-                                <Card key={item.day} className={cn("flex flex-col justify-between p-4 text-center hover:shadow-md transition-shadow", config.bgColor)}>
-                                    <div>
-                                        <p className="font-bold text-lg">{item.day}</p>
-                                        <div className="my-3 flex justify-center">{weatherIcons[item.condition]}</div>
-                                        <p className="text-3xl font-bold">{item.temp}</p>
-                                    </div>
-                                    <div className="mt-4 pt-4 border-t border-border/50">
-                                        {advice ? (
-                                            <>
-                                            <span className={cn("inline-flex items-center gap-2 font-semibold text-sm px-2 py-1 rounded-full", config.color, config.bgColor.replace('10', '50'))}>
-                                               <Icon className="h-4 w-4" /> {advice.index}
-                                            </span>
-                                            <p className="text-xs text-muted-foreground mt-2">{advice.reasoning}</p>
-                                            </>
-                                        ) : <Loader2 className="h-5 w-5 animate-spin mx-auto"/>}
-                                    </div>
-                                </Card>
-                            )})}
-                        </div>
-                    ) : (
-                        <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
-                    )}
+                    <CardTitle className="font-headline text-xl mb-4">5-Day Forecast</CardTitle>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {weatherData.forecast.map((item, index) => {
+                            return (
+                            <Card key={index} className="flex flex-col items-center justify-center p-4 text-center bg-background hover:shadow-md transition-shadow">
+                                <p className="font-bold text-lg">{item.day}</p>
+                                <div className="my-3 flex justify-center">{weatherIcons[item.condition]}</div>
+                                <p className="text-2xl font-bold">{item.temp}</p>
+                            </Card>
+                        )})}
+                    </div>
                 </div>
             </motion.div>
         )}
