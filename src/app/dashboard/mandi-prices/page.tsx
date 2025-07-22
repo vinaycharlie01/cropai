@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { TrendingUp, Loader2, Bot } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, Bot, Mic } from 'lucide-react';
 
 import {
   Card,
@@ -16,307 +16,229 @@ import {
   CardFooter,
 } from "@/components/ui/card"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { predictMandiPrice } from "@/ai/flows/predict-mandi-price";
-import { getMandiPrices, MandiPriceRecord } from "@/ai/flows/get-mandi-prices";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Label } from "@/components/ui/label";
+import { predictMandiPrice, PredictMandiPriceOutput } from "@/ai/flows/predict-mandi-price";
+import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 
-const states = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
-];
-const commodities = ["Potato", "Onion", "Tomato", "Wheat", "Paddy", "Cotton", "Maize"];
-
-
-type FilterFormInputs = {
-  crop: string;
-  state: string;
-  district: string;
-  market: string;
+type PredictionFormInputs = {
+  cropType: string;
+  location: string;
 }
+
+type SttField = 'cropType' | 'location';
+
+const mockMandiPrices: { cropKey: TranslationKeys, price: number, regionKey: TranslationKeys, trend: 'up' | 'down' | 'neutral' }[] = [
+  { cropKey: 'tomato', price: 2500, regionKey: 'maharashtra', trend: 'up' },
+  { cropKey: 'onion', price: 1800, regionKey: 'karnataka', trend: 'down' },
+  { cropKey: 'potato', price: 1500, regionKey: 'uttarPradesh', trend: 'neutral' },
+  { cropKey: 'wheat', price: 2200, regionKey: 'punjab', trend: 'up' },
+  { cropKey: 'riceBasmati', price: 9500, regionKey: 'haryana', trend: 'down' },
+  { cropKey: 'cotton', price: 7500, regionKey: 'gujarat', trend: 'neutral' },
+];
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { control, handleSubmit, watch, setValue } = useForm<FilterFormInputs>({
-    defaultValues: {
-        state: "Maharashtra",
-        crop: "Onion",
-        district: "All",
-        market: "All",
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
+
+  const [prediction, setPrediction] = useState<PredictMandiPriceOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+
+  const onRecognitionResult = useCallback((result: string) => {
+    if (activeSttField) {
+      setValue(activeSttField, result, { shouldValidate: true });
     }
+  }, [activeSttField, setValue]);
+
+  const onRecognitionError = useCallback((err: string) => {
+    console.error(err);
+    toast({ variant: 'destructive', title: t('error'), description: 'Speech recognition failed.' });
+  }, [t, toast]);
+
+  const { isListening, startListening, stopListening, isSupported } = useSpeechRecognition({
+    onResult: onRecognitionResult,
+    onError: onRecognitionError,
+    onEnd: () => setActiveSttField(null),
   });
 
-  const [allPricesForState, setAllPricesForState] = useState<MandiPriceRecord[]>([]);
-  const [filteredPrices, setFilteredPrices] = useState<MandiPriceRecord[]>([]);
-  const [isLivePricesLoading, setIsLivePricesLoading] = useState(true);
-  const [prediction, setPrediction] = useState<any | null>(null);
-  const [isPredictionLoading, setIsPredictionLoading] = useState(false);
-
-  const selectedState = watch('state');
-  const selectedCrop = watch('crop');
-  const selectedDistrict = watch('district');
-  const selectedMarket = watch('market');
-
-  const districts = useMemo(() => {
-    if (!allPricesForState) return [];
-    const uniqueDistricts = [...new Set(allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase()).map(p => p.district))];
-    return ["All", ...uniqueDistricts];
-  }, [allPricesForState, selectedCrop]);
-
-  const markets = useMemo(() => {
-    if (!allPricesForState) return [];
-    let filtered = allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase());
-    if (selectedDistrict !== "All") {
-      filtered = filtered.filter(p => p.district === selectedDistrict);
+  const handleSttToggle = (field: SttField) => {
+    if (isListening) {
+      stopListening();
+    } else {
+      setActiveSttField(field);
+      startListening(getTtsLanguageCode(language));
     }
-    const uniqueMarkets = [...new Set(filtered.map(p => p.market))];
-    return ["All", ...uniqueMarkets];
-  }, [allPricesForState, selectedCrop, selectedDistrict]);
-  
-  
-  const fetchLivePrices = useCallback(async (state: string, commodity: string) => {
-    setIsLivePricesLoading(true);
-    setAllPricesForState([]);
-    setFilteredPrices([]);
-    setValue('district', 'All');
-    setValue('market', 'All');
-    try {
-        const results = await getMandiPrices({ state, commodity });
-        setAllPricesForState(results);
-    } catch (error) {
-        console.error("Failed to fetch live prices", error);
-        toast({
-            variant: 'destructive',
-            title: t('error'),
-            description: "Could not fetch live market prices."
-        })
-    } finally {
-        setIsLivePricesLoading(false);
-    }
-  }, [t, toast, setValue]);
-  
-  // Filter prices whenever selections change
-  useEffect(() => {
-    let results = allPricesForState.filter(p=>p.commodity.toLowerCase() === selectedCrop.toLowerCase());
-    if (selectedDistrict !== 'All') {
-      results = results.filter(p => p.district === selectedDistrict);
-    }
-    if (selectedMarket !== 'All') {
-      results = results.filter(p => p.market === selectedMarket);
-    }
-    setFilteredPrices(results);
-  }, [selectedDistrict, selectedMarket, selectedCrop, allPricesForState]);
+  };
 
-
-  // Fetch default prices on initial load and when state/crop changes
-  useEffect(() => {
-    fetchLivePrices(selectedState, selectedCrop);
-  }, [selectedState, selectedCrop, fetchLivePrices]);
-  
-  const onPredictionSubmit = useCallback(async (state: string, crop: string) => {
-    setIsPredictionLoading(true);
+  const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
+    setIsLoading(true);
     setPrediction(null);
-    
     try {
-        const result = await predictMandiPrice({
-            cropType: crop,
-            location: state,
-            language: language,
-        });
-        setPrediction(result);
+      const result = await predictMandiPrice({
+        cropType: data.cropType,
+        location: data.location,
+        language,
+      });
+      setPrediction(result);
     } catch (error) {
-         console.error("Failed to fetch prediction", error);
-         toast({
-            variant: 'destructive',
-            title: t('error'),
-            description: "Could not fetch AI price prediction."
-         })
+      console.error("Failed to fetch prediction", error);
+      toast({
+        variant: 'destructive',
+        title: t('error'),
+        description: "Could not fetch AI price prediction."
+      });
     } finally {
-        setIsPredictionLoading(false);
+      setIsLoading(false);
     }
-  }, [language, toast, t])
+  };
 
-  useEffect(() => {
-    onPredictionSubmit(selectedState, selectedCrop);
-  }, [selectedState, selectedCrop, onPredictionSubmit]);
-  
+  const getTrendIcon = (trend: 'up' | 'down' | 'neutral') => {
+    switch (trend) {
+      case 'up': return <TrendingUp className="h-5 w-5 text-green-500" />;
+      case 'down': return <TrendingDown className="h-5 w-5 text-red-500" />;
+      case 'neutral': return <Minus className="h-5 w-5 text-muted-foreground" />;
+    }
+  };
 
   const chartConfig = {
     price: {
       label: t('price'),
       color: "hsl(var(--primary))",
     },
-  }
+  };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="grid gap-6 lg:grid-cols-3"
+      className="space-y-6"
     >
-      <div className="lg:col-span-2 space-y-6">
-        <Card className="bg-background">
-            <CardHeader>
-            <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>
-            <CardDescription>{t('mandiPriceInfo')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="crop-select-live">{t('crop')}</Label>
-                        <Controller name="crop" control={control} render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger id="crop-select-live"><SelectValue /></SelectTrigger>
-                                <SelectContent>{commodities.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                            </Select>
-                        )} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="state-select-live">{t('region')}</Label>
-                        <Controller name="state" control={control} render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger id="state-select-live"><SelectValue /></SelectTrigger>
-                                <SelectContent>{states.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                            </Select>
-                        )} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="district-select-live">District</Label>
-                        <Controller name="district" control={control} render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value} disabled={districts.length <= 1}>
-                                <SelectTrigger id="district-select-live"><SelectValue /></SelectTrigger>
-                                <SelectContent>{districts.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                            </Select>
-                        )} />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="market-select-live">{t('market')}</Label>
-                        <Controller name="market" control={control} render={({ field }) => (
-                            <Select onValueChange={field.onChange} value={field.value} disabled={markets.length <= 1}>
-                                <SelectTrigger id="market-select-live"><SelectValue /></SelectTrigger>
-                                <SelectContent>{markets.map(item => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectContent>
-                            </Select>
-                        )} />
-                    </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>
+          <CardDescription>{t('mandiPriceInfo')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid grid-cols-3 gap-4 px-4 py-2 font-semibold text-muted-foreground">
+              <div className="col-span-1">{t('crop')}</div>
+              <div className="col-span-1">{t('price')}</div>
+              <div className="col-span-1">{t('region')}</div>
+            </div>
+            <div className="space-y-2">
+              {mockMandiPrices.map((item, index) => (
+                <div key={index} className="grid grid-cols-3 gap-4 items-center p-4 rounded-lg hover:bg-muted/50 transition-colors">
+                  <div className="col-span-1 font-medium">{t(item.cropKey)}</div>
+                  <div className="col-span-1 flex items-center gap-2 font-semibold">
+                    {getTrendIcon(item.trend)}
+                    ₹{item.price.toLocaleString('en-IN')}
+                  </div>
+                  <div className="col-span-1 text-muted-foreground">{t(item.regionKey)}</div>
                 </div>
-                <div className="min-h-[300px]">
-                {isLivePricesLoading ? (
-                    <div className="space-y-2 pt-2">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12" />)}
-                    </div>
-                ) : filteredPrices && filteredPrices.length > 0 ? (
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead className="font-semibold">{t('market')}</TableHead>
-                            <TableHead className="font-semibold hidden sm:table-cell">{t('variety')}</TableHead>
-                            <TableHead className="font-semibold hidden md:table-cell">{t('date')}</TableHead>
-                            <TableHead className="font-semibold text-right">{t('price')}</TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredPrices.slice(0, 10).map((item, index) => (
-                            <TableRow key={index} className="hover:bg-muted/50">
-                                <TableCell className="font-medium">
-                                    <p>{item.market}</p>
-                                    <p className="text-xs text-muted-foreground">{item.district}</p>
-                                </TableCell>
-                                <TableCell className="hidden sm:table-cell">{item.variety}</TableCell>
-                                <TableCell className="hidden md:table-cell">{item.arrival_date}</TableCell>
-                                <TableCell className="text-right font-semibold">
-                                    ₹{item.modal_price.toLocaleString('en-IN')}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                        </TableBody>
-                    </Table>
-                ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                        No prices found for the selected filters.
-                    </div>
-                )}
-                </div>
-            </CardContent>
-        </Card>
-      </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="lg:col-span-1">
-        <Card className="bg-background sticky top-20">
-            <CardHeader>
-            <CardTitle className="font-headline text-xl">AI Price Prediction</CardTitle>
-            <CardDescription>A 4-week forecast based on current prices.</CardDescription>
-            </CardHeader>
-            <CardContent>
-            {isPredictionLoading ? (
-                 <div className="flex justify-center items-center h-[200px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-headline text-xl">AI Price Prediction</CardTitle>
+          <CardDescription>Get a 4-week price forecast for a crop.</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit(onPredictionSubmit)}>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cropType">{t('cropType')}</Label>
+                <div className="relative">
+                  <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                  <Button
+                    type="button" size="icon" variant="ghost"
+                    onClick={() => handleSttToggle('cropType')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    disabled={!isSupported}
+                  >
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                  </Button>
                 </div>
-            ) : prediction ? (
-                <AnimatePresence>
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                    >
-                        <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
-                            <BarChart accessibilityLayer data={prediction.predictions} margin={{top: 5, right: 5, left: -20, bottom: 5}}>
-                            <CartesianGrid vertical={false} />
-                            <XAxis
-                                dataKey="week"
-                                tickLine={false}
-                                tickMargin={10}
-                                axisLine={false}
-                                tickFormatter={(value) => value.substring(0,3)}
-                            />
-                            <YAxis 
-                                stroke="#888888"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                                tickFormatter={(value) => `₹${value/1000}k`}
-                            />
-                            <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                            <Bar dataKey="price" fill="var(--color-price)" radius={4} />
-                            </BarChart>
-                        </ChartContainer>
-                    </motion.div>
-                </AnimatePresence>
-             ) : (
-                <div className="flex items-center justify-center h-[200px] text-muted-foreground">
-                   <p>Select crop/state to see prediction.</p>
+                {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="location">{t('location')}</Label>
+                <div className="relative">
+                  <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                   <Button
+                    type="button" size="icon" variant="ghost"
+                    onClick={() => handleSttToggle('location')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    disabled={!isSupported}
+                  >
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                  </Button>
                 </div>
-             )}
-            </CardContent>
-             {prediction && (
-                <CardFooter className="flex-col items-start gap-2 text-sm border-t pt-4">
-                    <div className="flex items-center gap-2 font-medium leading-none">
-                    <Bot className="h-4 w-4" /> Analyst's Summary
-                    </div>
-                    <div className="mt-1 leading-relaxed text-muted-foreground">
-                    {prediction.analysis}
-                    </div>
-                </CardFooter>
-            )}
-        </Card>
-      </div>
-
+                {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
+              </div>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Bot className="mr-2" />}
+              {isLoading ? 'Predicting...' : 'Get Prediction'}
+            </Button>
+          </CardContent>
+        </form>
+        <AnimatePresence>
+          {prediction && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <CardContent>
+                <ChartContainer config={chartConfig} className="min-h-[200px] w-full">
+                  <BarChart accessibilityLayer data={prediction.predictions} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="week"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => t(value.replace(' ', '').toLowerCase() as TranslationKeys) || value}
+                    />
+                    <YAxis
+                      stroke="#888888"
+                      fontSize={12}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `₹${value / 1000}k`}
+                    />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                    <Bar dataKey="price" fill="var(--color-price)" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+              <CardFooter className="flex-col items-start gap-2 text-sm border-t pt-4">
+                <div className="flex items-center gap-2 font-medium leading-none">
+                  <Bot className="h-4 w-4" /> Analyst's Summary
+                </div>
+                <div className="mt-1 leading-relaxed text-muted-foreground">
+                  {prediction.analysis}
+                </div>
+              </CardFooter>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </Card>
     </motion.div>
-  )
+  );
 }

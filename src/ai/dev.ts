@@ -11,8 +11,17 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import '@/ai/flows/spraying-advice';
-import '@/ai/flows/get-mandi-prices';
-import '@/ai/flows/get-mandi-price-official';
+import '@/ai/flows/predict-mandi-price.ts';
+import '@/ai/flows/selling-advice.ts';
+import '@/ai/flows/irrigation-advice.ts';
+import '@/ai/flows/support-chat.ts';
+import '@/ai/flows/crop-health-analytics.ts';
+import '@/ai/flows/daily-crop-growth.ts';
+import '@/ai/flows/insurance-advice.ts';
+import '@/ai/flows/assess-loan-eligibility.ts';
+import '@/ai/flows/get-risk-alerts.ts';
+import '@/ai/flows/agrigpt-flow.ts';
+
 
 const DiagnoseCropDiseaseInputSchema = z.object({
   photoDataUri: z
