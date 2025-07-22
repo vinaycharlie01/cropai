@@ -76,7 +76,7 @@ const getWeatherTool = ai.defineTool(
                     day: date.toLocaleDateString('en-US', { weekday: 'short' }),
                     temp: `${Math.round(day.day.avgtemp_c)}°`,
                     condition: mapWeatherCondition(day.day.condition.text),
-                    wind_kph: day.day.avgvis_km,
+                    wind_kph: day.day.maxwind_kph,
                     chance_of_rain: day.day.daily_chance_of_rain,
                 };
             });
