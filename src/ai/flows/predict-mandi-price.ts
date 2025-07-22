@@ -92,4 +92,3 @@ const predictMandiPriceFlow = ai.defineFlow(
     return output!;
   }
 );
-

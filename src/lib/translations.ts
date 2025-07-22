@@ -291,7 +291,10 @@ export const translations = {
     mockAlertAdvisory1: "Expect moderate rainfall. Ensure proper drainage for standing crops.",
     mockAlertCrop1: "All Crops",
     mockAlertAdvisory2: "High probability of Aphid outbreak. Monitor leafy vegetables closely.",
-    mockAlertCrop2: "Vegetables"
+    mockAlertCrop2: "Vegetables",
+    market: "Market",
+    variety: "Variety",
+    date: "Date"
   },
   hi: {
     welcomeMessage: "किसानों के लिए एआई-संचालित सहायक",
@@ -388,9 +391,9 @@ export const translations = {
     schemePmKisanTitle: "पीएम-किसान योजना",
     schemePmKisanDesc: "एक सरकारी योजना जिसका उद्देश्य सभी भूमिधारक किसानों के परिवारों की वित्तीय जरूरतों को पूरा करना है ताकि उचित फसल स्वास्थ्य और उचित पैदावार सुनिश्चित करने के लिए विभिन्न आदानों की खरीद की जा सके, जो अनुमानित कृषि आय के अनुरूप हो।",
     schemePmKisanElig: "सभी भूमिधारक किसान परिवार, जिनके नाम पर खेती योग्य भूमि है, इस योजना के तहत लाभ पाने के पात्र हैं।",
-    schemePmfbyTitle: "प्रधानमंत्री फसल बीमा योजना (पीएमएफबीवाई)",
-    schemePmfbyDesc: "यह योजना फसल की विफलता के खिलाफ व्यापक बीमा कवरेज प्रदान करती है जिससे किसानों की आय को स्थिर करने में मदद मिलती है।",
-    schemePmfbyElig: "अधिसूचित क्षेत्रों में अधिसूचित फसलें उगाने वाले बटाईदारों और किरायेदार किसानों सहित सभी किसान कवरेज के लिए पात्र हैं।",
+    pmfbyTitle: "प्रधानमंत्री फसल बीमा योजना (पीएमएफबीवाई)",
+    pmfbyDesc: "यह योजना फसल की विफलता के खिलाफ व्यापक बीमा कवरेज प्रदान करती है जिससे किसानों की आय को स्थिर करने में मदद मिलती है।",
+    pmfbyElig: "अधिसूचित क्षेत्रों में अधिसूचित फसलें उगाने वाले बटाईदारों और किरायेदार किसानों सहित सभी किसान कवरेज के लिए पात्र हैं।",
     schemePmksyTitle: "प्रधानमंत्री कृषि सिंचाई योजना (पीएमकेएसवाई)",
     schemePmksyDesc: "'हर खेत को पानी' के आदर्श वाक्य के साथ शुरू की गई, इस योजना को सुनिश्चित सिंचाई के साथ खेती वाले क्षेत्र का विस्तार करने, पानी की बर्बादी को कम करने और पानी के उपयोग की दक्षता में सुधार करने के लिए लागू किया जा रहा है।",
     schemePmksyElig: "घटक के अनुसार बदलता है, लेकिन आम तौर पर सभी किसानों और किसान समूहों के लिए खुला है।",
@@ -584,7 +587,10 @@ export const translations = {
     mockAlertAdvisory1: "मध्यम वर्षा की अपेक्षा करें। खड़ी फसलों के लिए उचित जल निकासी सुनिश्चित करें।",
     mockAlertCrop1: "सभी फसलें",
     mockAlertAdvisory2: "एफिड प्रकोप की उच्च संभावना। पत्तेदार सब्जियों पर कड़ी नजर रखें।",
-    mockAlertCrop2: "सब्जियां"
+    mockAlertCrop2: "सब्जियां",
+    market: "बाजार",
+    variety: "किस्म",
+    date: "तारीख"
   },
   te: {
     welcomeMessage: "రైతుల కోసం AI-ఆధారిత సహాయకుడు",
@@ -877,7 +883,10 @@ export const translations = {
     mockAlertAdvisory1: "మోస్తరు వర్షపాతం எதிர்பார்க்கండి. నిలబడిన పంటలకు సరైన డ్రైనేజీని నిర్ధారించుకోండి.",
     mockAlertCrop1: "అన్ని పంటలు",
     mockAlertAdvisory2: "అఫిడ్ వ్యాప్తికి అధిక సంభావ్యత. ఆకు కూరగాయలను నిశితంగా పరిశీలించండి.",
-    mockAlertCrop2: "కూరగాయలు"
+    mockAlertCrop2: "కూరగాయలు",
+    market: "మార్కెట్",
+    variety: "రకం",
+    date: "తేదీ"
   },
   kn: {
     welcomeMessage: "ರೈತರಿಗಾಗಿ AI-ಚಾಲಿತ ಸಹಾಯಕ",
@@ -1170,7 +1179,10 @@ export const translations = {
     mockAlertAdvisory1: "ಮಧ್ಯಮ ಮಳೆಯನ್ನು ನಿರೀಕ್ಷಿಸಿ. ನಿಂತಿರುವ ಬೆಳೆಗಳಿಗೆ ಸರಿಯಾದ ಒಳಚರಂಡಿಯನ್ನು ಖಚಿತಪಡಿಸಿಕೊಳ್ಳಿ.",
     mockAlertCrop1: "ಎಲ್ಲಾ ಬೆಳೆಗಳು",
     mockAlertAdvisory2: "ಅಫಿಡ್ ಹರಡುವಿಕೆಯ ಹೆಚ್ಚಿನ ಸಂಭವನೀಯತೆ. ಎಲೆ ತರಕಾರಿಗಳನ್ನು ಸೂಕ್ಷ್ಮವಾಗಿ ಗಮನಿಸಿ.",
-    mockAlertCrop2: "ತರಕಾರಿಗಳು"
+    mockAlertCrop2: "ತರಕಾರಿಗಳು",
+    market: "ಮಾರುಕಟ್ಟೆ",
+    variety: "ವೈವಿಧ್ಯ",
+    date: "ದಿನಾಂಕ"
   },
   ml: {
     welcomeMessage: "കർഷകർക്കായി AI-യുടെ സഹായത്തോടെയുള്ള സഹായി",
@@ -1463,7 +1475,10 @@ export const translations = {
     mockAlertAdvisory1: "മിതമായ മഴ പ്രതീക്ഷിക്കുക. നിൽക്കുന്ന വിളകൾക്ക് ശരിയായ ഡ്രെയിനേജ് ഉറപ്പാക്കുക.",
     mockAlertCrop1: "എല്ലാ വിളകളും",
     mockAlertAdvisory2: "അഫിഡ് ബാധയ്ക്ക് ഉയർന്ന സാധ്യത. ഇലക്കറികൾ അടുത്തു നിരീക്ഷിക്കുക.",
-    mockAlertCrop2: "പച്ചക്കറികൾ"
+    mockAlertCrop2: "പച്ചക്കറികൾ",
+    market: "വിപണി",
+    variety: "ഇനം",
+    date: "തീയതി"
   },
   ta: {
     welcomeMessage: "விவசாயிகளுக்கான AI-இயங்கும் உதவியாளர்",
@@ -1756,7 +1771,10 @@ export const translations = {
     mockAlertAdvisory1: "மிதமான மழையை எதிர்பார்க்கலாம். நிற்கும் பயிர்களுக்கு சரியான வடிகால் வசதியை உறுதி செய்யவும்.",
     mockAlertCrop1: "அனைத்து பயிர்களும்",
     mockAlertAdvisory2: "அசுவினி தாக்குதலுக்கு அதிக வாய்ப்பு. இலை காய்கறிகளை உன்னிப்பாகக் கண்காணிக்கவும்.",
-    mockAlertCrop2: "காய்கறிகள்"
+    mockAlertCrop2: "காய்கறிகள்",
+    market: "சந்தை",
+    variety: "வகை",
+    date: "தேதி"
   },
 };
 
@@ -1774,5 +1792,3 @@ const ttsLanguageMap: Record<string, string> = {
 export function getTtsLanguageCode(appLanguageCode: string): string {
   return ttsLanguageMap[appLanguageCode] || 'en-US';
 }
-
-    
