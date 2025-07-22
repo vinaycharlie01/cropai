@@ -16,6 +16,7 @@ import {
   Snowflake,
   Search,
   Loader2,
+  Droplet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -25,14 +26,16 @@ import type { WeatherOutput } from '@/types/weather';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
-  Sunny: <Sun className="w-10 h-10 text-yellow-400" />,
-  Cloudy: <Cloud className="w-10 h-10 text-gray-400" />,
-  Rainy: <CloudRain className="w-10 h-10 text-blue-400" />,
-  Thunderstorm: <CloudLightning className="w-10 h-10 text-gray-600" />,
-  Snowy: <Snowflake className="w-10 h-10 text-blue-200" />,
+  Sunny: <Sun className="w-8 h-8 text-yellow-400" />,
+  Cloudy: <Cloud className="w-8 h-8 text-gray-400" />,
+  Rainy: <CloudRain className="w-8 h-8 text-blue-400" />,
+  Thunderstorm: <CloudLightning className="w-8 h-8 text-yellow-500" />,
+  Snowy: <Snowflake className="w-8 h-8 text-blue-200" />,
 };
 
 
@@ -59,8 +62,8 @@ const WeatherCardSkeleton = () => (
             </div>
              <div className="mt-6 pt-4 border-t">
                  <Skeleton className="h-6 w-1/3 mb-4" />
-                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-28 rounded-lg" />)}
+                 <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12 rounded-lg" />)}
                  </div>
             </div>
         </CardContent>
@@ -205,15 +208,29 @@ const WeatherPage = () => {
 
                 <div className="mt-8 pt-6 border-t">
                     <CardTitle className="font-headline text-xl mb-4">5-Day Forecast</CardTitle>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        {weatherData.forecast.map((item, index) => {
-                            return (
-                            <Card key={index} className="flex flex-col items-center justify-center p-4 text-center bg-background hover:shadow-md transition-shadow">
-                                <p className="font-bold text-lg">{item.day}</p>
-                                <div className="my-3 flex justify-center">{weatherIcons[item.condition]}</div>
-                                <p className="text-2xl font-bold">{item.temp}</p>
-                            </Card>
-                        )})}
+                    <div className="space-y-2">
+                        {weatherData.forecast.map((item, index) => (
+                           <motion.div
+                             key={index}
+                             initial={{ opacity: 0, x: -20 }}
+                             animate={{ opacity: 1, x: 0 }}
+                             transition={{ duration: 0.3, delay: index * 0.1 }}
+                             className="flex items-center p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors"
+                           >
+                             <span className="font-semibold text-base w-12">{item.day}</span>
+                             <div className="flex-shrink-0 w-10 h-10 mx-4 flex items-center justify-center">
+                               {weatherIcons[item.condition]}
+                             </div>
+                             <div className="flex-1">
+                               <p className="font-medium capitalize">{item.condition}</p>
+                               <div className="flex items-center text-xs text-muted-foreground">
+                                 <Droplet className="w-3 h-3 mr-1 text-blue-500"/>
+                                 <span>{item.chance_of_rain}% chance of rain</span>
+                               </div>
+                             </div>
+                             <span className="font-bold text-lg w-16 text-right">{item.temp}</span>
+                           </motion.div>
+                        ))}
                     </div>
                 </div>
             </motion.div>
@@ -226,3 +243,6 @@ const WeatherPage = () => {
 };
 
 export default memo(WeatherPage);
+
+
+    
