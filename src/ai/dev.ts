@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import '@/ai/flows/spraying-advice';
 
 const DiagnoseCropDiseaseInputSchema = z.object({
   photoDataUri: z
@@ -73,3 +74,4 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     return output;
   }
 );
+
