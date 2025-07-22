@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getMandiPricesTool } from './get-mandi-prices';
 
 const PredictMandiPriceInputSchema = z.object({
   cropType: z.string().describe('The type of crop for which to predict the price.'),
@@ -37,21 +38,28 @@ export async function predictMandiPrice(input: PredictMandiPriceInput): Promise<
 
 const prompt = ai.definePrompt({
   name: 'predictMandiPricePrompt',
-  input: {schema: PredictMandiPriceInputSchema},
+  input: {schema: z.object({
+    cropType: z.string(),
+    location: z.string(),
+    language: z.string(),
+    currentPrice: z.number(),
+  })},
   output: {schema: PredictMandiPriceOutputSchema},
   prompt: `You are an expert agricultural market analyst. Your task is to predict the mandi price for a specific crop for the next four weeks.
 
 **INPUTS:**
 *   Crop: {{{cropType}}}
 *   Location: {{{location}}}
+*   Current Price: {{{currentPrice}}}
 *   Language: {{{language}}}
 
 **INSTRUCTIONS:**
-1.  Analyze historical data, seasonality, weather patterns, and current market sentiment to make your predictions.
-2.  Provide a week-by-week price prediction for the next 4 weeks. The price should be per quintal.
-3.  Provide a brief analysis explaining your prediction (e.g., "Prices are expected to rise due to festive demand," or "Prices may dip as new harvest arrives in the market.").
-4.  The 'analysis' field MUST be in the requested language: **{{{language}}}**.
-5.  Your entire response MUST be a valid JSON object matching the defined schema.
+1.  Use the provided current price as the baseline for your prediction.
+2.  Analyze historical data, seasonality, weather patterns, and current market sentiment to make your predictions.
+3.  Provide a week-by-week price prediction for the next 4 weeks. The price should be per quintal.
+4.  Provide a brief analysis explaining your prediction (e.g., "Prices are expected to rise due to festive demand," or "Prices may dip as new harvest arrives in the market.").
+5.  The 'analysis' field MUST be in the requested language: **{{{language}}}**.
+6.  Your entire response MUST be a valid JSON object matching the defined schema.
 
 Provide the structured JSON output now.
 `,
@@ -63,8 +71,23 @@ const predictMandiPriceFlow = ai.defineFlow(
     inputSchema: PredictMandiPriceInputSchema,
     outputSchema: PredictMandiPriceOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input) => {
+    // Get the current live price for the crop
+    const allPrices = await getMandiPricesTool();
+    const cropPriceData = allPrices.find(p => p.commodity === input.cropType);
+    
+    const currentPrice = cropPriceData ? cropPriceData.price : 0;
+    
+    if (currentPrice === 0) {
+      // Handle case where live price for the selected crop isn't available
+      // For now, we'll throw an error, but this could be handled more gracefully
+      throw new Error(`Could not find a live price for ${input.cropType}.`);
+    }
+
+    const {output} = await prompt({
+        ...input,
+        currentPrice: currentPrice,
+    });
     return output!;
   }
 );
