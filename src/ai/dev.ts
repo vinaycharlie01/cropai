@@ -12,4 +12,4 @@ import '@/ai/flows/insurance-advice.ts';
 import '@/ai/flows/assess-loan-eligibility.ts';
 import '@/ai/flows/get-risk-alerts.ts';
 import '@/ai/flows/agrigpt-flow.ts';
-import '@/ai/flows/weather-forecast.ts';
+import '@/ai/flows/weather-api.ts';
