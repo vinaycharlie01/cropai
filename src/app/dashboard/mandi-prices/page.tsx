@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { TrendingUp, Loader2, Bot, Mic, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, Bot, Mic } from 'lucide-react';
 
 import {
   Card,
@@ -34,12 +34,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { predictMandiPrice } from "@/ai/flows/predict-mandi-price";
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
 import { getTtsLanguageCode } from "@/lib/translations";
-import { getMandiPrices, MandiPrice } from "@/ai/flows/get-mandi-prices";
-import { predictMandiPrice } from "@/ai/flows/predict-mandi-price";
-import { Skeleton } from "@/components/ui/skeleton";
 
+const mockPrices = [
+  { commodity: 'tomato', price: 2500, region: 'maharashtra', trend: 1 },
+  { commodity: 'onion', price: 1800, region: 'karnataka', trend: -1 },
+  { commodity: 'potato', price: 1500, region: 'uttarPradesh', trend: 0 },
+  { commodity: 'wheat', price: 2200, region: 'punjab', trend: 1 },
+  { commodity: 'riceBasmati', price: 9500, region: 'haryana', trend: -1 },
+  { commodity: 'cotton', price: 7500, region: 'gujarat', trend: 0 },
+];
 
 type PredictionFormInputs = {
   crop: string;
@@ -53,32 +59,9 @@ export default function MandiPricesPage() {
   const { toast } = useToast();
   const { control, register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
 
-  const [prices, setPrices] = useState<MandiPrice[]>([]);
-  const [isPriceLoading, setIsPriceLoading] = useState(true);
   const [prediction, setPrediction] = useState<any | null>(null);
-  const [isPredictionLoading, setIsPredictionLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
-
-  useEffect(() => {
-    async function fetchPrices() {
-        setIsPriceLoading(true);
-        try {
-            const livePrices = await getMandiPrices();
-            setPrices(livePrices);
-        } catch (error) {
-            console.error("Failed to fetch mandi prices", error);
-            toast({
-                variant: 'destructive',
-                title: t('error'),
-                description: "Could not load live mandi prices."
-            });
-        } finally {
-            setIsPriceLoading(false);
-        }
-    }
-    fetchPrices();
-  }, [t, toast]);
-
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
@@ -108,15 +91,16 @@ export default function MandiPricesPage() {
   };
 
   const TrendArrow = ({ trend }: { trend: number }) => {
-    if (trend > 0) return <span className="text-green-500">▲</span>
-    if (trend < 0) return <span className="text-red-500">▼</span>
-    return <span className="text-gray-500">▬</span>
+    if (trend > 0) return <TrendingUp className="text-green-500" />
+    if (trend < 0) return <TrendingDown className="text-red-500" />
+    return <Minus className="text-gray-500" />
   }
   
   const onSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
-    setIsPredictionLoading(true);
+    setIsLoading(true);
     setPrediction(null);
     
+    // This part will call the Genkit flow
     try {
         const result = await predictMandiPrice({
             cropType: data.crop,
@@ -132,7 +116,7 @@ export default function MandiPricesPage() {
             description: "Could not fetch AI price prediction."
          })
     } finally {
-        setIsPredictionLoading(false);
+        setIsLoading(false);
     }
   }
 
@@ -165,32 +149,16 @@ export default function MandiPricesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isPriceLoading ? (
-                [...Array(6)].map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-28 ml-auto" /></TableCell>
-                    </TableRow>
-                ))
-              ) : prices.length > 0 ? (
-                 prices.map((item) => (
-                    <TableRow key={item.commodity} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{item.commodity}</TableCell>
-                        <TableCell className="flex items-center gap-2">
-                            <TrendArrow trend={item.trend} />
-                            ₹{item.price.toLocaleString('en-IN')}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">{item.region}</TableCell>
-                    </TableRow>
-                 ))
-              ) : (
-                <TableRow>
-                    <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        <AlertCircle className="inline-block mr-2"/>Could not load live price data.
-                    </TableCell>
+              {mockPrices.map((item) => (
+                <TableRow key={item.commodity} className="hover:bg-muted/50">
+                  <TableCell className="font-medium">{t(item.commodity as any)}</TableCell>
+                  <TableCell className="flex items-center gap-2">
+                    <TrendArrow trend={item.trend} />
+                     ₹{item.price.toLocaleString('en-IN')}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">{t(item.region as any)}</TableCell>
                 </TableRow>
-              )}
+              ))}
             </TableBody>
           </Table>
         </CardContent>
@@ -216,8 +184,8 @@ export default function MandiPricesPage() {
                               <SelectValue placeholder="Select a crop to predict" />
                             </SelectTrigger>
                             <SelectContent>
-                              {prices.map(item => (
-                                <SelectItem key={item.commodity} value={item.commodity}>{item.commodity}</SelectItem>
+                              {mockPrices.map(item => (
+                                <SelectItem key={item.commodity} value={t(item.commodity as any)}>{t(item.commodity as any)}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -243,8 +211,8 @@ export default function MandiPricesPage() {
                     {errors.location && <p className="text-destructive text-sm mt-1">{errors.location.message}</p>}
                 </div>
               </div>
-              <Button type="submit" disabled={isPredictionLoading} className="w-full !mt-6">
-                {isPredictionLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
+              <Button type="submit" disabled={isLoading} className="w-full !mt-6">
+                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <TrendingUp className="mr-2" />}
                 Predict
               </Button>
           </CardContent>
