@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TranslationKeys } from '@/lib/translations';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type FormInputs = {
   cropType: string;
@@ -339,9 +340,12 @@ export default function MonitorPage() {
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
               <Card className="bg-background">
                   <CardHeader>
-                    <div className="flex items-center gap-2">
-                      <Bot />
-                      <CardTitle className="font-headline">{t('growthAnalysis')}</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Bot />
+                          <CardTitle className="font-headline">{t('growthAnalysis')}</CardTitle>
+                        </div>
+                        <AudioPlayer textToSpeak={`Growth Stage: ${analysis.growthStage}. Observations: ${analysis.observations}. Recommendations: ${analysis.recommendations}`} />
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">

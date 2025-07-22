@@ -24,6 +24,7 @@ import {
 import { getCropHealthAnalytics, CropHealthAnalyticsOutput } from '@/ai/flows/crop-health-analytics';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 interface DiagnosisRecord {
     id: string;
@@ -223,7 +224,12 @@ export default function AnalyticsPage() {
                          <motion.div variants={itemVariants}>
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="flex items-center gap-2"><Bot /> {t('aiAnalysis')}</CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2"><Bot /> {t('aiAnalysis')}</CardTitle>
+                                        {analyticsData && (
+                                            <AudioPlayer textToSpeak={`Overall Assessment: ${analyticsData.overallAssessment}. Identified Trends: ${analyticsData.trends}. Preventative Advice: ${analyticsData.preventativeAdvice}`} />
+                                        )}
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     {isAiLoading ? (

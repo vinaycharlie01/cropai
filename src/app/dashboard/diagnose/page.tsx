@@ -22,6 +22,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getTtsLanguageCode } from '@/lib/translations';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 
 type FormInputs = {
@@ -404,9 +405,12 @@ export default function DiagnosePage() {
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
                 <Card className="bg-background">
                     <CardHeader>
-                      <div className="flex items-center gap-2">
-                        <Bot />
-                        <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Bot />
+                            <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
+                        </div>
+                        <AudioPlayer textToSpeak={`Disease: ${diagnosis.disease}. Treatment: ${diagnosis.treatment}. Remedies: ${diagnosis.remedies}`} />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
