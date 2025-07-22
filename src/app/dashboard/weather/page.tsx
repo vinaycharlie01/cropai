@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, memo, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Sun,
   Cloud,
@@ -11,28 +11,41 @@ import {
   Wind,
   Sunrise,
   Sunset,
-  Loader2,
   MapPin,
   CloudLightning,
   Snowflake,
-  Search
+  Search,
+  Loader2,
+  AlertCircle,
+  ShieldCheck,
+  ShieldAlert,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { getWeatherAction } from '@/ai/flows/weather-api';
+import { getSprayingAdvice } from '@/ai/flows/spraying-advice';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { WeatherOutput } from '@/types/weather';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
-  Sunny: <Sun className="w-16 h-16 text-yellow-400" />,
-  Cloudy: <Cloud className="w-16 h-16 text-gray-400" />,
-  Rainy: <CloudRain className="w-16 h-16 text-blue-400" />,
-  Thunderstorm: <CloudLightning className="w-16 h-16 text-gray-600" />,
-  Snowy: <Snowflake className="w-16 h-16 text-blue-200" />,
+  Sunny: <Sun className="w-10 h-10 text-yellow-400" />,
+  Cloudy: <Cloud className="w-10 h-10 text-gray-400" />,
+  Rainy: <CloudRain className="w-10 h-10 text-blue-400" />,
+  Thunderstorm: <CloudLightning className="w-10 h-10 text-gray-600" />,
+  Snowy: <Snowflake className="w-10 h-10 text-blue-200" />,
 };
+
+const sprayingIndexConfig = {
+    Optimal: { icon: ShieldCheck, color: "text-green-500", bgColor: "bg-green-500/10" },
+    Moderate: { icon: ShieldAlert, color: "text-yellow-500", bgColor: "bg-yellow-500/10" },
+    Unfavourable: { icon: AlertCircle, color: "text-red-500", bgColor: "bg-red-500/10" },
+};
+
 
 const WeatherCardSkeleton = () => (
     <Card className="shadow-lg h-full">
@@ -48,46 +61,48 @@ const WeatherCardSkeleton = () => (
                 </div>
             </div>
             <div className="flex justify-around pt-4">
-                <div className="flex flex-col items-center space-y-1">
-                    <Skeleton className="h-6 w-6" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
-                <div className="flex flex-col items-center space-y-1">
-                    <Skeleton className="h-6 w-6" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
-                 <div className="flex flex-col items-center space-y-1">
-                    <Skeleton className="h-6 w-6" />
-                    <Skeleton className="h-4 w-16" />
-                </div>
+                {[...Array(3)].map((_, i) => (
+                     <div key={i} className="flex flex-col items-center space-y-1">
+                        <Skeleton className="h-6 w-6" />
+                        <Skeleton className="h-4 w-16" />
+                    </div>
+                ))}
             </div>
              <div className="mt-6 pt-4 border-t">
                  <Skeleton className="h-6 w-1/3 mb-4" />
-                 <div className="flex justify-between">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-14 h-24" />)}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-36 rounded-lg" />)}
                  </div>
             </div>
         </CardContent>
     </Card>
 );
 
+type SprayingAdvice = {
+    day: string;
+    index: "Optimal" | "Moderate" | "Unfavourable";
+    reasoning: string;
+}
 
 const WeatherPage = () => {
     const [weatherData, setWeatherData] = useState<WeatherOutput | null>(null);
+    const [sprayingAdvice, setSprayingAdvice] = useState<SprayingAdvice[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
-    const fetchWeather = useCallback(async (params: { latitude?: number, longitude?: number, city?: string }) => {
+    const fetchWeatherAndAdvice = useCallback(async (params: { latitude?: number, longitude?: number, city?: string }) => {
         setLoading(true);
         setError(null);
+        setWeatherData(null);
+        setSprayingAdvice(null);
+        
         try {
             const data = await getWeatherAction(params);
             if (data?.error) {
               setError(data.error);
-              setWeatherData(null);
               return;
             }
             
@@ -95,15 +110,20 @@ const WeatherPage = () => {
                 data.location = data.location.split(',')[0]; // Just take the city part.
             }
             setWeatherData(data);
+
+            if (data?.forecast) {
+                const advice = await getSprayingAdvice({ forecast: data.forecast, language: language });
+                setSprayingAdvice(advice);
+            }
+
         } catch (err) {
             console.error(err);
             const description = err instanceof Error ? err.message : 'Could not fetch weather data from the server.';
             setError(description);
-            setWeatherData(null);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [language]);
 
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -112,27 +132,24 @@ const WeatherPage = () => {
                 title: 'Geolocation Error',
                 description: "Geolocation is not supported by your browser.",
             });
-            // Fallback to a default location
-            fetchWeather({ city: 'New Delhi' });
+            fetchWeatherAndAdvice({ city: 'New Delhi' });
             return;
         }
 
-        setLoading(true);
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                fetchWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+                fetchWeatherAndAdvice({ latitude: position.coords.latitude, longitude: position.coords.longitude });
             },
             () => {
                  toast({
                     variant: 'destructive',
                     title: 'Location Error',
-                    description: "Unable to retrieve your location. Please grant permission or search for a city.",
+                    description: "Unable to retrieve your location. Searching for a default city.",
                 });
-                // Fallback to a default location if geolocation fails
-                fetchWeather({ city: 'New Delhi' });
+                fetchWeatherAndAdvice({ city: 'New Delhi' });
             }
         );
-    }, [fetchWeather, toast]);
+    }, [fetchWeatherAndAdvice, toast]);
 
     useEffect(() => {
         getLocation();
@@ -142,7 +159,7 @@ const WeatherPage = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            fetchWeather({ city: searchQuery.trim() });
+            fetchWeatherAndAdvice({ city: searchQuery.trim() });
         }
     };
     
@@ -186,55 +203,67 @@ const WeatherPage = () => {
                  </Button>
             </div>
         )}
+        <AnimatePresence>
         {weatherData && weatherData.condition && weatherData.temperature && weatherData.forecast && (
             <motion.div initial={{ opacity: 0}} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-                <div className="flex flex-col items-center text-center space-y-4">
-                <div className="flex items-center justify-center space-x-4">
-                    {weatherIcons[weatherData.condition]}
-                    <div>
-                    <p className="text-6xl font-bold">{weatherData.temperature}</p>
-                    <p className="text-muted-foreground capitalize">{weatherData.condition}</p>
-                    </div>
-                </div>
-                <div className="flex justify-around w-full text-sm text-muted-foreground pt-4">
-                    <div className="flex items-center gap-2">
-                    <Wind size={16} /> {weatherData.wind}
-                    </div>
-                    <div className="flex items-center gap-2">
-                    <Sunrise size={16} /> {weatherData.sunrise}
-                    </div>
-                    <div className="flex items-center gap-2">
-                    <Sunset size={16} /> {weatherData.sunset}
-                    </div>
-                </div>
-                </div>
-                <div className="mt-6 pt-6 border-t">
-                <h3 className="text-lg font-semibold mb-4 text-primary">
-                    5-Day Forecast
-                </h3>
-                <div className="flex justify-between text-center">
-                    {weatherData.forecast.map((item) => (
-                    <div
-                        key={item.day}
-                        className="flex flex-col items-center space-y-2 p-2 rounded-md hover:bg-muted transition-colors w-1/5"
-                    >
-                        <p className="font-medium text-sm text-muted-foreground">{item.day}</p>
-                        <div className="text-3xl">
-                        {weatherIcons[item.condition] &&
-                            (
-                            <div className="w-10 h-10 flex items-center justify-center">
-                                {React.cloneElement(weatherIcons[item.condition] as React.ReactElement, { className: "w-8 h-8" })}
-                            </div>
-                            )
-                        }
+                <div className="flex flex-col md:flex-row items-center justify-center text-center md:text-left gap-6 md:gap-10 p-4 bg-muted/50 rounded-lg">
+                    <div className="flex items-center justify-center space-x-4">
+                        {weatherIcons[weatherData.condition]}
+                        <div>
+                        <p className="text-6xl font-bold">{weatherData.temperature}</p>
+                        <p className="text-muted-foreground capitalize">{weatherData.condition}</p>
                         </div>
-                        <p className="text-base font-bold">{item.temp}</p>
                     </div>
-                    ))}
+                    <div className="flex justify-around w-full md:w-auto md:flex-col text-sm text-muted-foreground gap-4">
+                        <div className="flex items-center gap-2">
+                        <Wind size={16} /> {weatherData.wind}
+                        </div>
+                        <div className="flex items-center gap-2">
+                        <Sunrise size={16} /> {weatherData.sunrise}
+                        </div>
+                        <div className="flex items-center gap-2">
+                        <Sunset size={16} /> {weatherData.sunset}
+                        </div>
+                    </div>
                 </div>
+
+                <div className="mt-8 pt-6 border-t">
+                    <CardTitle className="font-headline text-2xl mb-1">Spraying Conditions Forecast</CardTitle>
+                    <CardDescription className="mb-4">AI-powered advice for the best time to spray crops.</CardDescription>
+                    {sprayingAdvice ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            {weatherData.forecast.map((item, index) => {
+                                const advice = sprayingAdvice.find(a => a.day === item.day);
+                                const config = advice ? sprayingIndexConfig[advice.index] : sprayingIndexConfig["Moderate"];
+                                const Icon = config.icon;
+                                
+                                return (
+                                <Card key={item.day} className={cn("flex flex-col justify-between p-4 text-center hover:shadow-md transition-shadow", config.bgColor)}>
+                                    <div>
+                                        <p className="font-bold text-lg">{item.day}</p>
+                                        <div className="my-3 flex justify-center">{weatherIcons[item.condition]}</div>
+                                        <p className="text-3xl font-bold">{item.temp}</p>
+                                    </div>
+                                    <div className="mt-4 pt-4 border-t border-border/50">
+                                        {advice ? (
+                                            <>
+                                            <span className={cn("inline-flex items-center gap-2 font-semibold text-sm px-2 py-1 rounded-full", config.color, config.bgColor.replace('10', '50'))}>
+                                               <Icon className="h-4 w-4" /> {advice.index}
+                                            </span>
+                                            <p className="text-xs text-muted-foreground mt-2">{advice.reasoning}</p>
+                                            </>
+                                        ) : <Loader2 className="h-5 w-5 animate-spin mx-auto"/>}
+                                    </div>
+                                </Card>
+                            )})}
+                        </div>
+                    ) : (
+                        <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>
+                    )}
                 </div>
             </motion.div>
         )}
+        </AnimatePresence>
       </CardContent>
     </Card>
     </motion.div>
