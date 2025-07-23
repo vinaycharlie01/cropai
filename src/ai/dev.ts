@@ -22,6 +22,7 @@ import '@/ai/flows/assess-loan-eligibility.ts';
 import '@/ai/flows/get-risk-alerts.ts';
 import '@/ai/flows/agrigpt-flow.ts';
 import '@/ai/flows/tts-flow.ts';
+import '@/ai/flows/scheme-advisor.ts';
 
 
 const DiagnoseCropDiseaseInputSchema = z.object({
