@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
-import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, LifeBuoy } from 'lucide-react';
+import { Upload, Leaf, ShieldAlert, Loader2, Bot, Video, Camera, SwitchCamera, Mic, LifeBuoy, ShoppingCart } from 'lucide-react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import Link from 'next/link';
 
@@ -33,25 +33,6 @@ type FormInputs = {
 
 type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
-
-// A simple component to parse and highlight text wrapped in **...**
-const HighlightedText = ({ text }: { text: string }) => {
-    const parts = text.split(/(\*\*.*?\*\*)/g);
-    return (
-      <p>
-        {parts.map((part, index) =>
-          part.startsWith('**') && part.endsWith('**') ? (
-            <strong key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded-md">
-              {part.substring(2, part.length - 2)}
-            </strong>
-          ) : (
-            part
-          )
-        )}
-      </p>
-    );
-};
-
 
 export default function DiagnosePage() {
   const { t, language } = useLanguage();
@@ -439,8 +420,26 @@ export default function DiagnosePage() {
                       </div>
                        <div>
                         <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
-                        <HighlightedText text={diagnosis.treatment} />
+                        <p>{diagnosis.treatment}</p>
                       </div>
+                       {diagnosis.pesticideRecommendations && diagnosis.pesticideRecommendations.length > 0 && (
+                        <div>
+                            <h3 className="font-semibold text-muted-foreground">Pesticide Recommendations</h3>
+                            <div className="space-y-3 mt-2">
+                                {diagnosis.pesticideRecommendations.map((p, index) => (
+                                    <div key={index} className="p-4 bg-muted/50 rounded-lg">
+                                        <p className="font-bold text-primary">{p.pesticideName}</p>
+                                        <p className="text-sm my-1">{p.usageInstructions}</p>
+                                        <Button size="sm" variant="outline" asChild>
+                                            <a href={p.productUrl} target="_blank" rel="noopener noreferrer">
+                                                <ShoppingCart className="mr-2" /> {t('buyNow')}
+                                            </a>
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                       )}
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>
                         <p>{diagnosis.remedies}</p>

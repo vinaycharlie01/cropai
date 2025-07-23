@@ -5,7 +5,7 @@
  * @fileOverview A crop disease diagnosis AI agent.
  *
  * - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
- * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
+ * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropdisease function.
  * - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
  */
 
@@ -24,12 +24,18 @@ const DiagnoseCropDiseaseInputSchema = z.object({
 });
 export type DiagnoseCropDiseaseInput = z.infer<typeof DiagnoseCropDiseaseInputSchema>;
 
+const PesticideRecommendationSchema = z.object({
+    pesticideName: z.string().describe('The commercial name of the pesticide product.'),
+    usageInstructions: z.string().describe('Simple, clear instructions on how to apply the pesticide. Must be in the requested language.'),
+    productUrl: z.string().describe('A valid, generated search URL for the product on a major Indian e-commerce platform like indiamart.com or amazon.in.')
+});
 
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy". This field MUST be in the requested language.'),
   remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips. This field MUST be in the requested language.'),
   treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed". This field MUST be in the requested language.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
+  pesticideRecommendations: z.array(PesticideRecommendationSchema).describe('A list of specific, affordable, and locally available pesticide recommendations.')
 });
 export type DiagnoseCropDiseaseOutput = z.infer<typeof DiagnoseCropDiseaseOutputSchema>;
 
@@ -44,16 +50,15 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert agricultural entomologist and pathologist. Your task is to analyze the provided image and information to diagnose crop diseases or pest infestations and provide expert treatment advice.
 
 **IMPORTANT INSTRUCTIONS:**
-1.  Your entire response, including all fields, MUST be in the language specified: **{{{language}}}**.
-2.  You MUST provide the output in the specified JSON format. Do not add any text before or after the JSON object.
+1.  Your entire response, including all fields and recommendations, MUST be in the language specified: **{{{language}}}**.
+2.  You MUST provide the output in the specified JSON format.
 3.  **Disease**: Identify the disease or pest. If the plant is healthy, you MUST state "Healthy".
 4.  **Remedies**: Provide general, non-pesticide remedies or preventative care tips.
-5.  **Treatment**: This is the most critical section. Provide specific, actionable treatment steps.
-    *   If a pest or disease is identified, recommend specific, commercially available pesticides or fungicides that are effective for the issue in the given crop and location.
-    *   **Crucially, you MUST wrap the names of all recommended pesticides or fungicides in double asterisks, like this: **PesticideName**. This is for highlighting purposes.**
-    *   Include application rates and methods if possible.
-    *   If the plant is healthy, state "No treatment needed".
-6.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
+5.  **Treatment**: This is a critical section. Provide specific, actionable treatment steps. If the plant is healthy, state "No treatment needed".
+6.  **Pesticide Recommendations**: If a pest or disease is identified, provide a list of 1-3 specific, affordable, and locally available pesticide recommendations for Indian farmers.
+    *   For each pesticide, provide its commercial name, simple usage instructions, and generate a valid search URL for a major Indian e-commerce platform (like indiamart.com or amazon.in) for the user to find example products.
+    *   If the plant is healthy, return an empty array.
+7.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
 
 **INPUT DATA:**
 *   **Crop Type**: {{{cropType}}}
