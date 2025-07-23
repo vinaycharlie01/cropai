@@ -16,7 +16,7 @@ const DiagnoseCropDiseaseInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of a plant, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. This is REQUIRED to diagnose a disease."
     ),
   cropType: z.string().describe('The type of crop in the photo.'),
   location: z.string().describe('The geographic location where the crop is grown.'),
@@ -33,7 +33,7 @@ const PesticideRecommendationSchema = z.object({
 const DiagnoseCropDiseaseOutputSchema = z.object({
   disease: z.string().describe('The identified disease, if any. If no disease is detected, state "Healthy". This field MUST be in the requested language.'),
   remedies: z.string().describe('Suggested general, non-pesticide remedies for the identified disease. If healthy, provide general care tips. This field MUST be in the requested language.'),
-  treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed". This field MUST be in the requested language.'),
+  treatment: z.string().describe('Specific, actionable treatment steps for the identified disease. If healthy, state "No treatment needed". Any pesticide names should be wrapped in markdown bold, e.g., **PesticideName**. This field MUST be in the requested language.'),
   confidence: z.number().describe('The confidence level of the diagnosis (0-1).'),
   pesticideRecommendations: z.array(PesticideRecommendationSchema).describe('A list of specific, affordable, and locally available pesticide recommendations.')
 });
@@ -54,7 +54,7 @@ const prompt = ai.definePrompt({
 2.  You MUST provide the output in the specified JSON format.
 3.  **Disease**: Identify the disease or pest. If the plant is healthy, you MUST state "Healthy".
 4.  **Remedies**: Provide general, non-pesticide remedies or preventative care tips.
-5.  **Treatment**: This is a critical section. Provide specific, actionable treatment steps. If the plant is healthy, state "No treatment needed".
+5.  **Treatment**: This is a critical section. Provide specific, actionable treatment steps. Wrap any recommended pesticide or fungicide names in markdown bold, for example: "**PesticideName**". If the plant is healthy, state "No treatment needed".
 6.  **Pesticide Recommendations**: If a pest or disease is identified, provide a list of 1-3 specific, affordable, and locally available pesticide recommendations for Indian farmers.
     *   For each pesticide, provide its commercial name, simple usage instructions, and generate a valid search URL for a major Indian e-commerce platform (like indiamart.com or amazon.in) for the user to find example products.
     *   If the plant is healthy, return an empty array.
@@ -89,4 +89,15 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
         throw e;
     }
   }
+);
+
+
+export const diagnoseCropDiseaseTool = ai.defineTool(
+    {
+        name: 'diagnoseCropDiseaseTool',
+        description: 'Diagnoses a crop disease based on a photo and other details. Use this tool if the user mentions symptoms of a sick plant or asks for a diagnosis.',
+        inputSchema: DiagnoseCropDiseaseInputSchema,
+        outputSchema: DiagnoseCropDiseaseOutputSchema,
+    },
+    async (input) => diagnoseCropDiseaseFlow(input)
 );

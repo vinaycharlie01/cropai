@@ -69,3 +69,14 @@ const schemeAdvisorFlow = ai.defineFlow(
     return output;
   }
 );
+
+
+export const schemeAdvisorTool = ai.defineTool(
+    {
+        name: 'schemeAdvisorTool',
+        description: 'Finds relevant government schemes for a farmer based on their profile and needs. Use this when a user asks about government support, subsidies, or schemes.',
+        inputSchema: SchemeFinderInputSchema,
+        outputSchema: SchemeFinderOutputSchema,
+    },
+    async (input) => schemeAdvisorFlow(input)
+);

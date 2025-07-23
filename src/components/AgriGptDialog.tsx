@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
 import { usePathname, useRouter } from 'next/navigation';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from './AudioPlayer';
 
 export function AgriGptDialog() {
   const { t, language } = useLanguage();
@@ -33,12 +34,14 @@ export function AgriGptDialog() {
 
   const handleAiResponse = (response: AgriGptOutput) => {
     setAiResponse(response);
-    // Future: Play TTS audio of response.kisanMitraResponse.localized
 
-    // Handle navigation
-    if (response.actionCode === 'SPEAK_AND_NAVIGATE' && response.navigationTarget) {
-      router.push(response.navigationTarget);
-      setTimeout(() => setIsOpen(false), 1000); // Close dialog after navigation
+    if (response.actionCode === 'REQUEST_IMAGE_FOR_DIAGNOSIS') {
+      toast({
+        title: 'Photo Required',
+        description: 'Please go to the diagnose page to upload a photo.',
+      });
+      router.push('/dashboard/diagnose');
+      setTimeout(() => setIsOpen(false), 1000);
     }
   };
 
@@ -119,13 +122,18 @@ export function AgriGptDialog() {
             {isProcessing ? "Thinking..." : isListening ? "Listening..." : "Tap the mic and speak"}
           </p>
           <div className="min-h-[50px] text-center">
-            {transcript && <p className="text-sm">"{transcript}"</p>}
-            {aiResponse && <p className="font-semibold">{aiResponse.kisanMitraResponse.localized}</p>}
+            {transcript && !aiResponse && <p className="text-sm">"{transcript}"</p>}
+            {aiResponse && (
+                <div className='space-y-4'>
+                    <p className="font-semibold">{aiResponse.kisanMitraResponse}</p>
+                    <AudioPlayer textToSpeak={aiResponse.kisanMitraResponse} />
+                </div>
+            )}
           </div>
         </div>
         <DialogFooter>
             <DialogClose asChild>
-                <Button variant="outline" className="w-full">{isListening ? "Stop" : "Close"}</Button>
+                <Button variant="outline" className="w-full" onClick={() => { if(isListening) stopListening(); }}>{isListening ? "Stop" : "Close"}</Button>
             </DialogClose>
         </DialogFooter>
       </DialogContent>

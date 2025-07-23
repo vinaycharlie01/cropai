@@ -34,6 +34,24 @@ type FormInputs = {
 type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
 
+const HighlightedText = ({ text }: { text: string }) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+        <p>
+            {parts.map((part, index) =>
+                part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={index} className="font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
+                        {part.slice(2, -2)}
+                    </strong>
+                ) : (
+                    part
+                )
+            )}
+        </p>
+    );
+};
+
+
 export default function DiagnosePage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
@@ -420,7 +438,7 @@ export default function DiagnosePage() {
                       </div>
                        <div>
                         <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
-                        <p>{diagnosis.treatment}</p>
+                        <HighlightedText text={diagnosis.treatment} />
                       </div>
                        {diagnosis.pesticideRecommendations && diagnosis.pesticideRecommendations.length > 0 && (
                         <div>

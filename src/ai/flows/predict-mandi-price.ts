@@ -84,3 +84,14 @@ const predictMandiPriceFlow = ai.defineFlow(
     return output!;
   }
 );
+
+
+export const predictMandiPriceTool = ai.defineTool(
+    {
+        name: 'predictMandiPriceTool',
+        description: 'Predicts the mandi (market) price for a given crop for the next 4 weeks. Use this if a user asks about future prices or price forecasts.',
+        inputSchema: PredictMandiPriceInputSchema,
+        outputSchema: PredictMandiPriceOutputSchema,
+    },
+    async (input) => predictMandiPriceFlow(input)
+);
