@@ -34,6 +34,25 @@ type FormInputs = {
 type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
 
+// A simple component to parse and highlight text wrapped in **...**
+const HighlightedText = ({ text }: { text: string }) => {
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return (
+      <p>
+        {parts.map((part, index) =>
+          part.startsWith('**') && part.endsWith('**') ? (
+            <strong key={index} className="bg-yellow-200 dark:bg-yellow-800 px-1 rounded-md">
+              {part.substring(2, part.length - 2)}
+            </strong>
+          ) : (
+            part
+          )
+        )}
+      </p>
+    );
+};
+
+
 export default function DiagnosePage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
@@ -420,7 +439,7 @@ export default function DiagnosePage() {
                       </div>
                        <div>
                         <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
-                        <p>{diagnosis.treatment}</p>
+                        <HighlightedText text={diagnosis.treatment} />
                       </div>
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>

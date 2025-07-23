@@ -50,6 +50,7 @@ const prompt = ai.definePrompt({
 4.  **Remedies**: Provide general, non-pesticide remedies or preventative care tips.
 5.  **Treatment**: This is the most critical section. Provide specific, actionable treatment steps.
     *   If a pest or disease is identified, recommend specific, commercially available pesticides or fungicides that are effective for the issue in the given crop and location.
+    *   **Crucially, you MUST wrap the names of all recommended pesticides or fungicides in double asterisks, like this: **PesticideName**. This is for highlighting purposes.**
     *   Include application rates and methods if possible.
     *   If the plant is healthy, state "No treatment needed".
 6.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
