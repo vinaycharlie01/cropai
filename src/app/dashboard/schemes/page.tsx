@@ -17,8 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { getSchemeRecommendations } from '@/ai/flows/scheme-advisor';
-import { SchemeFinderOutput } from '@/types/scheme-advisor';
+import { SchemeFinderOutput, SchemeRecommendation } from '@/types/scheme-advisor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 const formSchema = z.object({
     helpType: z.string({ required_error: 'Please select a help type.' }),
@@ -64,6 +65,16 @@ export default function SchemesPage() {
         } finally {
             setIsLoading(false);
         }
+    };
+    
+    const getSchemeTextForTts = (scheme: SchemeRecommendation) => {
+        return `
+            Scheme Name: ${scheme.schemeName}.
+            Description: ${scheme.description}.
+            Eligibility: ${scheme.eligibility}.
+            Benefits: ${scheme.benefits}.
+            How to Apply: ${scheme.howToApply}.
+        `;
     };
 
     return (
@@ -197,7 +208,12 @@ export default function SchemesPage() {
                                 <Accordion type="single" collapsible className="w-full">
                                     {recommendations.map((scheme, index) => (
                                         <AccordionItem value={`item-${index}`} key={index}>
-                                            <AccordionTrigger className="font-semibold text-lg hover:no-underline text-left">{scheme.schemeName}</AccordionTrigger>
+                                            <AccordionTrigger className="font-semibold text-lg hover:no-underline text-left">
+                                                <div className="flex justify-between items-center w-full pr-4">
+                                                    <span>{scheme.schemeName}</span>
+                                                    <AudioPlayer textToSpeak={getSchemeTextForTts(scheme)} />
+                                                </div>
+                                            </AccordionTrigger>
                                             <AccordionContent className="space-y-4 pt-2">
                                                 <p className="text-muted-foreground">{scheme.description}</p>
                                                 <div>

@@ -20,6 +20,7 @@ const SchemeRecommendationSchema = z.object({
     benefits: z.string().describe('A list of the primary benefits provided by the scheme. This MUST be in the requested language.'),
     howToApply: z.string().describe('Simple, step-by-step instructions on how to apply for the scheme. This MUST be in the requested language.'),
 });
+export type SchemeRecommendation = z.infer<typeof SchemeRecommendationSchema>;
 
 export const SchemeFinderOutputSchema = z.array(SchemeRecommendationSchema);
 export type SchemeFinderOutput = z.infer<typeof SchemeFinderOutputSchema>;
