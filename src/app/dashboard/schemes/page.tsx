@@ -16,7 +16,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
-import { getSchemeRecommendations, SchemeFinderOutput } from '@/ai/flows/scheme-advisor';
+import { getSchemeRecommendations } from '@/ai/flows/scheme-advisor';
+import { SchemeFinderOutput } from '@/types/scheme-advisor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const formSchema = z.object({
