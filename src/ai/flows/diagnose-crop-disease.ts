@@ -71,10 +71,17 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     outputSchema: DiagnoseCropDiseaseOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
+    try {
+        const {output} = await prompt(input);
+        if (!output) {
+          throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
+        }
+        return output;
+    } catch (e: any) {
+        if (e.message?.includes('503 Service Unavailable')) {
+            throw new Error("The AI diagnosis service is currently overloaded. Please try again in a few moments.");
+        }
+        throw e;
     }
-    return output;
   }
 );
