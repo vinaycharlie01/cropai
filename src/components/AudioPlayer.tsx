@@ -61,6 +61,15 @@ export function AudioPlayer({ textToSpeak }: AudioPlayerProps) {
     }
   }, [audioSrc]);
 
+  // Effect to reset audio when text changes
+  useEffect(() => {
+      if (audioRef.current) {
+          audioRef.current.pause();
+          setIsPlaying(false);
+      }
+      setAudioSrc(null);
+  }, [textToSpeak]);
+
   // Cleanup audio element
   useEffect(() => {
     return () => {
@@ -79,10 +88,11 @@ export function AudioPlayer({ textToSpeak }: AudioPlayerProps) {
     <div className="flex items-center gap-2">
       <Button
         variant="outline"
-        size="sm"
+        size="icon"
         onClick={handleFetchAndPlay}
-        disabled={isLoading}
-        className="flex-shrink-0"
+        disabled={isLoading || !textToSpeak}
+        className="flex-shrink-0 h-8 w-8"
+        title="Listen to advice"
       >
         <AnimatePresence mode="wait">
           {isLoading ? (
@@ -93,17 +103,12 @@ export function AudioPlayer({ textToSpeak }: AudioPlayerProps) {
             <motion.div key="pause" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
               <Pause className="h-4 w-4" />
             </motion.div>
-          ) : audioSrc ? (
-            <motion.div key="play" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-              <Play className="h-4 w-4" />
-            </motion.div>
           ) : (
              <motion.div key="speaker" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
               <Speaker className="h-4 w-4" />
             </motion.div>
           )}
         </AnimatePresence>
-        <span className="ml-2">{isLoading ? 'Loading...' : isPlaying ? 'Pause' : audioSrc ? 'Play' : 'Listen'}</span>
       </Button>
 
       {error && <AlertCircle className="h-5 w-5 text-destructive" title={error} />}

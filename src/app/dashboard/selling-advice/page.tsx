@@ -6,6 +6,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Loader2, Search, Mic } from 'lucide-react';
 
+import { getSellingAdvice } from '@/ai/flows/selling-advice';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type FormInputs = {
   cropType: string;
@@ -67,21 +69,17 @@ export default function SellingAdvicePage() {
     setError(null);
     setAdvice(null);
     
-    // Simulate AI thinking time
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // --- MOCK DATA WORKAROUND for 429 Quota Error ---
-    const mockAdviceText = t('sellingAdviceMock')
-      .replace('{quantity}', data.quantity)
-      .replace('{cropType}', data.cropType)
-      .replace('{location}', data.location)
-      .replace('{desiredSellTime}', data.desiredSellTime);
-
-    const mockAdvice = {
-        advice: mockAdviceText,
-    };
-    setAdvice(mockAdvice);
-    setIsLoading(false);
+    try {
+        const result = await getSellingAdvice({ ...data, language });
+        setAdvice(result);
+    } catch (e) {
+        console.error(e);
+        const errorMessage = (e as Error).message || t('errorGettingAdvice');
+        setError(errorMessage);
+        toast({ variant: 'destructive', title: t('error'), description: errorMessage });
+    } finally {
+        setIsLoading(false);
+    }
   };
   
   return (
@@ -196,9 +194,12 @@ export default function SellingAdvicePage() {
           >
             <Card className="bg-background">
                 <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Bot />
-                        <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Bot />
+                            <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
+                        </div>
+                        <AudioPlayer textToSpeak={advice.advice} />
                     </div>
                 </CardHeader>
                 <CardContent className="whitespace-pre-wrap">
