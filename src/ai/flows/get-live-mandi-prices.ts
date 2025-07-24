@@ -25,7 +25,7 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
       throw new Error('The government API key is not configured. Please add it to the backend.');
     }
 
-    const url = `${BASE_URL}${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&filters[market]=${encodeURIComponent(market)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
+    const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&filters[market]=${encodeURIComponent(market)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
 
     try {
         const fetch = (await import('node-fetch')).default;
