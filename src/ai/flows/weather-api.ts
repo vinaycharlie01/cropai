@@ -8,11 +8,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { WeatherInputSchema, WeatherOutputSchema, type WeatherInput, type WeatherOutput } from '@/types/weather';
+import { WeatherInputSchema, WeatherOutputSchema, type WeatherInput, type WeatherOutput, DailyForecastSchema } from '@/types/weather';
 import { z } from 'zod';
 
 // Helper function to map WeatherAPI.com condition text to our simplified conditions
-const mapWeatherCondition = (conditionText: string): z.infer<typeof WeatherOutputSchema.shape.condition> => {
+const mapWeatherCondition = (conditionText: string): z.infer<typeof DailyForecastSchema.shape.condition> => {
     const text = conditionText.toLowerCase();
     if (text.includes('thunder')) return 'Thunderstorm';
     if (text.includes('rain') || text.includes('drizzle')) return 'Rainy';
