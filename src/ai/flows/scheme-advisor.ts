@@ -69,33 +69,40 @@ const schemeAdvisorFlow = ai.defineFlow(
     outputSchema: SchemeFinderOutputSchema, // The final flow output will match the full schema with the URL.
   },
   async (profile) => {
-    const { output } = await prompt({
-        profile: profile,
-        schemes: JSON.stringify(schemesDatabase, null, 2),
-    });
+    try {
+        const { output } = await prompt({
+            profile: profile,
+            schemes: JSON.stringify(schemesDatabase, null, 2),
+        });
 
-    if (!output) {
+        if (!output) {
+            return [];
+        }
+
+        // Post-process the AI output to add the URL from our trusted database.
+        // This prevents the AI from hallucinating incorrect URLs and causes of validation errors.
+        const fullRecommendations: SchemeRecommendation[] = output
+            .map(aiRec => {
+                const originalScheme = schemesDatabase.find(dbScheme => dbScheme.name === aiRec.schemeName);
+                if (!originalScheme) {
+                    // If the AI hallucinates a scheme name that's not in our DB, we'll filter it out.
+                    return null;
+                }
+                return {
+                    ...aiRec,
+                    // Add the applicationUrl from our reliable database, not from the AI output.
+                    applicationUrl: originalScheme.applicationUrl,
+                };
+            })
+            .filter((rec): rec is SchemeRecommendation => rec !== null); // Filter out any null entries.
+
+        return fullRecommendations;
+    } catch (e: any) {
+        console.error("Scheme Advisor Flow Error:", e);
+        // If the error is due to quota or other API issues, gracefully return an empty array.
+        // The frontend will handle showing a "no results" message.
         return [];
     }
-
-    // Post-process the AI output to add the URL from our trusted database.
-    // This prevents the AI from hallucinating incorrect URLs and causes of validation errors.
-    const fullRecommendations: SchemeRecommendation[] = output
-        .map(aiRec => {
-            const originalScheme = schemesDatabase.find(dbScheme => dbScheme.name === aiRec.schemeName);
-            if (!originalScheme) {
-                // If the AI hallucinates a scheme name that's not in our DB, we'll filter it out.
-                return null;
-            }
-            return {
-                ...aiRec,
-                // Add the applicationUrl from our reliable database, not from the AI output.
-                applicationUrl: originalScheme.applicationUrl,
-            };
-        })
-        .filter((rec): rec is SchemeRecommendation => rec !== null); // Filter out any null entries.
-
-    return fullRecommendations;
   }
 );
 
