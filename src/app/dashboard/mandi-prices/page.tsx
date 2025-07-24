@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { TrendingUp, TrendingDown, Minus, Loader2, Bot, Mic, AlertCircle } from 'lucide-react';
+import { Loader2, Bot, Mic, AlertCircle, Search, LineChart } from 'lucide-react';
 
 import {
   Card,
@@ -31,63 +31,52 @@ import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 import { getMandiPriceTool } from "@/ai/flows/get-mandi-prices";
 import { MandiPriceRecord } from "@/types/mandi-prices";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+const indianStates = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 
+  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka', 
+  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 
+  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 
+  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal'
+];
+
+type LivePriceFormInputs = {
+  state: string;
+  commodity: string;
+}
 
 type PredictionFormInputs = {
   cropType: string;
   location: string;
 }
 
-type SttField = 'cropType' | 'location';
-
-// Main list of crops to display by default
-const defaultCrops = ['Tomato', 'Onion', 'Potato', 'Wheat', 'Paddy', 'Cotton', 'Maize'];
-const defaultState = 'Karnataka';
+type SttField = 'liveCommodity' | 'predictCropType' | 'predictLocation';
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const { register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
+  
+  const livePriceForm = useForm<LivePriceFormInputs>();
+  const predictionForm = useForm<PredictionFormInputs>();
 
   const [prediction, setPrediction] = useState<PredictMandiPriceOutput | null>(null);
   const [isPredictionLoading, setIsPredictionLoading] = useState(false);
-  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
-
-  const [livePrices, setLivePrices] = useState<MandiPriceRecord[]>([]);
-  const [isLivePriceLoading, setIsLivePriceLoading] = useState(true);
+  
+  const [livePrices, setLivePrices] = useState<MandiPriceRecord[] | null>(null);
+  const [isLivePriceLoading, setIsLivePriceLoading] = useState(false);
   const [livePriceError, setLivePriceError] = useState<string | null>(null);
-
-
-  useEffect(() => {
-    const fetchInitialPrices = async () => {
-        setIsLivePriceLoading(true);
-        setLivePriceError(null);
-        let allPrices: MandiPriceRecord[] = [];
-        try {
-            for (const crop of defaultCrops) {
-                const prices = await getMandiPriceTool({ state: defaultState, commodity: crop });
-                if (prices.length > 0) {
-                     // Get the most recent price for this crop
-                    allPrices.push(prices[0]);
-                }
-            }
-            // Sort by commodity name
-            allPrices.sort((a, b) => a.commodity.localeCompare(b.commodity));
-            setLivePrices(allPrices);
-        } catch (error) {
-            console.error("Failed to fetch initial prices", error);
-            setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable.");
-        } finally {
-            setIsLivePriceLoading(false);
-        }
-    };
-    fetchInitialPrices();
-  }, []);
+  
+  const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
-      setValue(activeSttField, result, { shouldValidate: true });
+      if (activeSttField === 'liveCommodity') livePriceForm.setValue('commodity', result);
+      if (activeSttField === 'predictCropType') predictionForm.setValue('cropType', result);
+      if (activeSttField === 'predictLocation') predictionForm.setValue('location', result);
     }
-  }, [activeSttField, setValue]);
+  }, [activeSttField, livePriceForm, predictionForm]);
 
   const onRecognitionError = useCallback((err: string) => {
     console.error(err);
@@ -107,6 +96,24 @@ export default function MandiPricesPage() {
       setActiveSttField(field);
       startListening(getTtsLanguageCode(language));
     }
+  };
+
+  const onLivePriceSubmit: SubmitHandler<LivePriceFormInputs> = async (data) => {
+      setIsLivePriceLoading(true);
+      setLivePriceError(null);
+      setLivePrices(null);
+      try {
+        const prices = await getMandiPriceTool({ state: data.state, commodity: data.commodity });
+        if (prices.length === 0) {
+            setLivePriceError(`No data found for ${data.commodity} in ${data.state}. Please try a different crop or state.`);
+        }
+        setLivePrices(prices);
+      } catch (error) {
+          console.error("Failed to fetch live prices", error);
+          setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected state.");
+      } finally {
+          setIsLivePriceLoading(false);
+      }
   };
 
   const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
@@ -147,44 +154,84 @@ export default function MandiPricesPage() {
     >
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>
+          <CardTitle className="font-headline text-2xl flex items-center gap-2"><LineChart /> {t('mandiPriceAdvisor')}</CardTitle>
           <CardDescription>{t('mandiPriceInfo')}</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-4 gap-4 px-4 py-2 font-semibold text-muted-foreground">
-              <div className="col-span-1">{t('crop')}</div>
-              <div className="col-span-1">{t('price')} (₹)</div>
-              <div className="col-span-1">{t('market')}</div>
-              <div className="col-span-1">{t('date')}</div>
+        <form onSubmit={livePriceForm.handleSubmit(onLivePriceSubmit)}>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+               <div className="space-y-2">
+                  <Label htmlFor="state">{t('yourState')}</Label>
+                  <Controller
+                      name="state"
+                      control={livePriceForm.control}
+                      rules={{ required: "State is required." }}
+                      render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger id="state"><SelectValue placeholder="Select a state" /></SelectTrigger>
+                              <SelectContent>
+                                  {indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      )}
+                  />
+                  {livePriceForm.formState.errors.state && <p className="text-destructive text-sm">{livePriceForm.formState.errors.state.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="commodity">{t('crop')}</Label>
+                 <div className="relative">
+                    <Input id="commodity" placeholder={t('egTomato')} {...livePriceForm.register('commodity', { required: "Commodity is required." })} />
+                    <Button
+                      type="button" size="icon" variant="ghost"
+                      onClick={() => handleSttToggle('liveCommodity')}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      disabled={!isSupported}
+                    >
+                      <Mic className={`h-5 w-5 ${isListening && activeSttField === 'liveCommodity' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    </Button>
+                </div>
+                {livePriceForm.formState.errors.commodity && <p className="text-destructive text-sm">{livePriceForm.formState.errors.commodity.message}</p>}
+              </div>
             </div>
-            <div className="space-y-2">
-              {isLivePriceLoading ? (
-                [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-              ) : livePriceError ? (
-                  <div className="text-center py-8 text-destructive">
-                    <AlertCircle className="mx-auto h-10 w-10 mb-2" />
-                    <p className="font-semibold">Failed to Load Prices</p>
-                    <p className="text-sm">{livePriceError}</p>
-                  </div>
-              ) : livePrices.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p>No live price data found for default crops in {defaultState}.</p>
-                  </div>
-              ) : (
-                livePrices.map((item, index) => (
-                  <div key={index} className="grid grid-cols-4 gap-4 items-center p-4 rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="col-span-1 font-medium">{item.commodity}</div>
-                    <div className="col-span-1 flex items-center gap-2 font-semibold">
-                      {item.modal_price}
-                    </div>
-                    <div className="col-span-1 text-muted-foreground">{item.market}</div>
-                    <div className="col-span-1 text-muted-foreground">{item.arrival_date}</div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
+             <Button type="submit" className="w-full" disabled={isLivePriceLoading}>
+              {isLivePriceLoading ? <Loader2 className="mr-2 animate-spin" /> : <Search className="mr-2" />}
+              {isLivePriceLoading ? 'Searching...' : 'Search Live Prices'}
+            </Button>
+          </CardContent>
+        </form>
+         <CardContent>
+            {isLivePriceLoading && [...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full mt-2" />)}
+            {livePriceError && !isLivePriceLoading && (
+                <div className="text-center py-8 text-destructive">
+                  <AlertCircle className="mx-auto h-10 w-10 mb-2" />
+                  <p className="font-semibold">Failed to Load Prices</p>
+                  <p className="text-sm max-w-md mx-auto">{livePriceError}</p>
+                </div>
+            )}
+            {livePrices && livePrices.length > 0 && !isLivePriceLoading && (
+              <div className="border rounded-md mt-4">
+                  <Table>
+                      <TableHeader>
+                          <TableRow>
+                              <TableHead>{t('market')}</TableHead>
+                              <TableHead>{t('variety')}</TableHead>
+                              <TableHead className="text-right">{t('price')} (₹)</TableHead>
+                              <TableHead className="text-right">{t('date')}</TableHead>
+                          </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                          {livePrices.map((item, index) => (
+                              <TableRow key={index}>
+                                  <TableCell className="font-medium">{item.market}</TableCell>
+                                  <TableCell>{item.variety}</TableCell>
+                                  <TableCell className="text-right font-semibold">{item.modal_price}</TableCell>
+                                  <TableCell className="text-right">{item.arrival_date}</TableCell>
+                              </TableRow>
+                          ))}
+                      </TableBody>
+                  </Table>
+              </div>
+            )}
         </CardContent>
       </Card>
 
@@ -193,38 +240,38 @@ export default function MandiPricesPage() {
           <CardTitle className="font-headline text-xl">AI Price Prediction</CardTitle>
           <CardDescription>Get a 4-week price forecast for a crop.</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit(onPredictionSubmit)}>
+        <form onSubmit={predictionForm.handleSubmit(onPredictionSubmit)}>
           <CardContent className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="cropType">{t('cropType')}</Label>
                 <div className="relative">
-                  <Input id="cropType" placeholder={t('egTomato')} {...register('cropType', { required: t('cropTypeRequired') })} />
+                  <Input id="cropType" placeholder={t('egTomato')} {...predictionForm.register('cropType', { required: t('cropTypeRequired') })} />
                   <Button
                     type="button" size="icon" variant="ghost"
-                    onClick={() => handleSttToggle('cropType')}
+                    onClick={() => handleSttToggle('predictCropType')}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
                     disabled={!isSupported}
                   >
-                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'cropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'predictCropType' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                   </Button>
                 </div>
-                {errors.cropType && <p className="text-destructive text-sm">{errors.cropType.message}</p>}
+                {predictionForm.formState.errors.cropType && <p className="text-destructive text-sm">{predictionForm.formState.errors.cropType.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">{t('location')}</Label>
                 <div className="relative">
-                  <Input id="location" placeholder={t('egAndhraPradesh')} {...register('location', { required: t('locationRequired') })} />
+                  <Input id="location" placeholder={t('egAndhraPradesh')} {...predictionForm.register('location', { required: t('locationRequired') })} />
                    <Button
                     type="button" size="icon" variant="ghost"
-                    onClick={() => handleSttToggle('location')}
+                    onClick={() => handleSttToggle('predictLocation')}
                     className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
                     disabled={!isSupported}
                   >
-                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'location' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'predictLocation' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
                   </Button>
                 </div>
-                {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
+                {predictionForm.formState.errors.location && <p className="text-destructive text-sm">{predictionForm.formState.errors.location.message}</p>}
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isPredictionLoading}>
@@ -278,3 +325,5 @@ export default function MandiPricesPage() {
     </motion.div>
   );
 }
+
+    
