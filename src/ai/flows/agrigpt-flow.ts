@@ -6,29 +6,11 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
 import { diagnoseCropDiseaseTool } from './diagnose-crop-disease';
 import { getLiveMandiPriceTool } from './get-live-mandi-prices';
 import { getWeatherTool } from './weather-api';
 import { schemeAdvisorTool } from './scheme-advisor';
-
-const HistoryPartSchema = z.object({
-  role: z.enum(['user', 'model']),
-  content: z.array(z.object({ text: z.string() })),
-});
-
-export const AgriGptInputSchema = z.object({
-  message: z.string().describe("The user's latest message."),
-  history: z.array(HistoryPartSchema).describe('The history of the conversation.'),
-  language: z.string().describe('The language for the response (e.g., "English", "Hindi").'),
-});
-export type AgriGptInput = z.infer<typeof AgriGptInputSchema>;
-
-export const AgriGptOutputSchema = z.object({
-  reply: z.string().describe("The AI's response to the user's message."),
-});
-export type AgriGptOutput = z.infer<typeof AgriGptOutputSchema>;
-
+import { AgriGptInput, AgriGptInputSchema, AgriGptOutput, AgriGptOutputSchema } from '@/types/agrigpt';
 
 const agriGptPrompt = ai.definePrompt(
   {
@@ -65,7 +47,7 @@ const agriGptPrompt = ai.definePrompt(
 );
 
 
-export const agriGptFlow = ai.defineFlow(
+const agriGptFlow = ai.defineFlow(
   {
     name: 'agriGptFlow',
     inputSchema: AgriGptInputSchema,
@@ -91,3 +73,8 @@ export const agriGptFlow = ai.defineFlow(
     }
   }
 );
+
+
+export async function agriGpt(input: AgriGptInput): Promise<AgriGptOutput> {
+  return await agriGptFlow(input);
+}

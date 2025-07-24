@@ -9,13 +9,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { Bot, User, Send, Mic, Loader2, Sparkles, History, AlertTriangle } from 'lucide-react';
-import { agriGptFlow } from '@/ai/flows/agrigpt-flow';
+import { agriGpt, type AgriGptInput, type AgriGptOutput } from '@/ai/flows/agrigpt-flow';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioPlayer } from './AudioPlayer';
 import { generateSpeech } from '@/ai/flows/tts-flow';
+import { HistoryPart } from '@/types/agrigpt';
 
 interface Message {
   role: 'user' | 'model';
@@ -77,12 +78,12 @@ export function AgriGptDialog({ open, onOpenChange }: AgriGptDialogProps) {
     setMessages(newMessages);
 
     try {
-      const history = newMessages.slice(0, -1).map(msg => ({
+      const history: HistoryPart[] = newMessages.slice(0, -1).map(msg => ({
         role: msg.role,
         content: [{ text: msg.text }],
       }));
 
-      const result = await agriGptFlow({ message: userMessage, history, language });
+      const result = await agriGpt({ message: userMessage, history, language });
       setMessages(prev => [...prev, { role: 'model', text: result.reply }]);
     } catch (e: any) {
       console.error("AgriGPT Error:", e);
