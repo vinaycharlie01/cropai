@@ -21,6 +21,7 @@ import '@/ai/flows/assess-loan-eligibility.ts';
 import '@/ai/flows/get-risk-alerts.ts';
 import '@/ai/flows/tts-flow.ts';
 import '@/ai/flows/scheme-advisor.ts';
+import '@/ai/flows/predict-mandi-price.ts';
 
 
 const DiagnoseCropDiseaseInputSchema = z.object({
@@ -92,3 +93,5 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     }
   }
 );
+
+    
