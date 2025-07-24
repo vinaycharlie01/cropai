@@ -20,6 +20,12 @@ import { Button } from "@/components/ui/button";
 
 const featureCards = [
   {
+    href: "/dashboard/diagnose",
+    icon: HeartPulse,
+    titleKey: "diagnoseDisease",
+    descriptionKey: "diagnoseDescription",
+  },
+  {
     href: "/dashboard/mandi-prices",
     icon: LineChart,
     titleKey: "mandiPrices",
@@ -36,12 +42,6 @@ const featureCards = [
     icon: ScrollText,
     titleKey: "govtSchemes",
     descriptionKey: "govtSchemesDescription",
-  },
-  {
-    href: "/dashboard/diagnose",
-    icon: HeartPulse,
-    titleKey: "diagnoseDisease",
-    descriptionKey: "diagnoseDescription",
   },
   {
     href: "/dashboard/monitor",
