@@ -9,14 +9,16 @@ import {
   CloudRain,
   Thermometer,
   Wind,
-  Sunrise,
-  Sunset,
+  Droplet,
   MapPin,
   CloudLightning,
   Snowflake,
   Search,
   Loader2,
-  Droplet,
+  SprayCan,
+  CheckCircle2,
+  AlertTriangle,
+  XCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getSprayingAdvice, SprayingAdvice } from '@/ai/flows/spraying-advice';
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
   Sunny: <Sun className="w-16 h-16 text-yellow-400" />,
@@ -52,6 +55,15 @@ const smallWeatherIcons: { [key: string]: React.ReactNode } = {
   Snow: <Snowflake className="w-8 h-8 text-blue-200" />,
 };
 
+const SprayingStatusIcon = ({ status }: { status: string }) => {
+    switch (status) {
+        case 'Optimal': return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+        case 'Moderate': return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        case 'Unfavourable': return <XCircle className="h-5 w-5 text-red-500" />;
+        default: return null;
+    }
+};
+
 const WeatherCardSkeleton = () => (
     <Card className="shadow-lg">
         <CardHeader className="pb-4">
@@ -77,16 +89,18 @@ const WeatherCardSkeleton = () => (
 
 const WeatherPage = () => {
     const [weatherData, setWeatherData] = useState<WeatherOutput | null>(null);
+    const [sprayingAdvice, setSprayingAdvice] = useState<SprayingAdvice[] | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
 
-    const fetchWeather = useCallback(async (location: string | { latitude: number, longitude: number}) => {
+    const fetchWeatherAndAdvice = useCallback(async (location: string | { latitude: number, longitude: number}) => {
         setLoading(true);
         setError(null);
         setWeatherData(null);
+        setSprayingAdvice(null);
         
         try {
             const input = typeof location === 'string' 
@@ -101,9 +115,20 @@ const WeatherPage = () => {
                     title: "Weather Error",
                     description: data.error,
                 });
+                setLoading(false);
                 return;
             }
             setWeatherData(data);
+
+            if (data.forecast) {
+                 try {
+                    const advice = await getSprayingAdvice({ forecast: data.forecast, language });
+                    setSprayingAdvice(advice);
+                 } catch (adviceError) {
+                     console.error("Failed to get spraying advice", adviceError);
+                     toast({ variant: 'destructive', title: "AI Advice Error", description: "Could not fetch spraying recommendations."});
+                 }
+            }
         } catch (err) {
             console.error(err);
             const description = err instanceof Error ? err.message : t('errorWeather');
@@ -111,7 +136,7 @@ const WeatherPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [t, toast]);
+    }, [t, toast, language]);
 
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -120,13 +145,13 @@ const WeatherPage = () => {
                 title: 'Geolocation Error',
                 description: "Geolocation is not supported by your browser.",
             });
-            fetchWeather('New Delhi');
+            fetchWeatherAndAdvice('New Delhi');
             return;
         }
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                fetchWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+                fetchWeatherAndAdvice({ latitude: position.coords.latitude, longitude: position.coords.longitude });
             },
             () => {
                  toast({
@@ -134,10 +159,10 @@ const WeatherPage = () => {
                     title: 'Location Error',
                     description: "Unable to retrieve your location. Searching for a default city.",
                 });
-                fetchWeather('New Delhi');
+                fetchWeatherAndAdvice('New Delhi');
             }
         );
-    }, [fetchWeather, toast]);
+    }, [fetchWeatherAndAdvice, toast]);
 
     useEffect(() => {
         getLocation();
@@ -147,7 +172,7 @@ const WeatherPage = () => {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
-            fetchWeather(searchQuery.trim());
+            fetchWeatherAndAdvice(searchQuery.trim());
         }
     };
     
@@ -158,91 +183,127 @@ const WeatherPage = () => {
         transition={{ duration: 0.5 }}
         className="space-y-6"
     >
-        <Card className="shadow-lg max-w-2xl mx-auto">
-          <CardHeader className="pb-4">
-             <form onSubmit={handleSearch} className="flex items-center gap-2 mb-2">
-                <Input 
-                    placeholder={t('egAndhraPradesh')} 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10"
-                />
-                <Button type="submit" size="icon" className="h-10 w-10 shrink-0">
-                    <Search className="h-5 w-5"/>
-                </Button>
-                <Button type="button" size="icon" variant="outline" onClick={getLocation} title="Get Current Location" className="h-10 w-10 shrink-0">
-                    <MapPin className="h-5 w-5"/>
-                </Button>
-             </form>
-             <AnimatePresence>
-             {weatherData?.location && (
-                 <motion.div initial={{opacity:0}} animate={{opacity:1}}>
-                    <CardTitle className="flex items-center justify-between font-headline text-2xl pt-2">
-                        <span>{t('forecastFor')} {weatherData.location}</span>
-                        <Thermometer className="w-7 h-7 text-primary" />
-                    </CardTitle>
-                 </motion.div>
-             )}
-             </AnimatePresence>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-                <WeatherCardSkeleton />
-            ) : error || !weatherData?.forecast || weatherData.forecast.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center p-4 min-h-[300px]">
-                     <Cloud className="w-16 h-16 text-destructive mb-4"/>
-                     <CardTitle className="mb-2">Could Not Fetch Weather</CardTitle>
-                     <p className="text-muted-foreground mb-4 max-w-sm">{error || t('errorWeather')}</p>
-                     <Button onClick={getLocation}>
-                        Try My Location Again
-                     </Button>
-                </div>
-            ) : (
-                <AnimatePresence>
-                    <motion.div initial={{ opacity: 0}} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
-                        <div className="flex flex-col items-center justify-center text-center p-4 bg-muted/50 rounded-lg">
-                            <div className="flex items-center justify-center space-x-4">
-                                {weatherIcons[weatherData.forecast[0].condition] || <Cloud className="w-16 h-16 text-gray-400" />}
-                                <div>
-                                <p className="text-6xl font-bold">{weatherData.forecast[0].temperature}</p>
-                                <p className="text-muted-foreground capitalize">{weatherData.forecast[0].condition}</p>
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="shadow-lg">
+              <CardHeader className="pb-4">
+                 <form onSubmit={handleSearch} className="flex items-center gap-2 mb-2">
+                    <Input 
+                        placeholder={t('egAndhraPradesh')} 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-10"
+                    />
+                    <Button type="submit" size="icon" className="h-10 w-10 shrink-0">
+                        <Search className="h-5 w-5"/>
+                    </Button>
+                    <Button type="button" size="icon" variant="outline" onClick={getLocation} title="Get Current Location" className="h-10 w-10 shrink-0">
+                        <MapPin className="h-5 w-5"/>
+                    </Button>
+                 </form>
+                 <AnimatePresence>
+                 {weatherData?.location && (
+                     <motion.div initial={{opacity:0}} animate={{opacity:1}}>
+                        <CardTitle className="flex items-center justify-between font-headline text-2xl pt-2">
+                            <span>{t('forecastFor')} {weatherData.location}</span>
+                            <Thermometer className="w-7 h-7 text-primary" />
+                        </CardTitle>
+                     </motion.div>
+                 )}
+                 </AnimatePresence>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                    <WeatherCardSkeleton />
+                ) : error || !weatherData?.forecast || weatherData.forecast.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center text-center p-4 min-h-[300px]">
+                         <Cloud className="w-16 h-16 text-destructive mb-4"/>
+                         <CardTitle className="mb-2">Could Not Fetch Weather</CardTitle>
+                         <p className="text-muted-foreground mb-4 max-w-sm">{error || t('errorWeather')}</p>
+                         <Button onClick={getLocation}>
+                            Try My Location Again
+                         </Button>
+                    </div>
+                ) : (
+                    <AnimatePresence>
+                        <motion.div initial={{ opacity: 0}} animate={{ opacity: 1 }} transition={{ duration: 0.7 }}>
+                            <div className="flex flex-col items-center justify-center text-center p-4 bg-muted/50 rounded-lg">
+                                <div className="flex items-center justify-center space-x-4">
+                                    {weatherIcons[weatherData.forecast[0].condition] || <Cloud className="w-16 h-16 text-gray-400" />}
+                                    <div>
+                                    <p className="text-6xl font-bold">{weatherData.forecast[0].temperature}</p>
+                                    <p className="text-muted-foreground capitalize">{weatherData.forecast[0].condition}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="mt-8 pt-6 border-t">
-                            <ul className="space-y-4">
-                              {weatherData.forecast.map((item, index) => (
-                                 <motion.li
-                                   key={index}
-                                   initial={{ opacity: 0, x: -20 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                                   className="flex items-center p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors"
-                                 >
-                                   <span className="font-semibold text-base w-20">{item.day}</span>
-                                   <div className="flex-shrink-0 w-10 h-10 mx-4 flex items-center justify-center">
-                                     {smallWeatherIcons[item.condition] || <Cloud className="w-8 h-8 text-gray-400" />}
-                                   </div>
-                                   <div className="flex-1">
-                                     <p className="font-medium capitalize">{item.condition}</p>
-                                   </div>
-                                   <div className="flex items-center gap-4 text-sm w-32 justify-end">
-                                      <span className="font-bold text-lg">{item.temperature}</span>
-                                      <div className="flex items-center gap-1 text-muted-foreground">
-                                        <Droplet size={14}/>
-                                        <span>{item.humidity}</span>
-                                      </div>
-                                   </div>
-                                 </motion.li>
-                              ))}
-                            </ul>
-                        </div>
+                            <div className="mt-8 pt-6 border-t">
+                                <ul className="space-y-4">
+                                  {weatherData.forecast.map((item, index) => (
+                                     <motion.li
+                                       key={index}
+                                       initial={{ opacity: 0, x: -20 }}
+                                       animate={{ opacity: 1, x: 0 }}
+                                       transition={{ duration: 0.3, delay: index * 0.1 }}
+                                       className="flex items-center p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors"
+                                     >
+                                       <span className="font-semibold text-base w-20">{item.day}</span>
+                                       <div className="flex-shrink-0 w-10 h-10 mx-4 flex items-center justify-center">
+                                         {smallWeatherIcons[item.condition] || <Cloud className="w-8 h-8 text-gray-400" />}
+                                       </div>
+                                       <div className="flex-1">
+                                         <p className="font-medium capitalize">{item.condition}</p>
+                                       </div>
+                                       <div className="flex items-center gap-4 text-sm w-32 justify-end">
+                                          <span className="font-bold text-lg">{item.temperature}</span>
+                                          <div className="flex items-center gap-1 text-muted-foreground">
+                                            <Droplet size={14}/>
+                                            <span>{item.humidity}</span>
+                                          </div>
+                                       </div>
+                                     </motion.li>
+                                  ))}
+                                </ul>
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
+                )}
+              </CardContent>
+            </Card>
+
+            <AnimatePresence>
+                {sprayingAdvice && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                    >
+                         <Card className="shadow-lg">
+                            <CardHeader>
+                                <CardTitle className="font-headline text-2xl flex items-center gap-2">
+                                    <SprayCan /> Spraying Schedule
+                                </CardTitle>
+                                <CardDescription>Daily advice for pesticide application based on the forecast.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ul className="space-y-3">
+                                    {sprayingAdvice.map((advice, index) => (
+                                        <li key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
+                                            <div className="w-12 font-bold">{advice.day}</div>
+                                            <div className="flex items-center gap-2">
+                                                <SprayingStatusIcon status={advice.status} />
+                                                <span className="font-semibold">{advice.status}</span>
+                                            </div>
+                                            <div className="flex-1 text-sm text-muted-foreground">{advice.reason}</div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </CardContent>
+                         </Card>
                     </motion.div>
-                </AnimatePresence>
-            )}
-          </CardContent>
-        </Card>
+                )}
+            </AnimatePresence>
+
+        </div>
     </motion.div>
   );
 };

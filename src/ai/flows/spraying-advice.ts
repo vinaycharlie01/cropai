@@ -11,11 +11,11 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { DailyForecastSchema as WeatherDailyForecastSchema } from '@/types/weather';
+import { DailyForecastSchema } from '@/types/weather';
 
 
 const SprayingAdviceInputSchema = z.object({
-  forecast: z.array(WeatherDailyForecastSchema),
+  forecast: z.array(DailyForecastSchema),
   language: z.string().describe('The language for the advice (e.g., "English", "Hindi").'),
 });
 export type SprayingAdviceInput = z.infer<typeof SprayingAdviceInputSchema>;
@@ -56,7 +56,7 @@ const prompt = ai.definePrompt({
 **5-Day Weather Forecast Data:**
 {{#each forecast}}
 - **Day:** {{day}}
-- **Temperature:** {{temp}}
+- **Temperature:** {{temperature}}
 - **Condition:** {{condition}}
 - **Wind Speed (kph):** {{wind_kph}}
 - **Chance of Rain (%):** {{chance_of_rain}}

@@ -17,6 +17,8 @@ export const DailyForecastSchema = z.object({
     temperature: z.string().describe("The forecasted average temperature, e.g., '28°C'."),
     condition: z.string().describe("The forecasted weather condition (e.g., 'Sunny', 'Partly Cloudy')."),
     humidity: z.string().describe("The forecasted average humidity as a percentage, e.g., '65%'."),
+    wind_kph: z.number().describe("The forecasted average wind speed in kilometers per hour."),
+    chance_of_rain: z.number().describe("The forecasted chance of rain as a percentage."),
 });
 export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 

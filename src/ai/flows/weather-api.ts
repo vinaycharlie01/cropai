@@ -9,22 +9,17 @@
 
 import { ai } from '@/ai/genkit';
 import { WeatherInputSchema, WeatherOutputSchema, type WeatherInput, type WeatherOutput } from '@/types/weather';
-import { getSimulatedWeatherForecast } from './weather-forecast';
-
 
 // This is the exported server action that the client component will call.
 export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
     const apiKey = process.env.WEATHERAPI_API_KEY;
 
-    // If no API key, use the AI-based simulation.
     if (!apiKey) {
-        return getSimulatedWeatherForecast({ location: input.city || 'your location' });
+        return { error: "The weather service is not configured. Please add a WeatherAPI.com API key to your environment variables." };
     }
     
-    // If API key exists, call the real API tool.
     return getWeatherTool(input);
 }
-
 
 // This is the Genkit Tool that does the actual work with a real API.
 export const getWeatherTool = ai.defineTool(
@@ -83,6 +78,8 @@ export const getWeatherTool = ai.defineTool(
                     temperature: `${Math.round(day.day.avgtemp_c)}°C`,
                     condition: day.day.condition.text,
                     humidity: `${day.day.avghumidity}%`,
+                    wind_kph: day.day.maxwind_kph,
+                    chance_of_rain: day.day.daily_chance_of_rain,
                 })),
             };
 
