@@ -49,8 +49,7 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
 
         const data = await response.json() as any;
 
-        if (!data.records) {
-            console.warn("API response was successful but contained no records field.", data);
+        if (!data.records || data.records.length === 0) {
             return [];
         }
         

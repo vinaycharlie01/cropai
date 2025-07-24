@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -67,11 +68,12 @@ export default function MandiPricesPage() {
         setLivePrices(null);
         try {
             const prices = await getLiveMandiPrice(data);
+            setLivePrices(prices);
             if (prices.length === 0) {
-                setLivePriceError(`No data found for ${data.commodity} in ${data.market}. Please check your spelling or try a different market.`);
-                setLivePrices([]); // Set to empty array to remove previous results
-            } else {
-                setLivePrices(prices);
+                toast({
+                    title: 'No Data Found',
+                    description: `No data found for ${data.commodity} in ${data.market}. Please check your spelling or try a different market.`
+                });
             }
         } catch (error) {
             console.error("Failed to fetch live prices", error);
@@ -84,11 +86,14 @@ export default function MandiPricesPage() {
 
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-1 lg:grid-cols-3 gap-6"
+        >
             {/* Live Prices Column */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+            <div
                 className="lg:col-span-2"
             >
                 <Card>
@@ -133,7 +138,7 @@ export default function MandiPricesPage() {
                                 </motion.div>
                             )}
                             {livePriceError && (
-                                <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 p-4 rounded-md text-center">{livePriceError}</motion.div>
+                                <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 dark:bg-red-900/20 p-4 rounded-md text-center">{livePriceError}</motion.div>
                             )}
                             {livePrices && livePrices.length > 0 && (
                                 <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="border rounded-md mt-4 overflow-x-auto">
@@ -166,7 +171,7 @@ export default function MandiPricesPage() {
                         </AnimatePresence>
                     </CardContent>
                 </Card>
-            </motion.div>
+            </div>
 
              {/* AI Prediction Column */}
             <motion.div
@@ -211,7 +216,7 @@ export default function MandiPricesPage() {
                         </motion.div>
                     )}
                     {predictionError && (
-                         <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 p-4 rounded-md text-center">{predictionError}</motion.div>
+                         <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 dark:bg-red-900/20 p-4 rounded-md text-center">{predictionError}</motion.div>
                     )}
                     {predictionResult && (
                         <motion.div
@@ -251,6 +256,6 @@ export default function MandiPricesPage() {
                     )}
                 </AnimatePresence>
             </motion.div>
-        </div>
+        </motion.div>
     );
 }
