@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { predictMandiPriceTool } from './predict-mandi-price';
 import { schemeAdvisorTool } from './scheme-advisor';
 import { sprayingAdviceTool } from './spraying-advice';
+import { generate } from 'genkit/generate';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
@@ -48,24 +49,6 @@ export async function processAgriGptCommand(input: AgriGptInput): Promise<AgriGp
 }
 
 
-const kisanMitraAgent = ai.prompt({
-    name: 'kisanMitraAgent',
-    tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
-    system: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response in their preferred language.
-
-**IMPORTANT INSTRUCTIONS:**
-1.  **Analyze the Query:** Based on the user's query and conversation history, determine their primary intent.
-2.  **Use Your Tools:** You have tools to get information about mandi prices, government schemes, and spraying advice. Use them whenever necessary to answer the user's question.
-    - When asked about future prices or price forecasts, use the \`predictMandiPriceTool\`.
-    - When asked about government schemes, subsidies, or support, use the \`schemeAdvisorTool\`. You will need to ask the user for all the required information (help type, state, farmer type, land ownership) before calling the tool.
-    - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
-3.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
-4.  **Synthesize the Final Response:** Formulate a single, helpful, conversational response based on the tool's output or the diagnosis rule.
-5.  **Translate:** The final response MUST be in the requested language.
-`
-});
-
-
 // Define the Genkit Flow that orchestrates the AI call
 const agrigptFlow = ai.defineFlow(
   {
@@ -75,25 +58,27 @@ const agrigptFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Convert the simplified history from the client to the format Genkit expects.
-    const history = input.conversationHistory.map(h => ({
-      role: h.role,
-      content: h.content.map(c => {
-        if(c.text) return { text: c.text };
-        if(c.toolRequest) return { toolRequest: c.toolRequest };
-        if(c.toolResponse) return { toolResponse: c.toolResponse };
-        return { text: "" }; // Should not happen with valid input
-      })
-    }));
+    const response = await generate({
+        model: 'googleai/gemini-1.5-flash',
+        tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
+        history: input.conversationHistory as any, // Cast to any to satisfy the complex type
+        prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response.
 
-    const response = await ai.run(kisanMitraAgent, {
-        input: `${input.transcribedQuery}. The response must be in ${input.language}.`,
-        history: history as any, // Cast to any to satisfy the type checker for this complex structure
+**IMPORTANT INSTRUCTIONS:**
+1.  **Analyze the Query:** Based on the user's query (\`\`\`${input.transcribedQuery}\`\`\`) and conversation history, determine their primary intent.
+2.  **Translate to English:** Your entire thought process and tool usage must be in English.
+3.  **Use Your Tools:** You have tools to get information about mandi prices, government schemes, and spraying advice. Use them whenever necessary to answer the user's question.
+    - When asked about future prices or price forecasts, use the \`predictMandiPriceTool\`.
+    - When asked about government schemes, subsidies, or support, use the \`schemeAdvisorTool\`.
+    - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
+4.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
+5.  **Synthesize and Translate Final Response:** After using tools, formulate a single, helpful, conversational response. The final response MUST be translated into the user's preferred language: **${input.language}**.
+`,
     });
     
-    const responseText = response.output;
+    const responseText = response.text();
 
-    if (!responseText || typeof responseText !== 'string') {
+    if (!responseText) {
         throw new Error('AgriGPT AI did not return a valid text response.');
     }
 
