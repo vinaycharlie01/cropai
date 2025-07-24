@@ -66,6 +66,9 @@ const agriGptFlow = ai.defineFlow(
          if (e.message?.includes('429 Too Many Requests') || e.message?.includes('exceeded your current quota')) {
              return { reply: "I'm sorry, I'm currently experiencing high demand and have reached my daily limit for complex queries. You can still access many features directly from the dashboard, like the Weather page. Please try asking me again later!" };
          }
+         if (e.message?.includes('503 Service Unavailable') || e.message?.includes('The model is overloaded')) {
+            return { reply: "I'm sorry, the AI service is very busy right now. Please try again in a few moments. Many features like Crop Insurance or Mandi Prices can be accessed directly from the dashboard." };
+         }
          if (e.message?.includes('The AI diagnosis service is currently overloaded')) {
              return { reply: "I'm sorry, the diagnosis service is currently very busy. Please try again in a few minutes." };
          }
