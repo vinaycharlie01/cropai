@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Speaker, Loader2, Play, Pause, AlertCircle } from 'lucide-react';
+import { Speaker, Loader2, Play, Pause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -17,8 +17,9 @@ export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPla
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
+    // When a new audio source is loaded, automatically play it.
     if (audioSrc && audioRef.current) {
-      audioRef.current.play();
+        audioRef.current.play().catch(e => console.error("Audio autoplay failed:", e));
     }
   }, [audioSrc]);
   
@@ -33,25 +34,30 @@ export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPla
       audioElement.addEventListener('pause', handlePause);
       audioElement.addEventListener('ended', handleEnded);
 
+      // Set initial state
+      setIsPlaying(!audioElement.paused);
+
       return () => {
         audioElement.removeEventListener('play', handlePlay);
         audioElement.removeEventListener('pause', handlePause);
         audioElement.removeEventListener('ended', handleEnded);
       };
     }
-  }, [audioRef.current]);
+  }, [audioSrc]); // Rerun when audioSrc changes to attach listeners to the new element
 
   const handleTogglePlay = () => {
+    // If no audio is loaded yet, request it.
     if (!audioSrc) {
       onPlaybackRequest();
       return;
     }
 
+    // If audio is loaded, toggle play/pause.
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
       } else {
-        audioRef.current.play();
+        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
       }
     }
   };
@@ -76,8 +82,8 @@ export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPla
               <Pause className="h-4 w-4" />
             </motion.div>
           ) : (
-             <motion.div key="speaker" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-              <Speaker className="h-4 w-4" />
+             <motion.div key="play" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
+              <Play className="h-4 w-4" />
             </motion.div>
           )}
         </AnimatePresence>
