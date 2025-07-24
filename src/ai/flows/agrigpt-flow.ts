@@ -63,6 +63,9 @@ const agriGptFlow = ai.defineFlow(
     } catch (e: any) {
          console.error("AgriGPT Flow Error:", e);
          // Provide a more user-friendly error message
+         if (e.message?.includes('429 Too Many Requests') || e.message?.includes('exceeded your current quota')) {
+             return { reply: "I'm sorry, I'm currently experiencing high demand and have reached my daily limit for complex queries. You can still access many features directly from the dashboard, like the Weather page. Please try asking me again later!" };
+         }
          if (e.message?.includes('The AI diagnosis service is currently overloaded')) {
              return { reply: "I'm sorry, the diagnosis service is currently very busy. Please try again in a few minutes." };
          }
