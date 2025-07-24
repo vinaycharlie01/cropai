@@ -28,7 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { predictMandiPrice, PredictMandiPriceOutput } from "@/ai/flows/predict-mandi-price";
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
-import { getMandiPriceTool, MandiPriceRecord } from "@/ai/flows/get-mandi-prices";
+import { getMandiPriceTool } from "@/ai/flows/get-mandi-prices";
+import { MandiPriceRecord } from "@/types/mandi-prices";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type PredictionFormInputs = {

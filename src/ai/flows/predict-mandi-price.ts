@@ -12,23 +12,9 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getMandiPriceTool } from './get-mandi-prices';
+import { PredictMandiPriceInputSchema, PredictMandiPriceOutputSchema } from '@/types/mandi-prices';
 
-const PredictMandiPriceInputSchema = z.object({
-  cropType: z.string().describe('The type of crop for which to predict the price.'),
-  location: z.string().describe('The geographical location (state) of the crop.'),
-  language: z.string().describe('The language for the output.'),
-});
 export type PredictMandiPriceInput = z.infer<typeof PredictMandiPriceInputSchema>;
-
-const WeeklyPredictionSchema = z.object({
-  week: z.string().describe('The week for the prediction (e.g., "Week 1", "Week 2").'),
-  price: z.number().describe('The predicted price per quintal for that week.'),
-});
-
-const PredictMandiPriceOutputSchema = z.object({
-  predictions: z.array(WeeklyPredictionSchema).describe('A list of price predictions for the next 4 weeks.'),
-  analysis: z.string().describe('A brief analysis of the price trend and the factors influencing it. Must be in the requested language.'),
-});
 export type PredictMandiPriceOutput = z.infer<typeof PredictMandiPriceOutputSchema>;
 
 

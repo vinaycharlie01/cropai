@@ -7,33 +7,11 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import fetch from 'node-fetch';
+import { MandiPriceInputSchema, MandiPriceOutputSchema, MandiPriceInput, MandiPriceOutput } from '@/types/mandi-prices';
 
 const API_KEY = process.env.GOVT_API_KEY;
 const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
 const BASE_URL = 'https://api.data.gov.in/resource/';
-
-const MandiPriceInputSchema = z.object({
-  state: z.string().describe('The state in India to fetch prices for (e.g., "Karnataka").'),
-  commodity: z.string().describe('The agricultural commodity to fetch prices for (e.g., "Tomato").'),
-});
-export type MandiPriceInput = z.infer<typeof MandiPriceInputSchema>;
-
-export const MandiPriceRecordSchema = z.object({
-  state: z.string(),
-  district: z.string(),
-  market: z.string(),
-  commodity: z.string(),
-  variety: z.string(),
-  arrival_date: z.string(),
-  min_price: z.string(),
-  max_price: z.string(),
-  modal_price: z.string(),
-});
-export type MandiPriceRecord = z.infer<typeof MandiPriceRecordSchema>;
-
-const MandiPriceOutputSchema = z.array(MandiPriceRecordSchema);
-export type MandiPriceOutput = z.infer<typeof MandiPriceOutputSchema>;
-
 
 export const getMandiPriceTool = ai.defineTool(
   {
@@ -42,7 +20,7 @@ export const getMandiPriceTool = ai.defineTool(
     inputSchema: MandiPriceInputSchema,
     outputSchema: MandiPriceOutputSchema,
   },
-  async ({ state, commodity }) => {
+  async ({ state, commodity }): Promise<MandiPriceOutput> => {
     if (!API_KEY) {
       throw new Error('Government API key is not configured.');
     }
@@ -69,6 +47,7 @@ export const getMandiPriceTool = ai.defineTool(
         return Number(b.modal_price) - Number(a.modal_price);
       });
       
+      // The schema validation will be done by the tool automatically.
       return sortedRecords;
     } catch (error) {
       console.error('Error fetching Mandi prices:', error);
