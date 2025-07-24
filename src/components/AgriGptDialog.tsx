@@ -17,57 +17,54 @@ import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { useCallback, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { processAgriGptCommand, AgriGptOutput } from '@/ai/flows/agrigpt-flow';
-import { usePathname, useRouter } from 'next/navigation';
+import { processAgriGptCommand, AgriGptOutput, HistoryPart } from '@/ai/flows/agrigpt-flow';
+import { usePathname } from 'next/navigation';
 import { getTtsLanguageCode } from '@/lib/translations';
 import { AudioPlayer } from './AudioPlayer';
 
 export function AgriGptDialog() {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const router = useRouter();
   const pathname = usePathname();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [aiResponse, setAiResponse] = useState<AgriGptOutput | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<HistoryPart[]>([]);
+  const [currentResponse, setCurrentResponse] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleAiResponse = (response: AgriGptOutput) => {
-    setAiResponse(response);
-
-    if (response.actionCode === 'REQUEST_IMAGE_FOR_DIAGNOSIS') {
-      toast({
-        title: 'Photo Required',
-        description: 'Please go to the diagnose page to upload a photo.',
-      });
-      router.push('/dashboard/diagnose');
-      setTimeout(() => setIsOpen(false), 1000);
-    }
-  };
 
   const onRecognitionResult = useCallback(async (result: string) => {
     if (!result) return;
     setIsProcessing(true);
-    setAiResponse(null);
+    setCurrentResponse(null);
+
+    const userMessage: HistoryPart = { role: 'user', content: [{ text: result }] };
+    const newHistory = [...conversationHistory, userMessage];
+    setConversationHistory(newHistory);
+
     try {
       const response = await processAgriGptCommand({
         transcribedQuery: result,
-        conversationHistory: [], // TODO: Implement conversation history
-        currentScreen: pathname,
+        conversationHistory: newHistory,
         language: language,
       });
-      handleAiResponse(response);
+      
+      const aiMessage: HistoryPart = { role: 'model', content: [{ text: response.kisanMitraResponse }] };
+      setConversationHistory(prev => [...prev, aiMessage]);
+      setCurrentResponse(response.kisanMitraResponse);
+
     } catch (error) {
       console.error('AgriGPT Error:', error);
+      const errorMessage = 'Sorry, I had trouble understanding that. Please try again.';
       toast({
         variant: 'destructive',
         title: 'AgriGPT Error',
-        description: 'Sorry, I had trouble understanding that. Please try again.',
+        description: errorMessage,
       });
+      setCurrentResponse(errorMessage);
     } finally {
       setIsProcessing(false);
     }
-  }, [pathname, language, toast, router]);
+  }, [pathname, language, toast, conversationHistory]);
 
   const onRecognitionError = useCallback((err: string) => {
     console.error(err);
@@ -79,22 +76,29 @@ export function AgriGptDialog() {
   const { isListening, startListening, stopListening, transcript, isSupported } = useSpeechRecognition({
     onResult: onRecognitionResult,
     onError: onRecognitionError,
-    onEnd: () => {
-        // Automatically stop listening if user stops talking
-    }
   });
 
   const handleMicClick = () => {
     if (isListening) {
       stopListening();
     } else {
-      setAiResponse(null);
+      setCurrentResponse(null);
       startListening(getTtsLanguageCode(language));
     }
   };
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      if(isListening) stopListening();
+      // Reset state when closing the dialog
+      setConversationHistory([]);
+      setCurrentResponse(null);
+    }
+    setIsOpen(open);
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           size="icon"
@@ -115,6 +119,7 @@ export function AgriGptDialog() {
                 "h-24 w-24 rounded-full transition-all duration-300",
                 isListening && "scale-110 bg-destructive hover:bg-destructive/90 animate-pulse"
             )}
+            disabled={isProcessing}
           >
             <Mic className="h-12 w-12" />
           </Button>
@@ -122,18 +127,18 @@ export function AgriGptDialog() {
             {isProcessing ? "Thinking..." : isListening ? "Listening..." : "Tap the mic and speak"}
           </p>
           <div className="min-h-[50px] text-center">
-            {transcript && !aiResponse && <p className="text-sm">"{transcript}"</p>}
-            {aiResponse && (
+            {transcript && !currentResponse && <p className="text-sm">"{transcript}"</p>}
+            {currentResponse && (
                 <div className='space-y-4'>
-                    <p className="font-semibold">{aiResponse.kisanMitraResponse}</p>
-                    <AudioPlayer textToSpeak={aiResponse.kisanMitraResponse} />
+                    <p className="font-semibold">{currentResponse}</p>
+                    <AudioPlayer textToSpeak={currentResponse} />
                 </div>
             )}
           </div>
         </div>
         <DialogFooter>
             <DialogClose asChild>
-                <Button variant="outline" className="w-full" onClick={() => { if(isListening) stopListening(); }}>{isListening ? "Stop" : "Close"}</Button>
+                <Button variant="outline" className="w-full">Close</Button>
             </DialogClose>
         </DialogFooter>
       </DialogContent>

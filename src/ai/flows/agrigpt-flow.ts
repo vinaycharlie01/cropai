@@ -10,28 +10,33 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { predictMandiPriceTool } from './predict-mandi-price';
+import { schemeAdvisorTool } from './scheme-advisor';
+import { sprayingAdviceTool } from './spraying-advice';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
-  role: z.enum(['user', 'model']),
-  parts: z.array(z.object({ text: z.string() })),
+  role: z.enum(['user', 'model', 'tool']),
+  content: z.array(z.object({ 
+    text: z.string().optional(),
+    toolRequest: z.any().optional(),
+    toolResponse: z.any().optional(),
+  })),
 });
+export type HistoryPart = z.infer<typeof HistoryPartSchema>;
+
 
 // Define the input schema for the AgriGPT flow
 const AgriGptInputSchema = z.object({
   transcribedQuery: z.string().describe("The user's transcribed voice query."),
   conversationHistory: z.array(HistoryPartSchema).describe('The history of the current conversation for context.'),
-  currentScreen: z.string().describe('The current screen the user is on, to provide context for the query.'),
   language: z.string().describe('The preferred language for the response (e.g., "English", "Hindi").'),
 });
 export type AgriGptInput = z.infer<typeof AgriGptInputSchema>;
 
 // Define the output schema for the AgriGPT flow
 const AgriGptOutputSchema = z.object({
-  intent: z.string().describe('A brief summary of the user\'s primary goal (e.g., GET_MANDI_PRICE, DIAGNOSE_DISEASE).'),
   kisanMitraResponse: z.string().describe("The final, user-facing response in the user's preferred language. It should be conversational and empathetic."),
-  actionCode: z.enum(['SPEAK_ONLY', 'REQUEST_IMAGE_FOR_DIAGNOSIS', 'CLARIFY']).describe('The action the app should take.'),
-  status: z.enum(['success', 'clarification_needed', 'error']).describe('The status of the processing.'),
 });
 export type AgriGptOutput = z.infer<typeof AgriGptOutputSchema>;
 
@@ -44,37 +49,21 @@ export async function processAgriGptCommand(input: AgriGptInput): Promise<AgriGp
 
 
 // Define the main prompt for the AgriGPT brain
-const agrigptPrompt = ai.definePrompt({
-  name: 'agrigptMasterPrompt',
-  input: { schema: AgriGptInputSchema },
-  output: { schema: AgriGptOutputSchema },
-  prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, determine their intent, and provide a clear, concise, and actionable response in their preferred language.
+const agrigptAgent = ai.defineAgent({
+  name: 'agrigptMasterAgent',
+  system: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response in their preferred language.
 
-**CONTEXT:**
-*   Farmer's Query: "{{{transcribedQuery}}}"
-*   Preferred Language: {{{language}}}
-*   Current App Screen: {{{currentScreen}}}
-*   Conversation History:
-    {{#each conversationHistory}}
-    - {{role}}: {{parts.[0].text}}
-    {{/each}}
-
-**YOUR TASK & REASONING PROCESS:**
-1.  **Analyze the Query:** Based on all context, determine the farmer's primary intent (e.g., get price, diagnose, find scheme).
-2.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST ask for a photo. Your response MUST be to request an image. Set the 'intent' to 'DIAGNOSE_DISEASE', the 'actionCode' to 'REQUEST_IMAGE_FOR_DIAGNOSIS', and 'status' to 'clarification_needed'. Formulate a 'kisanMitraResponse' in the user's language asking them to provide a photo.
-3.  **Other Topics**: For any other topic (prices, schemes, etc.), provide a helpful, conversational response that guides the user to the correct page in the app.
-4.  **Synthesize the Final Response:** Formulate a single, helpful 'kisanMitraResponse'.
-5.  **Translate:** The final response MUST be in the requested language: **{{{language}}}**.
-6.  **Provide Structured JSON Output:** Your entire response must be a single, valid JSON object matching the output schema.
-
-**Example Scenario (Diagnosis without photo):**
-- Query: "నా పంటకు ఏదో సమస్య ఉంది, నేను ఏమి చేయాలి?" (My crop has some problem, what should I do?)
-- Language: Telugu
-- Expected Action: "REQUEST_IMAGE_FOR_DIAGNOSIS"
-- Expected Response (Localized): "తప్పకుండా, నేను సహాయం చేయగలను. దయచేసి సమస్య ఉన్న మొక్క యొక్క ఫోటో తీసి చూపండి."
-
-Now, process the provided query and generate the JSON response.
+**IMPORTANT INSTRUCTIONS:**
+1.  **Analyze the Query:** Based on the user's query and conversation history, determine their primary intent.
+2.  **Use Your Tools:** You have tools to get information about mandi prices, government schemes, and spraying advice. Use them whenever necessary to answer the user's question.
+    - When asked about future prices or price forecasts, use the \`predictMandiPriceTool\`.
+    - When asked about government schemes, subsidies, or support, use the \`schemeAdvisorTool\`. You will need to ask the user for all the required information (help type, state, farmer type, land ownership) before calling the tool.
+    - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
+3.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
+4.  **Synthesize the Final Response:** Formulate a single, helpful, conversational response based on the tool's output or the diagnosis rule.
+5.  **Translate:** The final response MUST be in the requested language.
 `,
+  tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
 });
 
 // Define the Genkit Flow that orchestrates the AI call
@@ -85,12 +74,29 @@ const agrigptFlow = ai.defineFlow(
     outputSchema: AgriGptOutputSchema,
   },
   async (input) => {
-    const { output } = await agrigptPrompt(input);
+    
+    const history: HistoryPart[] = input.conversationHistory.map(h => ({
+      ...h,
+      content: h.content.map(c => {
+        if(c.text) return { text: c.text };
+        if(c.toolRequest) return { toolRequest: c.toolRequest };
+        if(c.toolResponse) return { toolResponse: c.toolResponse };
+        return { text: "" };
+      })
+    }));
 
-    if (!output) {
-      throw new Error('AgriGPT AI did not return a valid response.');
+    const { output } = await ai.generate({
+      agent: agrigptAgent,
+      input: `${input.transcribedQuery} (respond in ${input.language})`,
+      history: history as any,
+    });
+    
+    if (!output?.content[0]?.text) {
+        throw new Error('AgriGPT AI did not return a valid text response.');
     }
 
-    return output;
+    return {
+        kisanMitraResponse: output.content[0].text
+    };
   }
 );
