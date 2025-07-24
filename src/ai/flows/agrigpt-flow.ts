@@ -13,8 +13,6 @@ import { z } from 'zod';
 import { diagnoseCropDiseaseTool } from './diagnose-crop-disease';
 import { predictMandiPriceTool } from './predict-mandi-price';
 import { schemeAdvisorTool } from './scheme-advisor';
-import { getWeatherTool } from './weather-api';
-import { sprayingAdviceTool } from './spraying-advice';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
@@ -53,7 +51,7 @@ const agrigptPrompt = ai.definePrompt({
   name: 'agrigptMasterPrompt',
   input: { schema: AgriGptInputSchema },
   output: { schema: AgriGptOutputSchema },
-  tools: [diagnoseCropDiseaseTool, predictMandiPriceTool, schemeAdvisorTool, getWeatherTool, sprayingAdviceTool],
+  tools: [diagnoseCropDiseaseTool, predictMandiPriceTool, schemeAdvisorTool],
   prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, determine their intent, use available tools to gather information, and provide a clear, concise, and actionable response in their preferred language.
 
 **CONTEXT:**
@@ -71,7 +69,6 @@ const agrigptPrompt = ai.definePrompt({
     *   Can you answer directly?
     *   Do you need to use one of your tools?
     *   **Diagnosis Rule**: If the user's intent is to diagnose a crop disease or they mention a sick plant, you MUST ask for a photo. Your response MUST be to request an image. Set the 'intent' to 'DIAGNOSE_DISEASE', the 'actionCode' to 'REQUEST_IMAGE_FOR_DIAGNOSIS', and 'status' to 'clarification_needed'. Formulate a 'kisanMitraResponse' in the user's language asking them to provide a photo. Do NOT call the 'diagnoseCropDiseaseTool' directly. The user must upload a photo through the app's 'Diagnose' page first.
-    *   **Weather Rule**: If the user asks about the weather, you MUST use the 'getWeatherTool'. After getting the forecast data from the tool, you MUST then call the 'sprayingAdviceTool' with that forecast data and the user's preferred 'language'. Finally, combine the weather information and the spraying advice into a single, helpful 'kisanMitraResponse'. If the user's location is ambiguous, ask for clarification before calling the tool.
     *   If the query is ambiguous for any other tool, ask for clarification.
 3.  **Use Tools:** If you have enough information for tools other than diagnosis, call the necessary tool(s) to get the required data.
 4.  **Synthesize the Final Response:** Combine the user's query and the tool's output to formulate a single, helpful 'kisanMitraResponse'.
