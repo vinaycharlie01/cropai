@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from "framer-motion";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { TrendingUp, TrendingDown, Minus, Loader2, Bot, Mic } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2, Bot, Mic, AlertCircle } from 'lucide-react';
 
 import {
   Card,
@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { predictMandiPrice, PredictMandiPriceOutput } from "@/ai/flows/predict-mandi-price";
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
+import { getMandiPriceTool, MandiPriceRecord } from "@/ai/flows/get-mandi-prices";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PredictionFormInputs = {
   cropType: string;
@@ -36,14 +38,9 @@ type PredictionFormInputs = {
 
 type SttField = 'cropType' | 'location';
 
-const mockMandiPrices: { cropKey: TranslationKeys, price: number, regionKey: TranslationKeys, trend: 'up' | 'down' | 'neutral' }[] = [
-  { cropKey: 'tomato', price: 2500, regionKey: 'maharashtra', trend: 'up' },
-  { cropKey: 'onion', price: 1800, regionKey: 'karnataka', trend: 'down' },
-  { cropKey: 'potato', price: 1500, regionKey: 'uttarPradesh', trend: 'neutral' },
-  { cropKey: 'wheat', price: 2200, regionKey: 'punjab', trend: 'up' },
-  { cropKey: 'riceBasmati', price: 9500, regionKey: 'haryana', trend: 'down' },
-  { cropKey: 'cotton', price: 7500, regionKey: 'gujarat', trend: 'neutral' },
-];
+// Main list of crops to display by default
+const defaultCrops = ['Tomato', 'Onion', 'Potato', 'Wheat', 'Paddy', 'Cotton', 'Maize'];
+const defaultState = 'Karnataka';
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
@@ -51,8 +48,39 @@ export default function MandiPricesPage() {
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<PredictionFormInputs>();
 
   const [prediction, setPrediction] = useState<PredictMandiPriceOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPredictionLoading, setIsPredictionLoading] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+
+  const [livePrices, setLivePrices] = useState<MandiPriceRecord[]>([]);
+  const [isLivePriceLoading, setIsLivePriceLoading] = useState(true);
+  const [livePriceError, setLivePriceError] = useState<string | null>(null);
+
+
+  useEffect(() => {
+    const fetchInitialPrices = async () => {
+        setIsLivePriceLoading(true);
+        setLivePriceError(null);
+        let allPrices: MandiPriceRecord[] = [];
+        try {
+            for (const crop of defaultCrops) {
+                const prices = await getMandiPriceTool({ state: defaultState, commodity: crop });
+                if (prices.length > 0) {
+                     // Get the most recent price for this crop
+                    allPrices.push(prices[0]);
+                }
+            }
+            // Sort by commodity name
+            allPrices.sort((a, b) => a.commodity.localeCompare(b.commodity));
+            setLivePrices(allPrices);
+        } catch (error) {
+            console.error("Failed to fetch initial prices", error);
+            setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable.");
+        } finally {
+            setIsLivePriceLoading(false);
+        }
+    };
+    fetchInitialPrices();
+  }, []);
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
@@ -81,7 +109,7 @@ export default function MandiPricesPage() {
   };
 
   const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
-    setIsLoading(true);
+    setIsPredictionLoading(true);
     setPrediction(null);
     try {
       const result = await predictMandiPrice({
@@ -98,15 +126,7 @@ export default function MandiPricesPage() {
         description: "Could not fetch AI price prediction."
       });
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const getTrendIcon = (trend: 'up' | 'down' | 'neutral') => {
-    switch (trend) {
-      case 'up': return <TrendingUp className="h-5 w-5 text-green-500" />;
-      case 'down': return <TrendingDown className="h-5 w-5 text-red-500" />;
-      case 'neutral': return <Minus className="h-5 w-5 text-muted-foreground" />;
+      setIsPredictionLoading(false);
     }
   };
 
@@ -131,22 +151,37 @@ export default function MandiPricesPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4 px-4 py-2 font-semibold text-muted-foreground">
+            <div className="grid grid-cols-4 gap-4 px-4 py-2 font-semibold text-muted-foreground">
               <div className="col-span-1">{t('crop')}</div>
-              <div className="col-span-1">{t('price')}</div>
-              <div className="col-span-1">{t('region')}</div>
+              <div className="col-span-1">{t('price')} (₹)</div>
+              <div className="col-span-1">{t('market')}</div>
+              <div className="col-span-1">{t('date')}</div>
             </div>
             <div className="space-y-2">
-              {mockMandiPrices.map((item, index) => (
-                <div key={index} className="grid grid-cols-3 gap-4 items-center p-4 rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="col-span-1 font-medium">{t(item.cropKey)}</div>
-                  <div className="col-span-1 flex items-center gap-2 font-semibold">
-                    {getTrendIcon(item.trend)}
-                    ₹{item.price.toLocaleString('en-IN')}
+              {isLivePriceLoading ? (
+                [...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
+              ) : livePriceError ? (
+                  <div className="text-center py-8 text-destructive">
+                    <AlertCircle className="mx-auto h-10 w-10 mb-2" />
+                    <p className="font-semibold">Failed to Load Prices</p>
+                    <p className="text-sm">{livePriceError}</p>
                   </div>
-                  <div className="col-span-1 text-muted-foreground">{t(item.regionKey)}</div>
-                </div>
-              ))}
+              ) : livePrices.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p>No live price data found for default crops in {defaultState}.</p>
+                  </div>
+              ) : (
+                livePrices.map((item, index) => (
+                  <div key={index} className="grid grid-cols-4 gap-4 items-center p-4 rounded-lg hover:bg-muted/50 transition-colors">
+                    <div className="col-span-1 font-medium">{item.commodity}</div>
+                    <div className="col-span-1 flex items-center gap-2 font-semibold">
+                      {item.modal_price}
+                    </div>
+                    <div className="col-span-1 text-muted-foreground">{item.market}</div>
+                    <div className="col-span-1 text-muted-foreground">{item.arrival_date}</div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </CardContent>
@@ -191,9 +226,9 @@ export default function MandiPricesPage() {
                 {errors.location && <p className="text-destructive text-sm">{errors.location.message}</p>}
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Bot className="mr-2" />}
-              {isLoading ? 'Predicting...' : 'Get Prediction'}
+            <Button type="submit" className="w-full" disabled={isPredictionLoading}>
+              {isPredictionLoading ? <Loader2 className="mr-2 animate-spin" /> : <Bot className="mr-2" />}
+              {isPredictionLoading ? 'Predicting...' : 'Get Prediction'}
             </Button>
           </CardContent>
         </form>

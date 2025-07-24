@@ -11,6 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { getMandiPriceTool } from './get-mandi-prices';
 
 const PredictMandiPriceInputSchema = z.object({
   cropType: z.string().describe('The type of crop for which to predict the price.'),
@@ -73,15 +74,27 @@ const predictMandiPriceFlow = ai.defineFlow(
     outputSchema: PredictMandiPriceOutputSchema,
   },
   async (input) => {
-    // Reverted to using a default fallback price
-    const currentPrice = 2000;
+    let currentPrice = 2000; // Default fallback price
+    try {
+        const livePrices = await getMandiPriceTool({ state: input.location, commodity: input.cropType });
+        if (livePrices && livePrices.length > 0) {
+            // Use the modal price from the most recent record
+            currentPrice = Number(livePrices[0].modal_price);
+        }
+    } catch (e) {
+        console.warn(`Could not fetch live market price for ${input.cropType} in ${input.location}. Using fallback price. Error: ${e}`);
+    }
 
     const {output} = await prompt({
         ...input,
         currentPrice: currentPrice,
     });
     
-    return output!;
+    if (!output) {
+        throw new Error("The AI model did not return a valid price prediction.");
+    }
+    
+    return output;
   }
 );
 
