@@ -20,6 +20,24 @@ import { Button } from "@/components/ui/button";
 
 const featureCards = [
   {
+    href: "/dashboard/mandi-prices",
+    icon: LineChart,
+    titleKey: "mandiPrices",
+    descriptionKey: "mandiPricesDescription",
+  },
+  {
+    href: "/dashboard/weather",
+    icon: CloudSun,
+    titleKey: "weatherForecast",
+    descriptionKey: "weatherInstruction",
+  },
+  {
+    href: "/dashboard/schemes",
+    icon: ScrollText,
+    titleKey: "govtSchemes",
+    descriptionKey: "govtSchemesDescription",
+  },
+  {
     href: "/dashboard/diagnose",
     icon: HeartPulse,
     titleKey: "diagnoseDisease",
@@ -60,24 +78,6 @@ const featureCards = [
     icon: Droplets,
     titleKey: "smartIrrigation",
     descriptionKey: "irrigationDescription",
-  },
-  {
-    href: "/dashboard/mandi-prices",
-    icon: LineChart,
-    titleKey: "mandiPrices",
-    descriptionKey: "mandiPricesDescription",
-  },
-   {
-    href: "/dashboard/weather",
-    icon: CloudSun,
-    titleKey: "weatherForecast",
-    descriptionKey: "weatherInstruction",
-  },
-  {
-    href: "/dashboard/schemes",
-    icon: ScrollText,
-    titleKey: "govtSchemes",
-    descriptionKey: "govtSchemesDescription",
   },
 ];
 
