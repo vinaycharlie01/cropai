@@ -18,6 +18,8 @@ const SprayingAdviceInputSchema = z.object({
   forecast: z.array(WeatherDailyForecastSchema),
   language: z.string().describe('The language for the advice (e.g., "English", "Hindi").'),
 });
+export type SprayingAdviceInput = z.infer<typeof SprayingAdviceInputSchema>;
+
 
 const SprayingAdviceSchema = z.object({
   day: z.string().describe('The day of the week for the advice (e.g., "Mon").'),

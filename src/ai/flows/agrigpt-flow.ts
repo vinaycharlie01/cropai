@@ -71,7 +71,7 @@ const agrigptPrompt = ai.definePrompt({
     *   Can you answer directly?
     *   Do you need to use one of your tools?
     *   **Diagnosis Rule**: If you need to use the 'diagnoseCropDiseaseTool', you MUST check if a photo has been provided. If not, you MUST ask the user for a photo. Set the actionCode to 'REQUEST_IMAGE_FOR_DIAGNOSIS'.
-    *   **Weather Rule**: If the user asks about the weather, you MUST use the 'getWeatherTool'. After getting the forecast data from the tool, you MUST then call the 'sprayingAdviceTool' with that forecast data. Finally, combine the weather information and the spraying advice into a single, helpful 'kisanMitraResponse'. If the user's location is ambiguous, ask for clarification before calling the tool.
+    *   **Weather Rule**: If the user asks about the weather, you MUST use the 'getWeatherTool'. After getting the forecast data from the tool, you MUST then call the 'sprayingAdviceTool' with that forecast data and the user's preferred 'language'. Finally, combine the weather information and the spraying advice into a single, helpful 'kisanMitraResponse'. If the user's location is ambiguous, ask for clarification before calling the tool.
     *   If the query is ambiguous for any other tool, ask for clarification.
 3.  **Use Tools:** If you have enough information, call the necessary tool(s) to get the required data.
 4.  **Synthesize the Final Response:** Combine the user's query and the tool's output to formulate a single, helpful 'kisanMitraResponse'.
@@ -105,4 +105,3 @@ const agrigptFlow = ai.defineFlow(
     return output;
   }
 );
-
