@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { predictMandiPriceTool } from './predict-mandi-price';
 import { schemeAdvisorTool } from './scheme-advisor';
 import { sprayingAdviceTool } from './spraying-advice';
-import { generate } from 'genkit/generate';
+import { generate } from 'genkit';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
