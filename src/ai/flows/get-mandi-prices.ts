@@ -9,7 +9,7 @@ import { z } from 'zod';
 import fetch from 'node-fetch';
 import { MandiPriceInputSchema, MandiPriceOutputSchema, MandiPriceInput, MandiPriceOutput } from '@/types/mandi-prices';
 
-const API_KEY = process.env.GOVT_API_KEY;
+const API_KEY = process.env.API_KEY; // Corrected from GOVT_API_KEY
 const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
 const BASE_URL = 'https://api.data.gov.in/resource/';
 
