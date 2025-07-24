@@ -34,6 +34,16 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
         if (!response.ok) {
             const errorBody = await response.text();
             console.error("data.gov.in API error response:", errorBody);
+            // Try to parse for a more specific error message from the API's JSON response if possible
+            try {
+                const errorJson = JSON.parse(errorBody);
+                if (errorJson.error) {
+                    throw new Error(`The data.gov.in API returned an error: ${errorJson.error}`);
+                }
+            } catch (e) {
+                // If parsing fails, it might be HTML or plain text
+                 throw new Error(`The data.gov.in API returned a server error (${response.status}). Please check your filters or try again later.`);
+            }
             throw new Error(`The data.gov.in API returned an error: ${response.statusText}`);
         }
 
@@ -67,7 +77,7 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
         
     } catch (error) {
       console.error('Error fetching Mandi prices:', error);
-      if (error instanceof Error && error.message.includes('API returned an error')) {
+      if (error instanceof Error && (error.message.includes('API returned an error') || error.message.includes('unexpected format'))) {
         throw error;
       }
       throw new Error('Failed to fetch data from data.gov.in. The service might be down or your filters may not have returned results.');

@@ -69,11 +69,13 @@ export default function MandiPricesPage() {
             const prices = await getLiveMandiPrice(data);
             if (prices.length === 0) {
                 setLivePriceError(`No data found for ${data.commodity} in ${data.market}. Please check your spelling or try a different market.`);
+                setLivePrices([]); // Set to empty array to remove previous results
+            } else {
+                setLivePrices(prices);
             }
-            setLivePrices(prices);
         } catch (error) {
             console.error("Failed to fetch live prices", error);
-            const errorMessage = (error instanceof Error) ? error.message : "Could not load live market prices. The data.gov.in service may be temporarily unavailable.";
+            const errorMessage = (error instanceof Error) ? error.message : "Could not load live market prices.";
             setLivePriceError(errorMessage);
         } finally {
             setIsLivePriceLoading(false);
@@ -85,8 +87,8 @@ export default function MandiPricesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Live Prices Column */}
             <motion.div
-                initial="hidden"
-                animate="visible"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 className="lg:col-span-2"
             >
                 <Card>
@@ -126,14 +128,14 @@ export default function MandiPricesPage() {
                     <CardContent>
                          <AnimatePresence>
                             {isLivePriceLoading && (
-                                <div className="flex justify-center items-center h-40">
+                                <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center h-40">
                                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                </div>
+                                </motion.div>
                             )}
                             {livePriceError && (
                                 <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 p-4 rounded-md text-center">{livePriceError}</motion.div>
                             )}
-                            {livePrices && livePrices.length > 0 && !isLivePriceLoading && (
+                            {livePrices && livePrices.length > 0 && (
                                 <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="border rounded-md mt-4 overflow-x-auto">
                                     <Table>
                                         <TableHeader>
@@ -204,9 +206,9 @@ export default function MandiPricesPage() {
                 
                 <AnimatePresence>
                     {isPredictionLoading && (
-                        <div className="flex justify-center items-center h-40">
+                        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center h-40">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        </div>
+                        </motion.div>
                     )}
                     {predictionError && (
                          <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 p-4 rounded-md text-center">{predictionError}</motion.div>
