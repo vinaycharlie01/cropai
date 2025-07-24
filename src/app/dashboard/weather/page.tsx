@@ -28,6 +28,8 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getSprayingAdvice, SprayingAdvice } from '@/ai/flows/spraying-advice';
+import { cn } from '@/lib/utils';
+
 
 const weatherIcons: { [key: string]: React.ReactNode } = {
   Sunny: <Sun className="w-16 h-16 text-yellow-400" />,
@@ -55,13 +57,19 @@ const smallWeatherIcons: { [key: string]: React.ReactNode } = {
   Snow: <Snowflake className="w-8 h-8 text-blue-200" />,
 };
 
-const SprayingStatusIcon = ({ status }: { status: string }) => {
+const SprayingStatusIcon = ({ status, className }: { status: string, className?: string }) => {
     switch (status) {
-        case 'Optimal': return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-        case 'Moderate': return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
-        case 'Unfavourable': return <XCircle className="h-5 w-5 text-red-500" />;
+        case 'Optimal': return <CheckCircle2 className={cn("h-6 w-6", className)} />;
+        case 'Moderate': return <AlertTriangle className={cn("h-6 w-6", className)} />;
+        case 'Unfavourable': return <XCircle className={cn("h-6 w-6", className)} />;
         default: return null;
     }
+};
+
+const sprayingStatusConfig = {
+    'Optimal': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-200 dark:border-green-800',
+    'Moderate': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800',
+    'Unfavourable': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800',
 };
 
 const WeatherCardSkeleton = () => (
@@ -287,13 +295,15 @@ const WeatherPage = () => {
                             <CardContent>
                                 <ul className="space-y-3">
                                     {sprayingAdvice.map((advice, index) => (
-                                        <li key={index} className="flex items-center gap-4 p-3 bg-muted/50 rounded-lg">
-                                            <div className="w-12 font-bold">{advice.day}</div>
-                                            <div className="flex items-center gap-2">
-                                                <SprayingStatusIcon status={advice.status} />
-                                                <span className="font-semibold">{advice.status}</span>
+                                        <li key={index} className={cn("flex items-center gap-4 p-4 border rounded-lg", sprayingStatusConfig[advice.status as keyof typeof sprayingStatusConfig])}>
+                                            <SprayingStatusIcon status={advice.status} className="h-8 w-8 shrink-0" />
+                                            <div className="flex-1">
+                                                <div className="flex justify-between items-baseline">
+                                                    <span className="font-bold text-lg">{advice.day}</span>
+                                                    <span className="font-semibold text-base">{advice.status}</span>
+                                                </div>
+                                                <p className="text-sm opacity-90">{advice.reason}</p>
                                             </div>
-                                            <div className="flex-1 text-sm text-muted-foreground">{advice.reason}</div>
                                         </li>
                                     ))}
                                 </ul>
