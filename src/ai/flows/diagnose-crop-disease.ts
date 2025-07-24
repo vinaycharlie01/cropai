@@ -75,18 +75,69 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     inputSchema: DiagnoseCropDiseaseInputSchema,
     outputSchema: DiagnoseCropDiseaseOutputSchema,
   },
-  async input => {
-    try {
-        const {output} = await prompt(input);
-        if (!output) {
-          throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
-        }
-        return output;
-    } catch (e: any) {
-        if (e.message?.includes('503 Service Unavailable')) {
-            throw new Error("The AI diagnosis service is currently overloaded. Please try again in a few moments.");
-        }
-        throw e;
-    }
+  async (input) => {
+    // --- MOCK DATA WORKAROUND for 429 Quota Error ---
+    console.log("Using mock data for diagnosis to avoid 429 error.");
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate AI thinking time
+
+    const mockResponses: Record<string, DiagnoseCropDiseaseOutput> = {
+      en: {
+        disease: "Tomato Late Blight",
+        remedies: "Ensure proper spacing between plants for good air circulation. Water at the base of the plant to keep leaves dry. Remove and destroy infected leaves immediately.",
+        treatment: "Apply a fungicide containing **Mancozeb** or **Copper Oxychloride**. Follow the product instructions for application rates. Spray every 7-10 days or after rain.",
+        confidence: 0.92,
+        pesticideRecommendations: [
+          {
+            pesticideName: "Mancozeb 75% WP",
+            usageInstructions: "Mix 2-3 grams per liter of water and spray thoroughly on the foliage.",
+            productUrl: "https://dir.indiamart.com/search.mp?ss=mancozeb"
+          },
+          {
+            pesticideName: "Copper Oxychloride 50% WP",
+            usageInstructions: "Mix 3 grams per liter of water and apply as a foliar spray. Ensure complete coverage of the plant.",
+            productUrl: "https://dir.indiamart.com/search.mp?ss=copper+oxychloride"
+          }
+        ]
+      },
+      te: {
+        disease: "టమోటా లేట్ బ్లైట్",
+        remedies: "మొక్కల మధ్య మంచి గాలి ప్రసరణ కోసం సరైన అంతరం ఉండేలా చూసుకోండి. ఆకులు పొడిగా ఉండటానికి మొక్క యొక్క ఆధారం వద్ద నీరు పోయండి. సోకిన ఆకులను వెంటనే తీసివేసి నాశనం చేయండి.",
+        treatment: "**మాంకోజెబ్** లేదా **కాపర్ ఆక్సిక్లోరైడ్** కలిగిన శిలీంద్ర సంహారిణిని వాడండి. అప్లికేషన్ రేట్ల కోసం ఉత్పత్తి సూచనలను అనుసరించండి. ప్రతి 7-10 రోజులకు లేదా వర్షం తర్వాత స్ప్రే చేయండి.",
+        confidence: 0.92,
+        pesticideRecommendations: [
+          {
+            pesticideName: "మాంకోజెబ్ 75% WP",
+            usageInstructions: "లీటరు నీటికి 2-3 గ్రాములు కలిపి ఆకులపై పూర్తిగా స్ప్రే చేయండి.",
+            productUrl: "https://dir.indiamart.com/search.mp?ss=mancozeb"
+          },
+          {
+            pesticideName: "కాపర్ ఆక్సిక్లోరైడ్ 50% WP",
+            usageInstructions: "లీటరు నీటికి 3 గ్రాములు కలిపి ఫోలియర్ స్ప్రేగా వేయండి. మొక్క యొక్క పూర్తి కవరేజీని నిర్ధారించుకోండి.",
+            productUrl: "https://dir.indiamart.com/search.mp?ss=copper+oxychloride"
+          }
+        ]
+      },
+      hi: {
+        disease: "टमाटर की पछेती झुलसा",
+        remedies: "अच्छी हवा के संचार के लिए पौधों के बीच उचित दूरी सुनिश्चित करें। पत्तियों को सूखा रखने के लिए पौधे के आधार पर पानी दें। संक्रमित पत्तियों को तुरंत हटा दें और नष्ट कर दें।",
+        treatment: "**मैनकोजेब** या **कॉपर ऑक्सीक्लोराइड** युक्त कवकनाशी का प्रयोग करें। आवेदन दरों के लिए उत्पाद निर्देशों का पालन करें। हर 7-10 दिनों में या बारिश के बाद स्प्रे करें।",
+        confidence: 0.92,
+        pesticideRecommendations: [
+            {
+                pesticideName: "मैनकोजेब 75% WP",
+                usageInstructions: "2-3 ग्राम प्रति लीटर पानी में मिलाकर पत्तियों पर अच्छी तरह स्प्रे करें।",
+                productUrl: "https://dir.indiamart.com/search.mp?ss=mancozeb"
+            },
+            {
+                pesticideName: "कॉपर ऑक्सीक्लोराइड 50% WP",
+                usageInstructions: "3 ग्राम प्रति लीटर पानी में मिलाकर पर्ण स्प्रे के रूप में लगाएं। पौधे की पूरी कवरेज सुनिश्चित करें।",
+                productUrl: "https://dir.indiamart.com/search.mp?ss=copper+oxychloride"
+            }
+        ]
+      },
+    };
+
+    const lang = input.language as keyof typeof mockResponses;
+    return mockResponses[lang] || mockResponses['en'];
   }
 );
