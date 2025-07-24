@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { monitorCropGrowth, CropGrowthOutput } from '@/ai/flows/daily-crop-growth';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { TranslationKeys } from '@/lib/translations';
@@ -54,6 +55,9 @@ export default function MonitorPage() {
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
 
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -74,6 +78,30 @@ export default function MonitorPage() {
     onError: onRecognitionError,
     onEnd: () => setActiveSttField(null),
   });
+  
+  const getAudio = useCallback(async (textToSpeak: string) => {
+      setIsAudioLoading(true);
+      try {
+        const response = await generateSpeech({ text: textToSpeak, language });
+        setAudioSrc(response.audioDataUri);
+      } catch (err) {
+        console.error('TTS Generation Error:', err);
+        toast({
+          variant: 'destructive',
+          title: 'Audio Error',
+          description: 'Failed to generate audio for this text.',
+        });
+      } finally {
+        setIsAudioLoading(false);
+      }
+  }, [language, toast]);
+  
+  const handlePlaybackRequest = () => {
+    if (analysis) {
+        const textToSpeak = `Growth Stage: ${analysis.growthStage}. Observations: ${analysis.observations}. Recommendations: ${analysis.recommendations}`;
+        getAudio(textToSpeak);
+    }
+  };
 
   const handleSttToggle = (field: SttField) => {
     if (isListening) {
@@ -148,6 +176,7 @@ export default function MonitorPage() {
         setImagePreview(reader.result as string);
         setAnalysis(null);
         setError(null);
+        setAudioSrc(null);
         clearErrors('image');
       };
       reader.readAsDataURL(file);
@@ -167,6 +196,7 @@ export default function MonitorPage() {
         setImagePreview(dataUrl);
         setAnalysis(null);
         setError(null);
+        setAudioSrc(null);
         
         const res = await fetch(dataUrl);
         const blob = await res.blob();
@@ -192,6 +222,7 @@ export default function MonitorPage() {
     setIsLoading(true);
     setError(null);
     setAnalysis(null);
+    setAudioSrc(null);
 
     let imageDataUri: string | null = null;
     
@@ -215,6 +246,8 @@ export default function MonitorPage() {
           language: language,
         });
         setAnalysis(result);
+        const textToSpeak = `Growth Stage: ${result.growthStage}. Observations: ${result.observations}. Recommendations: ${result.recommendations}`;
+        getAudio(textToSpeak);
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
@@ -345,7 +378,11 @@ export default function MonitorPage() {
                           <Bot />
                           <CardTitle className="font-headline">{t('growthAnalysis')}</CardTitle>
                         </div>
-                        <AudioPlayer textToSpeak={`Growth Stage: ${analysis.growthStage}. Observations: ${analysis.observations}. Recommendations: ${analysis.recommendations}`} />
+                        <AudioPlayer
+                            audioSrc={audioSrc}
+                            isLoading={isAudioLoading}
+                            onPlaybackRequest={handlePlaybackRequest}
+                        />
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">

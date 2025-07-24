@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { Bot, HeartPulse, ShieldCheck, ShieldAlert, Loader2 } from 'lucide-react';
@@ -22,6 +22,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { getCropHealthAnalytics, CropHealthAnalyticsOutput } from '@/ai/flows/crop-health-analytics';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { AudioPlayer } from '@/components/AudioPlayer';
@@ -41,6 +42,32 @@ export default function AnalyticsPage() {
     const [diagnosisHistory, setDiagnosisHistory] = useState<DiagnosisRecord[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAiLoading, setIsAiLoading] = useState(true);
+    const [audioSrc, setAudioSrc] = useState<string | null>(null);
+    const [isAudioLoading, setIsAudioLoading] = useState(false);
+
+    const getAudio = useCallback(async (textToSpeak: string) => {
+        setIsAudioLoading(true);
+        try {
+          const response = await generateSpeech({ text: textToSpeak, language });
+          setAudioSrc(response.audioDataUri);
+        } catch (err) {
+          console.error('TTS Generation Error:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Failed to generate audio for this text.',
+          });
+        } finally {
+          setIsAudioLoading(false);
+        }
+    }, [language, toast]);
+    
+    const handlePlaybackRequest = () => {
+        if (analyticsData) {
+            const textToSpeak = `Overall Assessment: ${analyticsData.overallAssessment}. Identified Trends: ${analyticsData.trends}. Preventative Advice: ${analyticsData.preventativeAdvice}`;
+            getAudio(textToSpeak);
+        }
+    };
 
     useEffect(() => {
         setIsLoading(true);
@@ -77,12 +104,15 @@ export default function AnalyticsPage() {
         if (diagnosisHistory.length > 0) {
             const fetchAnalytics = async () => {
                 setIsAiLoading(true);
+                setAudioSrc(null);
                 try {
                     const result = await getCropHealthAnalytics({
                         diagnosisHistory: diagnosisHistory.map(({ id, ...rest }) => rest), // pass everything except the id
                         language: language,
                     });
                     setAnalyticsData(result);
+                    const textToSpeak = `Overall Assessment: ${result.overallAssessment}. Identified Trends: ${result.trends}. Preventative Advice: ${result.preventativeAdvice}`;
+                    getAudio(textToSpeak);
                 } catch (error) {
                     console.error("Failed to fetch analytics", error);
                     toast({
@@ -98,7 +128,7 @@ export default function AnalyticsPage() {
         } else {
             setIsAiLoading(false);
         }
-    }, [diagnosisHistory, language, toast, t]);
+    }, [diagnosisHistory, language, toast, t, getAudio]);
 
     const diseaseFrequency = diagnosisHistory
         .filter(item => item.disease !== "Healthy")
@@ -227,7 +257,11 @@ export default function AnalyticsPage() {
                                     <div className="flex items-center justify-between">
                                         <CardTitle className="flex items-center gap-2"><Bot /> {t('aiAnalysis')}</CardTitle>
                                         {analyticsData && (
-                                            <AudioPlayer textToSpeak={`Overall Assessment: ${analyticsData.overallAssessment}. Identified Trends: ${analyticsData.trends}. Preventative Advice: ${analyticsData.preventativeAdvice}`} />
+                                            <AudioPlayer
+                                                audioSrc={audioSrc}
+                                                isLoading={isAudioLoading}
+                                                onPlaybackRequest={handlePlaybackRequest}
+                                            />
                                         )}
                                     </div>
                                 </CardHeader>

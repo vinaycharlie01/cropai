@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Loader2, Search, ArrowRight } from 'lucide-react';
@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { getSchemeRecommendations } from '@/ai/flows/scheme-advisor';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { SchemeFinderOutput, SchemeRecommendation } from '@/types/scheme-advisor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { AudioPlayer } from '@/components/AudioPlayer';
@@ -32,6 +33,12 @@ const formSchema = z.object({
 
 type FormInputs = z.infer<typeof formSchema>;
 
+interface SchemeWithAudio extends SchemeRecommendation {
+    audioSrc: string | null;
+    isAudioLoading: boolean;
+}
+
+
 const helpTypes = ['cropInsurance', 'irrigation', 'financialSupport', 'equipmentSubsidy', 'soilHealth', 'generalSupport'];
 const farmerTypes = ['landholder', 'tenant', 'sharecropper', 'womanFarmer'];
 
@@ -43,7 +50,7 @@ export default function SchemesPage() {
     });
 
     const [isLoading, setIsLoading] = useState(false);
-    const [recommendations, setRecommendations] = useState<SchemeFinderOutput | null>(null);
+    const [recommendations, setRecommendations] = useState<SchemeWithAudio[] | null>(null);
 
     const hasLand = watch('hasLand');
 
@@ -52,12 +59,14 @@ export default function SchemesPage() {
         setRecommendations(null);
         try {
             const result = await getSchemeRecommendations({ ...data, language });
-            setRecommendations(result);
             if(result.length === 0) {
                 toast({
                     title: t('noSchemesFound'),
                     description: t('noSchemesFoundDesc'),
                 });
+                setRecommendations([]);
+            } else {
+                setRecommendations(result.map(r => ({ ...r, audioSrc: null, isAudioLoading: false })));
             }
         } catch (e) {
             console.error(e);
@@ -76,6 +85,42 @@ export default function SchemesPage() {
             How to Apply: ${scheme.howToApply}.
         `;
     };
+
+    const handlePlaybackRequest = useCallback(async (index: number) => {
+        if (!recommendations) return;
+
+        const targetScheme = recommendations[index];
+        if (targetScheme.audioSrc) return; // Already loaded
+
+        // Set loading state for the specific item
+        setRecommendations(prev => {
+            if (!prev) return null;
+            const newRecs = [...prev];
+            newRecs[index].isAudioLoading = true;
+            return newRecs;
+        });
+
+        try {
+            const textToSpeak = getSchemeTextForTts(targetScheme);
+            const response = await generateSpeech({ text: textToSpeak, language });
+             setRecommendations(prev => {
+                if (!prev) return null;
+                const newRecs = [...prev];
+                newRecs[index].audioSrc = response.audioDataUri;
+                return newRecs;
+            });
+        } catch (err) {
+            console.error('TTS Generation Error:', err);
+            toast({ variant: 'destructive', title: 'Audio Error', description: 'Failed to generate audio.' });
+        } finally {
+             setRecommendations(prev => {
+                if (!prev) return null;
+                const newRecs = [...prev];
+                newRecs[index].isAudioLoading = false;
+                return newRecs;
+            });
+        }
+    }, [recommendations, language, toast]);
 
     return (
         <motion.div
@@ -211,7 +256,11 @@ export default function SchemesPage() {
                                             <AccordionTrigger className="font-semibold text-lg hover:no-underline text-left">
                                                 <div className="flex justify-between items-center w-full pr-4">
                                                     <span>{scheme.schemeName}</span>
-                                                    <AudioPlayer textToSpeak={getSchemeTextForTts(scheme)} />
+                                                    <AudioPlayer
+                                                        audioSrc={scheme.audioSrc}
+                                                        isLoading={scheme.isAudioLoading}
+                                                        onPlaybackRequest={() => handlePlaybackRequest(index)}
+                                                    />
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="space-y-4 pt-2">

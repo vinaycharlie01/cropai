@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Loader2, Search, Mic } from 'lucide-react';
 
 import { getSellingAdvice } from '@/ai/flows/selling-advice';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,9 @@ export default function SellingAdvicePage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+  
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
@@ -63,15 +67,40 @@ export default function SellingAdvicePage() {
     }
   };
 
+  const getAudio = useCallback(async (textToSpeak: string) => {
+      setIsAudioLoading(true);
+      try {
+        const response = await generateSpeech({ text: textToSpeak, language });
+        setAudioSrc(response.audioDataUri);
+      } catch (err) {
+        console.error('TTS Generation Error:', err);
+        toast({
+          variant: 'destructive',
+          title: 'Audio Error',
+          description: 'Failed to generate audio for this text.',
+        });
+      } finally {
+        setIsAudioLoading(false);
+      }
+  }, [language, toast]);
+
+  const handlePlaybackRequest = () => {
+    if (advice) {
+        getAudio(advice.advice);
+    }
+  };
+
 
   const onSubmit: SubmitHandler<FormInputs> = async (data) => {
     setIsLoading(true);
     setError(null);
     setAdvice(null);
+    setAudioSrc(null);
     
     try {
         const result = await getSellingAdvice({ ...data, language });
         setAdvice(result);
+        getAudio(result.advice);
     } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorGettingAdvice');
@@ -199,7 +228,11 @@ export default function SellingAdvicePage() {
                             <Bot />
                             <CardTitle className="font-headline">{t('sellingAdvice')}</CardTitle>
                         </div>
-                        <AudioPlayer textToSpeak={advice.advice} />
+                        <AudioPlayer
+                            audioSrc={audioSrc}
+                            isLoading={isAudioLoading}
+                            onPlaybackRequest={handlePlaybackRequest}
+                        />
                     </div>
                 </CardHeader>
                 <CardContent className="whitespace-pre-wrap">

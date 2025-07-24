@@ -8,6 +8,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import Link from 'next/link';
 
 import { diagnoseCropDisease, DiagnoseCropDiseaseOutput } from '@/ai/flows/diagnose-crop-disease';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,9 @@ export default function DiagnosePage() {
   const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
   
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -89,6 +93,29 @@ export default function DiagnosePage() {
     onEnd: () => setActiveSttField(null),
   });
 
+  const getAudio = useCallback(async (textToSpeak: string) => {
+      setIsAudioLoading(true);
+      try {
+        const response = await generateSpeech({ text: textToSpeak, language });
+        setAudioSrc(response.audioDataUri);
+      } catch (err) {
+        console.error('TTS Generation Error:', err);
+        toast({
+          variant: 'destructive',
+          title: 'Audio Error',
+          description: 'Failed to generate audio for this text.',
+        });
+      } finally {
+        setIsAudioLoading(false);
+      }
+  }, [language, toast]);
+  
+  const handlePlaybackRequest = () => {
+    if (diagnosis) {
+        const textToSpeak = `Disease: ${diagnosis.disease}. Treatment: ${diagnosis.treatment}. Remedies: ${diagnosis.remedies}`;
+        getAudio(textToSpeak);
+    }
+  };
 
   const handleSttToggle = (field: SttField) => {
     if (isListening) {
@@ -186,6 +213,7 @@ export default function DiagnosePage() {
         setImagePreview(reader.result as string);
         setDiagnosis(null);
         setError(null);
+        setAudioSrc(null);
         clearErrors('image');
       };
       reader.readAsDataURL(file);
@@ -205,6 +233,7 @@ export default function DiagnosePage() {
         setImagePreview(dataUrl);
         setDiagnosis(null);
         setError(null);
+        setAudioSrc(null);
         
         const res = await fetch(dataUrl);
         const blob = await res.blob();
@@ -250,6 +279,7 @@ export default function DiagnosePage() {
     setIsLoading(true);
     setError(null);
     setDiagnosis(null);
+    setAudioSrc(null);
 
     let imageDataUri: string | null = null;
     
@@ -278,6 +308,9 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         await saveDiagnosis(data, result);
+        const textToSpeak = `Disease: ${result.disease}. Treatment: ${result.treatment}. Remedies: ${result.remedies}`;
+        getAudio(textToSpeak);
+
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
@@ -428,7 +461,11 @@ export default function DiagnosePage() {
                             <Bot />
                             <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                         </div>
-                        <AudioPlayer textToSpeak={`Disease: ${diagnosis.disease}. Treatment: ${diagnosis.treatment}. Remedies: ${diagnosis.remedies}`} />
+                        <AudioPlayer
+                            audioSrc={audioSrc}
+                            isLoading={isAudioLoading}
+                            onPlaybackRequest={handlePlaybackRequest}
+                        />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
