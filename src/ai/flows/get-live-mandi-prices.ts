@@ -14,7 +14,7 @@ interface MandiPriceInput {
 }
 
 const API_KEY = "579b464db66ec23bdd00000179a9b0a0494949954522ba8b8270a691";
-const RESOURCE_ID = '35985678-0d79-46b4-9ed6-6f13308a1d24'; // Corrected Resource ID
+const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
 const BASE_URL = 'https://api.data.gov.in/resource/';
 
 export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPriceRecord[]> {
@@ -24,7 +24,7 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
       throw new Error('The government API key is not configured. Please add it to the backend.');
     }
 
-    const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[State]=${encodeURIComponent(state)}&filters[District]=${encodeURIComponent(district)}&filters[Commodity]=${encodeURIComponent(commodity)}&limit=50`;
+    const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
 
     try {
         const fetch = (await import('node-fetch')).default;
