@@ -24,7 +24,6 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
       throw new Error('The government API key is not configured. Please add it to the backend.');
     }
 
-    // Corrected filter parameter casing (State, District, Commodity) and removed market filter
     const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[State]=${encodeURIComponent(state)}&filters[District]=${encodeURIComponent(district)}&filters[Commodity]=${encodeURIComponent(commodity)}&limit=50`;
 
     try {

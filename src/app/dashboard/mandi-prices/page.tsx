@@ -32,13 +32,11 @@ export default function MandiPricesPage() {
     const { t, language } = useLanguage();
     const { toast } = useToast();
     
-    // AI Prediction State
     const predictionForm = useForm<PredictionFormInputs>();
     const [isPredictionLoading, setIsPredictionLoading] = useState(false);
     const [predictionResult, setPredictionResult] = useState<MandiPricePredictionOutput | null>(null);
     const [predictionError, setPredictionError] = useState<string | null>(null);
 
-    // Live Price State
     const livePriceForm = useForm<LivePriceFormInputs>();
     const [isLivePriceLoading, setIsLivePriceLoading] = useState(false);
     const [livePrices, setLivePrices] = useState<MandiPriceRecord[] | null>(null);
@@ -91,7 +89,6 @@ export default function MandiPricesPage() {
             transition={{ duration: 0.5 }}
             className="grid grid-cols-1 lg:grid-cols-3 gap-6"
         >
-            {/* Live Prices Column */}
             <div
                 className="lg:col-span-2"
             >
@@ -111,7 +108,7 @@ export default function MandiPricesPage() {
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="district">District</Label>
-                                    <Input id="district" placeholder="Chittor" {...livePriceForm.register('district', { required: true })} />
+                                    <Input id="district" placeholder="Chittoor" {...livePriceForm.register('district', { required: true })} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="commodity">{t('crop')}</Label>
@@ -168,7 +165,6 @@ export default function MandiPricesPage() {
                 </Card>
             </div>
 
-             {/* AI Prediction Column */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
