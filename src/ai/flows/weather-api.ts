@@ -23,7 +23,7 @@ const mapWeatherCondition = (conditionText: string): z.infer<typeof WeatherOutpu
 };
 
 // This is the Genkit Tool that does the actual work.
-const getWeatherTool = ai.defineTool(
+export const getWeatherTool = ai.defineTool(
     {
         name: 'getWeather',
         description: 'Returns the current weather and a 5-day forecast for a given location, specified by either city name or latitude/longitude coordinates.',
@@ -73,7 +73,7 @@ const getWeatherTool = ai.defineTool(
             const dailyForecasts = forecastData.map((day: any) => {
                 const date = new Date(day.date_epoch * 1000);
                 return {
-                    day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                    day: date.toLocaleString('en-US', { weekday: 'short' }),
                     temp: `${Math.round(day.day.avgtemp_c)}°`,
                     condition: mapWeatherCondition(day.day.condition.text),
                     wind_kph: day.day.maxwind_kph,

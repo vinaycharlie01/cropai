@@ -78,3 +78,14 @@ const sprayingAdviceFlow = ai.defineFlow(
     return output;
   }
 );
+
+
+export const sprayingAdviceTool = ai.defineTool(
+    {
+        name: 'sprayingAdviceTool',
+        description: 'Analyzes a 5-day weather forecast to provide daily advice on whether conditions are suitable for spraying pesticides or fungicides.',
+        inputSchema: SprayingAdviceInputSchema,
+        outputSchema: SprayingAdviceOutputSchema,
+    },
+    async (input) => sprayingAdviceFlow(input)
+);

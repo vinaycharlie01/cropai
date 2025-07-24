@@ -13,6 +13,8 @@ import { z } from 'zod';
 import { diagnoseCropDiseaseTool } from './diagnose-crop-disease';
 import { predictMandiPriceTool } from './predict-mandi-price';
 import { schemeAdvisorTool } from './scheme-advisor';
+import { getWeatherTool } from './weather-api';
+import { sprayingAdviceTool } from './spraying-advice';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
@@ -51,7 +53,7 @@ const agrigptPrompt = ai.definePrompt({
   name: 'agrigptMasterPrompt',
   input: { schema: AgriGptInputSchema },
   output: { schema: AgriGptOutputSchema },
-  tools: [diagnoseCropDiseaseTool, predictMandiPriceTool, schemeAdvisorTool],
+  tools: [diagnoseCropDiseaseTool, predictMandiPriceTool, schemeAdvisorTool, getWeatherTool, sprayingAdviceTool],
   prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, determine their intent, use available tools to gather information, and provide a clear, concise, and actionable response in their preferred language.
 
 **CONTEXT:**
@@ -63,12 +65,13 @@ const agrigptPrompt = ai.definePrompt({
     - {{role}}: {{parts.[0].text}}
     {{/each}}
 
-**YOUR TASK:**
-1.  **Analyze the Query:** Based on all context, determine the farmer's intent.
+**YOUR TASK & REASONING PROCESS:**
+1.  **Analyze the Query:** Based on all context, determine the farmer's primary intent.
 2.  **Think Step-by-Step:**
     *   Can you answer directly?
     *   Do you need to use one of your tools?
-    *   If you need to use the 'diagnoseCropDiseaseTool', you MUST check if a photo has been provided. If not, you MUST ask the user for a photo. Set the actionCode to 'REQUEST_IMAGE_FOR_DIAGNOSIS'.
+    *   **Diagnosis Rule**: If you need to use the 'diagnoseCropDiseaseTool', you MUST check if a photo has been provided. If not, you MUST ask the user for a photo. Set the actionCode to 'REQUEST_IMAGE_FOR_DIAGNOSIS'.
+    *   **Weather Rule**: If the user asks about the weather, you MUST use the 'getWeather' tool. After getting the forecast, you MUST use the 'sprayingAdviceTool' with the forecast data to provide spraying recommendations and precautions. Combine both results into one helpful answer.
     *   If the query is ambiguous for any other tool, ask for clarification.
 3.  **Use Tools:** If you have enough information, call the necessary tool(s) to get the required data.
 4.  **Synthesize the Final Response:** Combine the user's query and the tool's output to formulate a single, helpful 'kisanMitraResponse'.
