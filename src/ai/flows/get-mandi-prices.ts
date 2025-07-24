@@ -36,7 +36,7 @@ export const getMandiPriceTool = ai.defineTool(
            const message = errorText.split('<pre>')[1].split('</pre>')[0];
            throw new Error(`API Error: ${message.trim()}`);
         }
-        throw new Error(`API request failed with status ${response.status}: ${errorText}`);
+        throw new Error(`An unexpected response was received from the server.`);
       }
       const data: any = await response.json();
       
@@ -60,10 +60,10 @@ export const getMandiPriceTool = ai.defineTool(
       return sortedRecords;
     } catch (error) {
       console.error('Error fetching Mandi prices:', error);
-      if (error instanceof Error && error.message.includes('API Error')) {
+      if (error instanceof Error && (error.message.includes('API Error') || error.message.includes('An unexpected response'))) {
         throw error;
       }
-      throw new Error('Failed to fetch data from data.gov.in. The service might be down or your filters may not have returned results.');
+      throw new Error('Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected location.');
     }
   }
 );
