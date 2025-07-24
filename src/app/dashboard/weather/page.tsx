@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getWeatherForecast, WeatherForecastOutput } from '@/ai/flows/weather-forecast';
+import { getWeatherAction, WeatherOutput } from '@/ai/flows/weather-api';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -32,15 +32,21 @@ const weatherIcons: { [key: string]: React.ReactNode } = {
   Cloudy: <Cloud className="w-16 h-16 text-gray-400" />,
   Rain: <CloudRain className="w-16 h-16 text-blue-400" />,
   Showers: <CloudRain className="w-16 h-16 text-blue-400" />,
+  'Light rain': <CloudRain className="w-16 h-16 text-blue-400" />,
+  'Moderate rain': <CloudRain className="w-16 h-16 text-blue-400" />,
+  'Heavy rain': <CloudRain className="w-16 h-16 text-blue-400" />,
   Thunderstorm: <CloudLightning className="w-16 h-16 text-yellow-500" />,
   Snow: <Snowflake className="w-16 h-16 text-blue-200" />,
 };
 
 const smallWeatherIcons: { [key: string]: React.ReactNode } = {
   Sunny: <Sun className="w-8 h-8 text-yellow-400" />,
-  'Partly Cloudy': <Cloud className="w-8 h-8 text-gray-400" />,
+  'Partly cloudy': <Cloud className="w-8 h-8 text-gray-400" />,
   Cloudy: <Cloud className="w-8 h-8 text-gray-400" />,
   Rain: <CloudRain className="w-8 h-8 text-blue-400" />,
+  'Light rain': <CloudRain className="w-8 h-8 text-blue-400" />,
+  'Moderate rain': <CloudRain className="w-8 h-8 text-blue-400" />,
+  'Heavy rain': <CloudRain className="w-8 h-8 text-blue-400" />,
   Showers: <CloudRain className="w-8 h-8 text-blue-400" />,
   Thunderstorm: <CloudLightning className="w-8 h-8 text-yellow-500" />,
   Snow: <Snowflake className="w-8 h-8 text-blue-200" />,
@@ -70,22 +76,31 @@ const WeatherCardSkeleton = () => (
 );
 
 const WeatherPage = () => {
-    const [weatherData, setWeatherData] = useState<WeatherForecastOutput | null>(null);
+    const [weatherData, setWeatherData] = useState<WeatherOutput | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
     const { t } = useLanguage();
 
-    const fetchWeather = useCallback(async (location: string) => {
+    const fetchWeather = useCallback(async (location: string | { latitude: number, longitude: number}) => {
         setLoading(true);
         setError(null);
         setWeatherData(null);
         
         try {
-            const data = await getWeatherForecast({ location });
-            if (!data) {
-                setError(t('errorWeather'));
+            const input = typeof location === 'string' 
+                ? { city: location } 
+                : { latitude: location.latitude, longitude: location.longitude };
+
+            const data = await getWeatherAction(input);
+            if (data.error) {
+                setError(data.error);
+                toast({
+                    variant: "destructive",
+                    title: "Weather Error",
+                    description: data.error,
+                });
                 return;
             }
             setWeatherData(data);
@@ -96,7 +111,7 @@ const WeatherPage = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
+    }, [t, toast]);
 
     const getLocation = useCallback(() => {
         if (!navigator.geolocation) {
@@ -111,7 +126,7 @@ const WeatherPage = () => {
 
         navigator.geolocation.getCurrentPosition(
             (position) => {
-                fetchWeather(`${position.coords.latitude}, ${position.coords.longitude}`);
+                fetchWeather({ latitude: position.coords.latitude, longitude: position.coords.longitude });
             },
             () => {
                  toast({
@@ -173,7 +188,7 @@ const WeatherPage = () => {
           <CardContent>
             {loading ? (
                 <WeatherCardSkeleton />
-            ) : error || !weatherData ? (
+            ) : error || !weatherData?.forecast || weatherData.forecast.length === 0 ? (
                 <div className="flex flex-col items-center justify-center text-center p-4 min-h-[300px]">
                      <Cloud className="w-16 h-16 text-destructive mb-4"/>
                      <CardTitle className="mb-2">Could Not Fetch Weather</CardTitle>
@@ -196,7 +211,6 @@ const WeatherPage = () => {
                         </div>
 
                         <div className="mt-8 pt-6 border-t">
-                            <CardDescription className="text-center mb-4">{t('weatherIsSimulated')}</CardDescription>
                             <ul className="space-y-4">
                               {weatherData.forecast.map((item, index) => (
                                  <motion.li
