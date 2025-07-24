@@ -99,9 +99,8 @@ const schemeAdvisorFlow = ai.defineFlow(
         return fullRecommendations;
     } catch (e: any) {
         console.error("Scheme Advisor Flow Error:", e);
-        // If the error is due to quota or other API issues, gracefully return an empty array.
-        // The frontend will handle showing a "no results" message.
-        return [];
+        // Let the caller handle the error so it can be displayed to the user.
+        throw new Error("Could not fetch scheme recommendations. The service may be temporarily unavailable.");
     }
   }
 );

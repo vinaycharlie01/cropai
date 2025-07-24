@@ -70,7 +70,8 @@ export default function SchemesPage() {
             }
         } catch (e) {
             console.error(e);
-            toast({ variant: 'destructive', title: t('error'), description: 'Could not fetch scheme recommendations.' });
+            const errorMessage = e instanceof Error ? e.message : 'Could not fetch scheme recommendations.';
+            toast({ variant: 'destructive', title: t('error'), description: errorMessage });
         } finally {
             setIsLoading(false);
         }
