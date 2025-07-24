@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Bot, Loader2, Search, LineChart } from 'lucide-react';
+import { Bot, Loader2, Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,8 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { predictMandiPrice, MandiPricePredictionOutput } from '@/ai/flows/predict-mandi-price';
-import { getLiveMandiPrice } from '@/ai/flows/get-live-mandi-prices';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MandiPriceRecord } from '@/types/mandi-prices';
+import { cn } from '@/lib/utils';
 
 
 type PredictionFormInputs = {
@@ -22,11 +21,56 @@ type PredictionFormInputs = {
     location: string;
 };
 
-type LivePriceFormInputs = {
-    state: string;
-    district: string;
-    commodity: string;
+const staticMandiData = [
+  {
+    crop: "tomato",
+    price: 2500,
+    region: "maharashtra",
+    trend: "up",
+  },
+  {
+    crop: "onion",
+    price: 1800,
+    region: "karnataka",
+    trend: "down",
+  },
+  {
+    crop: "potato",
+    price: 1500,
+    region: "uttarPradesh",
+    trend: "stable",
+  },
+  {
+    crop: "wheat",
+    price: 2200,
+    region: "punjab",
+    trend: "up",
+  },
+  {
+    crop: "riceBasmati",
+    price: 9500,
+    region: "haryana",
+    trend: "down",
+  },
+  {
+    crop: "cotton",
+    price: 7500,
+    region: "gujarat",
+    trend: "stable",
+  },
+];
+
+
+const TrendIcon = ({ trend }: { trend: "up" | "down" | "stable" }) => {
+  if (trend === "up") {
+    return <ArrowUp className="h-5 w-5 text-green-500" />;
+  }
+  if (trend === "down") {
+    return <ArrowDown className="h-5 w-5 text-red-500" />;
+  }
+  return <span className="text-gray-500 font-bold">-</span>;
 };
+
 
 export default function MandiPricesPage() {
     const { t, language } = useLanguage();
@@ -36,11 +80,6 @@ export default function MandiPricesPage() {
     const [isPredictionLoading, setIsPredictionLoading] = useState(false);
     const [predictionResult, setPredictionResult] = useState<MandiPricePredictionOutput | null>(null);
     const [predictionError, setPredictionError] = useState<string | null>(null);
-
-    const livePriceForm = useForm<LivePriceFormInputs>();
-    const [isLivePriceLoading, setIsLivePriceLoading] = useState(false);
-    const [livePrices, setLivePrices] = useState<MandiPriceRecord[] | null>(null);
-    const [livePriceError, setLivePriceError] = useState<string | null>(null);
 
     const onPredictionSubmit: SubmitHandler<PredictionFormInputs> = async (data) => {
         setIsPredictionLoading(true);
@@ -59,28 +98,6 @@ export default function MandiPricesPage() {
         }
     };
 
-    const onLivePriceSubmit: SubmitHandler<LivePriceFormInputs> = async (data) => {
-        setIsLivePriceLoading(true);
-        setLivePriceError(null);
-        setLivePrices(null);
-        try {
-            const prices = await getLiveMandiPrice(data);
-            setLivePrices(prices);
-            if (prices.length === 0) {
-                toast({
-                    title: 'No Data Found',
-                    description: `No data found for ${data.commodity} in ${data.district}. Please check your spelling or try different filters.`
-                });
-            }
-        } catch (error) {
-            console.error("Failed to fetch live prices", error);
-            const errorMessage = (error instanceof Error) ? error.message : "Could not load live market prices.";
-            setLivePriceError(errorMessage);
-        } finally {
-            setIsLivePriceLoading(false);
-        }
-    };
-
 
     return (
         <motion.div 
@@ -94,73 +111,33 @@ export default function MandiPricesPage() {
             >
                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline text-2xl flex items-center gap-2">
-                           <LineChart /> {t('mandiPriceAdvisor')}
-                        </CardTitle>
+                        <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>
                         <CardDescription>{t('mandiPriceInfo')}</CardDescription>
                     </CardHeader>
-                    <form onSubmit={livePriceForm.handleSubmit(onLivePriceSubmit)}>
-                        <CardContent className="space-y-4">
-                            <div className="grid sm:grid-cols-3 gap-4">
-                                <div className="space-y-1">
-                                    <Label htmlFor="state">{t('yourState')}</Label>
-                                    <Input id="state" placeholder="Andhra Pradesh" {...livePriceForm.register('state', { required: true })} />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="district">District</Label>
-                                    <Input id="district" placeholder="Chittoor" {...livePriceForm.register('district', { required: true })} />
-                                </div>
-                                <div className="space-y-1">
-                                    <Label htmlFor="commodity">{t('crop')}</Label>
-                                    <Input id="commodity" placeholder="Tomato" {...livePriceForm.register('commodity', { required: true })} />
-                                </div>
-                            </div>
-                             <Button type="submit" className="w-full sm:w-auto" disabled={isLivePriceLoading}>
-                                {isLivePriceLoading ? <Loader2 className="mr-2 animate-spin" /> : <Search className="mr-2" />}
-                                Search Live Prices
-                            </Button>
-                        </CardContent>
-                    </form>
-                    
                     <CardContent>
-                         <AnimatePresence>
-                            {isLivePriceLoading && (
-                                <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center h-40">
-                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                </motion.div>
-                            )}
-                            {livePriceError && (
-                                <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="text-red-600 bg-red-100 dark:bg-red-900/20 p-4 rounded-md text-center">{livePriceError}</motion.div>
-                            )}
-                            {livePrices && livePrices.length > 0 && (
-                                <motion.div initial={{opacity: 0}} animate={{opacity: 1}} className="border rounded-md mt-4 overflow-x-auto">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>{t('market')}</TableHead>
-                                                <TableHead>{t('variety')}</TableHead>
-                                                <TableHead>Min Price (₹)</TableHead>
-                                                <TableHead>Max Price (₹)</TableHead>
-                                                <TableHead className="font-bold">Modal Price (₹)</TableHead>
-                                                <TableHead className="text-right">{t('date')}</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {livePrices.map((item, index) => (
-                                                <TableRow key={index}>
-                                                    <TableCell className="font-medium">{item.market}</TableCell>
-                                                    <TableCell>{item.variety}</TableCell>
-                                                    <TableCell>{item.min_price}</TableCell>
-                                                    <TableCell>{item.max_price}</TableCell>
-                                                    <TableCell className="font-semibold text-primary">{item.modal_price}</TableCell>
-                                                    <TableCell className="text-right">{item.arrival_date}</TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
+                       <div className="space-y-4">
+                            <div className="grid grid-cols-3 font-semibold text-muted-foreground px-4">
+                                <div>{t('crop')}</div>
+                                <div>{t('price')}</div>
+                                <div>{t('region')}</div>
+                            </div>
+                            {staticMandiData.map((item, index) => (
+                                <div key={index} className="grid grid-cols-3 items-center px-4 py-3 bg-background hover:bg-muted/50 rounded-lg transition-colors">
+                                    <div className="font-medium">{t(item.crop as any)}</div>
+                                    <div className="flex items-center gap-2">
+                                        <TrendIcon trend={item.trend as any} />
+                                        <span className={cn(
+                                            "font-semibold",
+                                            item.trend === 'up' && 'text-green-600 dark:text-green-400',
+                                            item.trend === 'down' && 'text-red-600 dark:text-red-400'
+                                        )}>
+                                            ₹{item.price.toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
+                                    <div>{t(item.region as any)}</div>
+                                </div>
+                            ))}
+                       </div>
                     </CardContent>
                 </Card>
             </div>
