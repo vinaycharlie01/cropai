@@ -57,21 +57,22 @@ const agrigptFlow = ai.defineFlow(
   },
   async (input) => {
     
-    const history: HistoryPart[] = input.conversationHistory.map(h => ({
-      ...h,
+    // Convert the simplified history from the client to the format Genkit expects.
+    const history = input.conversationHistory.map(h => ({
+      role: h.role,
       content: h.content.map(c => {
         if(c.text) return { text: c.text };
         if(c.toolRequest) return { toolRequest: c.toolRequest };
         if(c.toolResponse) return { toolResponse: c.toolResponse };
-        return { text: "" };
+        return { text: "" }; // Should not happen with valid input
       })
     }));
 
     const { output } = await ai.generate({
-      prompt: `${input.transcribedQuery} (respond in ${input.language})`,
-      history: history as any,
+      prompt: input.transcribedQuery,
+      history: history as any, // Cast to any to satisfy the type checker for this complex structure
       tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
-      system: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response in their preferred language.
+      system: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response in their preferred language of ${input.language}.
 
 **IMPORTANT INSTRUCTIONS:**
 1.  **Analyze the Query:** Based on the user's query and conversation history, determine their primary intent.
@@ -81,16 +82,19 @@ const agrigptFlow = ai.defineFlow(
     - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
 3.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
 4.  **Synthesize the Final Response:** Formulate a single, helpful, conversational response based on the tool's output or the diagnosis rule.
-5.  **Translate:** The final response MUST be in the requested language.
+5.  **Translate:** The final response MUST be in the requested language: **${input.language}**.
 `,
     });
     
-    if (!output?.content[0]?.text) {
+    // Find the first text part in the content array, which should be the AI's response.
+    const responseText = output?.content.find(c => c.text)?.text;
+
+    if (!responseText) {
         throw new Error('AgriGPT AI did not return a valid text response.');
     }
 
     return {
-        kisanMitraResponse: output.content[0].text
+        kisanMitraResponse: responseText
     };
   }
 );

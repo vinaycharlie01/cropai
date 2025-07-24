@@ -34,6 +34,7 @@ export function AgriGptDialog() {
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   
   const getAudio = useCallback(async (textToSpeak: string) => {
+      if (!textToSpeak) return;
       setIsAudioLoading(true);
       try {
         const response = await generateSpeech({ text: textToSpeak, language });
@@ -73,7 +74,7 @@ export function AgriGptDialog() {
       toast({
         variant: 'destructive',
         title: 'AgriGPT Error',
-        description: errorMessage,
+        description: (error as Error).message || errorMessage,
       });
       setCurrentResponse(errorMessage);
     } finally {
