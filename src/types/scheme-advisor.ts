@@ -19,6 +19,7 @@ const SchemeRecommendationSchema = z.object({
     eligibility: z.string().describe('A summary of the key eligibility criteria for the scheme. This MUST be in the requested language.'),
     benefits: z.string().describe('A list of the primary benefits provided by the scheme. This MUST be in the requested language.'),
     howToApply: z.string().describe('Simple, step-by-step instructions on how to apply for the scheme. This MUST be in the requested language.'),
+    applicationUrl: z.string().url().describe('The direct, official URL to the application portal or information page for the scheme.'),
 });
 export type SchemeRecommendation = z.infer<typeof SchemeRecommendationSchema>;
 

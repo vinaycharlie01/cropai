@@ -31,7 +31,7 @@ const prompt = ai.definePrompt({
 1.  **Analyze the Farmer's Profile:** Carefully review all the details provided by the farmer.
 2.  **Match with Scheme Database:** Compare the farmer's profile against the criteria of each scheme in the database.
 3.  **Filter for Relevance:** Only return schemes for which the farmer is likely eligible and which match their stated needs ('helpType').
-4.  **Provide Detailed, Translated Output:** For each recommended scheme, provide all the required fields (schemeName, description, eligibility, benefits, howToApply). The entire response MUST be in the requested language: **{{{profile.language}}}**.
+4.  **Provide Detailed, Translated Output:** For each recommended scheme, provide all the required fields (schemeName, description, eligibility, benefits, howToApply, applicationUrl). The entire response MUST be in the requested language: **{{{profile.language}}}**.
 5.  **Be Empathetic:** If no schemes are a good match, return an empty array. Do not recommend schemes the farmer is not eligible for.
 
 **FARMER'S PROFILE:**

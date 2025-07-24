@@ -4,7 +4,7 @@
 import { useState, useCallback } from 'react';
 import { useForm, Controller, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bot, Loader2, Search, ArrowRight } from 'lucide-react';
+import { Bot, Loader2, Search, ArrowRight, ExternalLink } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -277,6 +277,11 @@ export default function SchemesPage() {
                                                     <h4 className="font-medium text-primary">{t('howToApply')}:</h4>
                                                     <p className="text-sm text-muted-foreground">{scheme.howToApply}</p>
                                                 </div>
+                                                <Button asChild variant="outline">
+                                                    <a href={scheme.applicationUrl} target="_blank" rel="noopener noreferrer">
+                                                        Apply Now <ExternalLink className="ml-2 h-4 w-4" />
+                                                    </a>
+                                                </Button>
                                             </AccordionContent>
                                         </AccordionItem>
                                     ))}
