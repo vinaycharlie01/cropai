@@ -16,16 +16,16 @@ const BASE_URL = 'https://api.data.gov.in/resource/';
 export const getMandiPriceTool = ai.defineTool(
   {
     name: 'getMandiPriceTool',
-    description: 'Fetches real-time market prices for a given commodity in a specific state from the Government of India data portal.',
+    description: 'Fetches real-time market prices for a given commodity in a specific state and district from the Government of India data portal.',
     inputSchema: MandiPriceInputSchema,
     outputSchema: MandiPriceOutputSchema,
   },
-  async ({ state, commodity }): Promise<MandiPriceOutput> => {
+  async ({ state, district, commodity }): Promise<MandiPriceOutput> => {
     if (!API_KEY) {
       throw new Error('Government API key is not configured.');
     }
 
-    const url = `${BASE_URL}${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
+    const url = `${BASE_URL}${RESOURCE_ID}?api-key=${API_KEY}&format=json&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
 
     try {
       const response = await fetch(url);
@@ -55,4 +55,3 @@ export const getMandiPriceTool = ai.defineTool(
     }
   }
 );
-

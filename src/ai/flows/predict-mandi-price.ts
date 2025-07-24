@@ -29,6 +29,7 @@ const prompt = ai.definePrompt({
       currentPrice: z.number(),
       cropType: z.string(),
       location: z.string(),
+      district: z.string(),
       language: z.string(),
     }),
   },
@@ -38,6 +39,7 @@ const prompt = ai.definePrompt({
 **INPUTS:**
 *   Crop: {{{cropType}}}
 *   Location (State): {{{location}}}
+*   District: {{{district}}}
 *   Language: {{{language}}}
 *   Current Modal Price (per quintal): {{{currentPrice}}}
 
@@ -62,7 +64,7 @@ const predictMandiPriceFlow = ai.defineFlow(
   async (input) => {
     let currentPrice = 2000; // Default fallback price
     try {
-        const livePrices = await getMandiPriceTool({ state: input.location, commodity: input.cropType });
+        const livePrices = await getMandiPriceTool({ state: input.location, district: input.district, commodity: input.cropType });
         if (livePrices && livePrices.length > 0) {
             // Use the modal price from the most recent record
             currentPrice = Number(livePrices[0].modal_price);

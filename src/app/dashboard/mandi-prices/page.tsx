@@ -44,15 +44,17 @@ const indianStates = [
 
 type LivePriceFormInputs = {
   state: string;
+  district: string;
   commodity: string;
 }
 
 type PredictionFormInputs = {
   cropType: string;
-  location: string;
+  location: string; // This will be state for prediction
+  district: string;
 }
 
-type SttField = 'liveCommodity' | 'predictCropType' | 'predictLocation';
+type SttField = 'liveCommodity' | 'liveDistrict' | 'predictCropType' | 'predictLocation' | 'predictDistrict';
 
 export default function MandiPricesPage() {
   const { t, language } = useLanguage();
@@ -73,8 +75,10 @@ export default function MandiPricesPage() {
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
       if (activeSttField === 'liveCommodity') livePriceForm.setValue('commodity', result);
+      if (activeSttField === 'liveDistrict') livePriceForm.setValue('district', result);
       if (activeSttField === 'predictCropType') predictionForm.setValue('cropType', result);
       if (activeSttField === 'predictLocation') predictionForm.setValue('location', result);
+      if (activeSttField === 'predictDistrict') predictionForm.setValue('district', result);
     }
   }, [activeSttField, livePriceForm, predictionForm]);
 
@@ -103,14 +107,14 @@ export default function MandiPricesPage() {
       setLivePriceError(null);
       setLivePrices(null);
       try {
-        const prices = await getMandiPriceTool({ state: data.state, commodity: data.commodity });
+        const prices = await getMandiPriceTool({ state: data.state, district: data.district, commodity: data.commodity });
         if (prices.length === 0) {
-            setLivePriceError(`No data found for ${data.commodity} in ${data.state}. Please try a different crop or state.`);
+            setLivePriceError(`No data found for ${data.commodity} in ${data.district}, ${data.state}. Please try a different crop or location.`);
         }
         setLivePrices(prices);
       } catch (error) {
           console.error("Failed to fetch live prices", error);
-          setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected state.");
+          setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected location.");
       } finally {
           setIsLivePriceLoading(false);
       }
@@ -123,6 +127,7 @@ export default function MandiPricesPage() {
       const result = await predictMandiPrice({
         cropType: data.cropType,
         location: data.location,
+        district: data.district,
         language,
       });
       setPrediction(result);
@@ -159,7 +164,7 @@ export default function MandiPricesPage() {
         </CardHeader>
         <form onSubmit={livePriceForm.handleSubmit(onLivePriceSubmit)}>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
                <div className="space-y-2">
                   <Label htmlFor="state">{t('yourState')}</Label>
                   <Controller
@@ -176,6 +181,21 @@ export default function MandiPricesPage() {
                       )}
                   />
                   {livePriceForm.formState.errors.state && <p className="text-destructive text-sm">{livePriceForm.formState.errors.state.message}</p>}
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="district">District</Label>
+                  <div className="relative">
+                    <Input id="district" placeholder="e.g., Chittor" {...livePriceForm.register('district', { required: "District is required." })} />
+                    <Button
+                      type="button" size="icon" variant="ghost"
+                      onClick={() => handleSttToggle('liveDistrict')}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      disabled={!isSupported}
+                    >
+                      <Mic className={`h-5 w-5 ${isListening && activeSttField === 'liveDistrict' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                    </Button>
+                  </div>
+                  {livePriceForm.formState.errors.district && <p className="text-destructive text-sm">{livePriceForm.formState.errors.district.message}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="commodity">{t('crop')}</Label>
@@ -242,7 +262,41 @@ export default function MandiPricesPage() {
         </CardHeader>
         <form onSubmit={predictionForm.handleSubmit(onPredictionSubmit)}>
           <CardContent className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="predictLocation">State</Label>
+                <div className="relative">
+                  <Controller
+                      name="location"
+                      control={predictionForm.control}
+                      rules={{ required: "State is required." }}
+                      render={({ field }) => (
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <SelectTrigger id="predictLocation"><SelectValue placeholder="Select a state" /></SelectTrigger>
+                              <SelectContent>
+                                  {indianStates.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                              </SelectContent>
+                          </Select>
+                      )}
+                  />
+                </div>
+                {predictionForm.formState.errors.location && <p className="text-destructive text-sm">{predictionForm.formState.errors.location.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="predictDistrict">District</Label>
+                <div className="relative">
+                  <Input id="predictDistrict" placeholder="e.g., Chittor" {...predictionForm.register('district', { required: "District is required." })} />
+                   <Button
+                    type="button" size="icon" variant="ghost"
+                    onClick={() => handleSttToggle('predictDistrict')}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                    disabled={!isSupported}
+                  >
+                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'predictDistrict' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
+                  </Button>
+                </div>
+                {predictionForm.formState.errors.district && <p className="text-destructive text-sm">{predictionForm.formState.errors.district.message}</p>}
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="cropType">{t('cropType')}</Label>
                 <div className="relative">
@@ -257,21 +311,6 @@ export default function MandiPricesPage() {
                   </Button>
                 </div>
                 {predictionForm.formState.errors.cropType && <p className="text-destructive text-sm">{predictionForm.formState.errors.cropType.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="location">{t('location')}</Label>
-                <div className="relative">
-                  <Input id="location" placeholder={t('egAndhraPradesh')} {...predictionForm.register('location', { required: t('locationRequired') })} />
-                   <Button
-                    type="button" size="icon" variant="ghost"
-                    onClick={() => handleSttToggle('predictLocation')}
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                    disabled={!isSupported}
-                  >
-                    <Mic className={`h-5 w-5 ${isListening && activeSttField === 'predictLocation' ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
-                  </Button>
-                </div>
-                {predictionForm.formState.errors.location && <p className="text-destructive text-sm">{predictionForm.formState.errors.location.message}</p>}
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isPredictionLoading}>
@@ -325,5 +364,3 @@ export default function MandiPricesPage() {
     </motion.div>
   );
 }
-
-    

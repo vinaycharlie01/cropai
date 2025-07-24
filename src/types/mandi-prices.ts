@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 export const MandiPriceInputSchema = z.object({
   state: z.string().describe('The state in India to fetch prices for (e.g., "Karnataka").'),
+  district: z.string().describe('The district in the state to fetch prices for (e.g., "Chittor").'),
   commodity: z.string().describe('The agricultural commodity to fetch prices for (e.g., "Tomato").'),
 });
 export type MandiPriceInput = z.infer<typeof MandiPriceInputSchema>;
@@ -28,6 +29,7 @@ export type MandiPriceOutput = z.infer<typeof MandiPriceOutputSchema>;
 export const PredictMandiPriceInputSchema = z.object({
   cropType: z.string().describe('The type of crop for which to predict the price.'),
   location: z.string().describe('The geographical location (state) of the crop.'),
+  district: z.string().describe('The geographical location (district) of the crop.'),
   language: z.string().describe('The language for the output.'),
 });
 
