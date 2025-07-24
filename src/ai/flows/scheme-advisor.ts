@@ -79,12 +79,12 @@ const schemeAdvisorFlow = ai.defineFlow(
     }
 
     // Post-process the AI output to add the URL from our trusted database.
-    // This prevents the AI from hallucinating incorrect URLs and causing validation errors.
+    // This prevents the AI from hallucinating incorrect URLs and causes of validation errors.
     const fullRecommendations: SchemeRecommendation[] = output
         .map(aiRec => {
             const originalScheme = schemesDatabase.find(dbScheme => dbScheme.name === aiRec.schemeName);
             if (!originalScheme) {
-                // If the AI hallucinates a scheme name that's not in our DB, we'll filter it out later.
+                // If the AI hallucinates a scheme name that's not in our DB, we'll filter it out.
                 return null;
             }
             return {
@@ -109,4 +109,3 @@ export const schemeAdvisorTool = ai.defineTool(
     },
     async (input) => schemeAdvisorFlow(input)
 );
-
