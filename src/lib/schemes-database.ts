@@ -3,7 +3,7 @@ export const schemesDatabase = [
     {
       id: "pm-kisan",
       name: "PM-KISAN Samman Nidhi",
-      keywords: ["financialSupport", "generalSupport", "dbt"],
+      keywords: ["financialsupport", "generalsupport", "dbt"],
       eligibility: {
         landOwner: true,
         maxLandAreaAcres: 5, // PM-KISAN originally had a 2-hectare limit, which was later removed. Simplified here.
@@ -16,7 +16,7 @@ export const schemesDatabase = [
     {
       id: "pmfby",
       name: "Pradhan Mantri Fasal Bima Yojana (PMFBY)",
-      keywords: ["cropInsurance", "financialSupport"],
+      keywords: ["cropinsurance", "financialsupport"],
       eligibility: {
         landOwner: true,
         tenantFarmer: true,
@@ -30,7 +30,7 @@ export const schemesDatabase = [
     {
       id: "pmksy",
       name: "Pradhan Mantri Krishi Sinchayee Yojana (PMKSY)",
-      keywords: ["irrigation", "water", "equipmentSubsidy"],
+      keywords: ["irrigation", "water", "equipmentsubsidy"],
       eligibility: {
         landOwner: true,
         tenantFarmer: true,
@@ -43,7 +43,7 @@ export const schemesDatabase = [
     {
       id: "shc",
       name: "Soil Health Card (SHC) Scheme",
-      keywords: ["soilHealth", "generalSupport"],
+      keywords: ["soilhealth", "generalsupport"],
       eligibility: {
         landOwner: true,
         tenantFarmer: true,
@@ -56,7 +56,7 @@ export const schemesDatabase = [
     {
       id: "kvk",
       name: "Kisan Credit Card (KCC)",
-      keywords: ["financialSupport", "loan", "generalSupport"],
+      keywords: ["financialsupport", "loan", "generalsupport"],
       eligibility: {
         landOwner: true,
         tenantFarmer: true,
@@ -68,3 +68,19 @@ export const schemesDatabase = [
       applicationUrl: "https://www.jansamarth.in/kisan-credit-card-scheme"
     }
   ];
+
+/**
+ * A simple, non-AI fallback to filter schemes based on the user's stated need.
+ * @param helpType The user's need, e.g., "Crop Insurance".
+ * @returns A list of matching schemes.
+ */
+export function filterSchemesByKeywords(helpType: string) {
+    if (!helpType) return [];
+    
+    // Normalize the input by removing spaces and converting to lowercase.
+    const normalizedHelpType = helpType.replace(/\s+/g, '').toLowerCase();
+
+    return schemesDatabase.filter(scheme =>
+        scheme.keywords.some(keyword => normalizedHelpType.includes(keyword))
+    );
+}

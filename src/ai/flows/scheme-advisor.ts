@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { schemesDatabase } from '@/lib/schemes-database';
+import { schemesDatabase, filterSchemesByKeywords } from '@/lib/schemes-database';
 import { SchemeFinderInput, SchemeFinderInputSchema, SchemeRecommendation, SchemeFinderOutput, SchemeFinderOutputSchema } from '@/types/scheme-advisor';
 
 // This is the schema of what we want the AI to return. Note it does not include the URL.
@@ -70,6 +70,7 @@ const schemeAdvisorFlow = ai.defineFlow(
   },
   async (profile) => {
     try {
+        // First, try to get personalized recommendations from the AI.
         const { output } = await prompt({
             profile: profile,
             schemes: JSON.stringify(schemesDatabase, null, 2),
@@ -80,27 +81,35 @@ const schemeAdvisorFlow = ai.defineFlow(
         }
 
         // Post-process the AI output to add the URL from our trusted database.
-        // This prevents the AI from hallucinating incorrect URLs and causes of validation errors.
         const fullRecommendations: SchemeRecommendation[] = output
             .map(aiRec => {
                 const originalScheme = schemesDatabase.find(dbScheme => dbScheme.name === aiRec.schemeName);
                 if (!originalScheme) {
-                    // If the AI hallucinates a scheme name that's not in our DB, we'll filter it out.
                     return null;
                 }
                 return {
                     ...aiRec,
-                    // Add the applicationUrl from our reliable database, not from the AI output.
                     applicationUrl: originalScheme.applicationUrl,
                 };
             })
-            .filter((rec): rec is SchemeRecommendation => rec !== null); // Filter out any null entries.
+            .filter((rec): rec is SchemeRecommendation => rec !== null);
 
         return fullRecommendations;
+
     } catch (e: any) {
-        console.error("Scheme Advisor Flow Error:", e);
-        // Let the caller handle the error so it can be displayed to the user.
-        throw new Error("Could not fetch scheme recommendations. The service may be temporarily unavailable.");
+        console.error("Scheme Advisor AI failed, using keyword fallback:", e);
+        // Fallback to simple keyword matching if the AI fails.
+        const fallbackResults = filterSchemesByKeywords(profile.helpType);
+        
+        // The fallback provides untranslated, raw data. This is better than an error.
+        return fallbackResults.map(scheme => ({
+            schemeName: scheme.name,
+            description: scheme.description,
+            eligibility: `Eligibility criteria apply. Please visit the official scheme page for details.`,
+            benefits: scheme.benefits,
+            howToApply: scheme.howToApply,
+            applicationUrl: scheme.applicationUrl,
+        }));
     }
   }
 );
