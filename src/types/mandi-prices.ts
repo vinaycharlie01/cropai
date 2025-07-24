@@ -14,6 +14,7 @@ export const MandiPriceRecordSchema = z.object({
   market: z.string(),
   commodity: z.string(),
   variety: z.string(),
+  grade: z.string(),
   arrival_date: z.string(),
   min_price: z.string(),
   max_price: z.string(),
