@@ -90,14 +90,3 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     }
   }
 );
-
-
-export const diagnoseCropDiseaseTool = ai.defineTool(
-    {
-        name: 'diagnoseCropDiseaseTool',
-        description: 'Diagnoses a crop disease based on a photo and other details. Use this tool if the user mentions symptoms of a sick plant or asks for a diagnosis.',
-        inputSchema: DiagnoseCropDiseaseInputSchema,
-        outputSchema: DiagnoseCropDiseaseOutputSchema,
-    },
-    async (input) => diagnoseCropDiseaseFlow(input)
-);
