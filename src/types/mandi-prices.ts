@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 // Schema for AI Price Prediction
@@ -25,14 +24,7 @@ export const MandiPricePredictionOutputSchema = z.object({
 export type MandiPricePredictionOutput = z.infer<typeof MandiPricePredictionOutputSchema>;
 
 
-// Schema for Live Mandi Price Tool
-export const MandiPriceInputSchema = z.object({
-  state: z.string(),
-  district: z.string(),
-  commodity: z.string(),
-});
-export type MandiPriceInput = z.infer<typeof MandiPriceInputSchema>;
-
+// Schema for Live Mandi Price
 export const MandiPriceRecordSchema = z.object({
   state: z.string(),
   district: z.string(),
@@ -46,6 +38,3 @@ export const MandiPriceRecordSchema = z.object({
   modal_price: z.string(),
 });
 export type MandiPriceRecord = z.infer<typeof MandiPriceRecordSchema>;
-
-export const MandiPriceOutputSchema = z.array(MandiPriceRecordSchema);
-export type MandiPriceOutput = z.infer<typeof MandiPriceOutputSchema>;
