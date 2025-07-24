@@ -78,8 +78,8 @@ export const getWeatherTool = ai.defineTool(
                     temperature: `${Math.round(day.day.avgtemp_c)}°C`,
                     condition: day.day.condition.text,
                     humidity: `${day.day.avghumidity}%`,
-                    wind_kph: Number(day.day.maxwind_kph),
-                    chance_of_rain: Number(day.day.daily_chance_of_rain),
+                    wind_kph: String(day.day.maxwind_kph),
+                    chance_of_rain: String(day.day.daily_chance_of_rain),
                 })),
             };
 
