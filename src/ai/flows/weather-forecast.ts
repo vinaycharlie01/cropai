@@ -67,6 +67,25 @@ const weatherForecastFlow = ai.defineFlow(
     outputSchema: WeatherForecastOutputSchema,
   },
   async (input) => {
+    // MOCK IMPLEMENTATION to avoid quota errors.
+    if (process.env.NODE_ENV === 'development' || !process.env.GEMINI_API_KEY) {
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+        
+        const today = new Date();
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        
+        return {
+            location: input.location,
+            forecast: [
+                { day: days[today.getDay()], temperature: '32°C', condition: 'Sunny', humidity: '55%' },
+                { day: days[(today.getDay() + 1) % 7], temperature: '33°C', condition: 'Partly Cloudy', humidity: '60%' },
+                { day: days[(today.getDay() + 2) % 7], temperature: '31°C', condition: 'Showers', humidity: '75%' },
+                { day: days[(today.getDay() + 3) % 7], temperature: '30°C', condition: 'Thunderstorm', humidity: '80%' },
+                { day: days[(today.getDay() + 4) % 7], temperature: '32°C', condition: 'Partly Cloudy', humidity: '70%' },
+            ],
+        };
+    }
+    
     const { output } = await prompt(input);
     if (!output) {
       throw new Error("The AI model did not return a valid forecast.");
