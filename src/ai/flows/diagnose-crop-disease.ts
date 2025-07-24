@@ -43,6 +43,16 @@ export async function diagnoseCropDisease(input: DiagnoseCropDiseaseInput): Prom
   return diagnoseCropDiseaseFlow(input);
 }
 
+export const diagnoseCropDiseaseTool = ai.defineTool(
+    {
+        name: 'diagnoseCropDiseaseTool',
+        description: 'Diagnoses a crop disease from a photo. Use this when the user mentions a sick plant or wants to know what is wrong with their crop. This tool requires a photo.',
+        inputSchema: DiagnoseCropDiseaseInputSchema,
+        outputSchema: DiagnoseCropDiseaseOutputSchema,
+    },
+    async (input) => diagnoseCropDiseaseFlow(input)
+);
+
 const prompt = ai.definePrompt({
   name: 'diagnoseCropDiseasePrompt',
   input: {schema: DiagnoseCropDiseaseInputSchema},

@@ -21,10 +21,10 @@ export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutp
     return getWeatherTool(input);
 }
 
-// This is the Genkit Tool that does the actual work with a real API.
+// This is the Genkit Tool that the AgriGPT agent will use.
 export const getWeatherTool = ai.defineTool(
     {
-        name: 'getWeather',
+        name: 'getWeatherTool',
         description: 'Returns the current weather and a 5-day forecast for a given location, specified by either city name or latitude/longitude coordinates.',
         inputSchema: WeatherInputSchema,
         outputSchema: WeatherOutputSchema,
