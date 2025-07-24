@@ -28,7 +28,6 @@ import { SearchCommand } from '@/components/SearchCommand';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAuth, signOut } from 'firebase/auth';
-import { AgriGptDialog } from '@/components/AgriGptDialog';
 
 
 const navItems = [
@@ -194,7 +193,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="grid min-h-screen w-full bg-background">
       <SearchCommand open={openSearch} setOpen={setOpenSearch} />
-      <AgriGptDialog />
       {/* Desktop Sidebar */}
       <div className={cn(
         "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out fixed top-0 left-0 h-full z-40",
