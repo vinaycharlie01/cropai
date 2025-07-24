@@ -114,7 +114,8 @@ export default function MandiPricesPage() {
         setLivePrices(prices);
       } catch (error) {
           console.error("Failed to fetch live prices", error);
-          setLivePriceError("Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected location.");
+          const errorMessage = (error instanceof Error) ? error.message : "Could not load live market prices. The data.gov.in service may be temporarily unavailable or the commodity may not be available in the selected location.";
+          setLivePriceError(errorMessage);
       } finally {
           setIsLivePriceLoading(false);
       }
@@ -213,7 +214,7 @@ export default function MandiPricesPage() {
                 {livePriceForm.formState.errors.commodity && <p className="text-destructive text-sm">{livePriceForm.formState.errors.commodity.message}</p>}
               </div>
             </div>
-             <Button type="submit" className="w-full" disabled={isLivePriceLoading}>
+             <Button type="submit" className="w-full !mt-6" disabled={isLivePriceLoading}>
               {isLivePriceLoading ? <Loader2 className="mr-2 animate-spin" /> : <Search className="mr-2" />}
               {isLivePriceLoading ? 'Searching...' : 'Search Live Prices'}
             </Button>
@@ -313,7 +314,7 @@ export default function MandiPricesPage() {
                 {predictionForm.formState.errors.cropType && <p className="text-destructive text-sm">{predictionForm.formState.errors.cropType.message}</p>}
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isPredictionLoading}>
+            <Button type="submit" className="w-full !mt-6" disabled={isPredictionLoading}>
               {isPredictionLoading ? <Loader2 className="mr-2 animate-spin" /> : <Bot className="mr-2" />}
               {isPredictionLoading ? 'Predicting...' : 'Get Prediction'}
             </Button>
