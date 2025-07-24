@@ -1,118 +1,124 @@
+
 'use client';
 
-import React, { useState } from 'react';
-import { MandiPriceRecord } from '@/types/mandi-prices';
-import { getMandiPrices } from '@/ai/flows/get-mandi-prices';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { motion } from 'framer-motion';
 
-function MandiTable({ records }: { records: MandiPriceRecord[] }) {
-  const { t } = useLanguage();
-  return (
-    <div className="border rounded-md mt-6">
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>{t('market')}</TableHead>
-                    <TableHead>{t('variety')}</TableHead>
-                    <TableHead>{t('grade')}</TableHead>
-                    <TableHead>{t('date')}</TableHead>
-                    <TableHead className="text-right">{t('min_price')}</TableHead>
-                    <TableHead className="text-right">{t('max_price')}</TableHead>
-                    <TableHead className="text-right font-bold text-primary">{t('modal_price')}</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {records.map((rec, i) => (
-                    <TableRow key={i}>
-                        <TableCell className="font-medium">{rec.market}</TableCell>
-                        <TableCell>{rec.variety}</TableCell>
-                        <TableCell>{rec.grade}</TableCell>
-                        <TableCell>{rec.arrival_date}</TableCell>
-                        <TableCell className="text-right">{rec.min_price}</TableCell>
-                        <TableCell className="text-right">{rec.max_price}</TableCell>
-                        <TableCell className="text-right font-semibold text-primary">{rec.modal_price}</TableCell>
-                    </TableRow>
-                ))}
-            </TableBody>
-        </Table>
-    </div>
-  );
-}
+const mockMandiData = [
+    {
+        cropKey: 'tomato',
+        price: 2500,
+        regionKey: 'maharashtra',
+        trend: 'up',
+    },
+    {
+        cropKey: 'onion',
+        price: 1800,
+        regionKey: 'karnataka',
+        trend: 'down',
+    },
+    {
+        cropKey: 'potato',
+        price: 1500,
+        regionKey: 'uttarPradesh',
+        trend: 'stable',
+    },
+    {
+        cropKey: 'wheat',
+        price: 2200,
+        regionKey: 'punjab',
+        trend: 'up',
+    },
+    {
+        cropKey: 'riceBasmati',
+        price: 9500,
+        regionKey: 'haryana',
+        trend: 'down',
+    },
+    {
+        cropKey: 'cotton',
+        price: 7500,
+        regionKey: 'gujarat',
+        trend: 'stable',
+    },
+];
 
+const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
+    switch (trend) {
+        case 'up':
+            return <ArrowUp className="h-5 w-5 text-green-500" />;
+        case 'down':
+            return <ArrowDown className="h-5 w-5 text-red-500" />;
+        case 'stable':
+            return <Minus className="h-5 w-5 text-gray-500" />;
+        default:
+            return null;
+    }
+};
 
 export default function MandiPricesPage() {
-  const { t } = useLanguage();
-  const [state, setState] = useState('');
-  const [district, setDistrict] = useState('');
-  const [commodity, setCommodity] = useState('');
-  const [data, setData] = useState<MandiPriceRecord[]>([]);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+    const { t } = useLanguage();
 
-  const fetchPrices = async () => {
-    setIsLoading(true);
-    setError('');
-    setData([]);
-    try {
-      const records = await getMandiPrices({ state, district, commodity });
-      setData(records);
-      if (records.length === 0) {
-        setError('No data found for the selected filters. Please try a different combination.');
-      }
-    } catch (err) {
-      console.error(err);
-      setError((err as Error).message || 'An unexpected error occurred.');
-      setData([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.08,
+            },
+        },
+    };
 
-  return (
-    <Card>
-        <CardHeader>
-            <CardTitle className="font-headline text-2xl">{t('mandiPrices')}</CardTitle>
-            <CardDescription>{t('mandiPricesDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <Input
-                  type="text"
-                  placeholder={t('egAndhraPradesh')}
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                />
-                <Input
-                  type="text"
-                  placeholder={t('egChittor')}
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                />
-                <Input
-                  type="text"
-                  placeholder={t('egTomato')}
-                  value={commodity}
-                  onChange={(e) => setCommodity(e.target.value)}
-                />
-            </div>
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 },
+    };
 
-            <Button
-                onClick={fetchPrices}
-                disabled={isLoading}
-            >
-                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : null}
-                {isLoading ? t('loading') : t('getPrices')}
-            </Button>
+    return (
+        <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+        >
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">{t('mandiPriceAdvisor')}</CardTitle>
+                    <CardDescription>{t('mandiPriceInfo')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-3 gap-4 px-4 py-2 font-semibold text-muted-foreground">
+                            <div className="col-span-1">{t('crop')}</div>
+                            <div className="col-span-1">{t('price')}</div>
+                            <div className="col-span-1">{t('region')}</div>
+                        </div>
 
-            {error && <p className="text-destructive mt-4">{error}</p>}
-            
-            {data.length > 0 && <MandiTable records={data} />}
-        </CardContent>
-    </Card>
-  );
+                        {/* Table Body */}
+                        <motion.div variants={containerVariants}>
+                            {mockMandiData.map((item, index) => (
+                                <motion.div
+                                    key={index}
+                                    variants={itemVariants}
+                                    className="grid grid-cols-3 gap-4 px-4 py-4 items-center border-t last:border-b last:rounded-b-lg first:border-t"
+                                >
+                                    <div className="col-span-1 font-medium">{t(item.cropKey as any)}</div>
+                                    <div className="col-span-1 flex items-center gap-2">
+                                        <TrendIcon trend={item.trend as any} />
+                                        <span className="font-semibold">
+                                            ₹{item.price.toLocaleString('en-IN')}
+                                        </span>
+                                    </div>
+                                    <div className="col-span-1 text-muted-foreground">{t(item.regionKey as any)}</div>
+                                </motion.div>
+                            ))}
+                        </motion.div>
+                    </div>
+                </CardContent>
+            </Card>
+        </motion.div>
+    );
 }
