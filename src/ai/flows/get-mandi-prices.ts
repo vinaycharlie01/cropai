@@ -40,10 +40,14 @@ export const getMandiPriceTool = ai.defineTool(
 
       // Sort by latest date and then by highest modal price
       const sortedRecords = data.records.sort((a: any, b: any) => {
+        // Correctly parse DD/MM/YYYY format
         const dateA = new Date(a.arrival_date.split('/').reverse().join('-')).getTime();
         const dateB = new Date(b.arrival_date.split('/').reverse().join('-')).getTime();
+        
         if (dateB > dateA) return 1;
         if (dateA > dateB) return -1;
+        
+        // Then sort by modal price descending
         return Number(b.modal_price) - Number(a.modal_price);
       });
       
