@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import '@/ai/flows/spraying-advice';
 import '@/ai/flows/selling-advice.ts';
 import '@/ai/flows/irrigation-advice.ts';
 import '@/ai/flows/support-chat.ts';
