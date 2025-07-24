@@ -56,32 +56,38 @@ const agrigptFlow = ai.defineFlow(
     outputSchema: AgriGptOutputSchema,
   },
   async (input) => {
-    
-    const response = await ai.generate({
-        tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
-        history: input.conversationHistory as any, // Cast to any to satisfy the complex type
-        prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response.
+    try {
+        const response = await ai.generate({
+            tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
+            history: input.conversationHistory as any, // Cast to any to satisfy the complex type
+            prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response.
 
-**IMPORTANT INSTRUCTIONS:**
-1.  **Analyze the Query:** Based on the user's query (\`\`\`${input.transcribedQuery}\`\`\`) and conversation history, determine their primary intent.
-2.  **Translate to English:** Your entire thought process and tool usage must be in English.
-3.  **Use Your Tools:** You have tools to get information about mandi prices, government schemes, and spraying advice. Use them whenever necessary to answer the user's question.
-    - When asked about future prices or price forecasts, use the \`predictMandiPriceTool\`.
-    - When asked about government schemes, subsidies, or support, use the \`schemeAdvisorTool\`.
-    - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
-4.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
-5.  **Synthesize and Translate Final Response:** After using tools, formulate a single, helpful, conversational response. The final response MUST be translated into the user's preferred language: **${input.language}**.
-`,
-    });
-    
-    const responseText = response.text();
+    **IMPORTANT INSTRUCTIONS:**
+    1.  **Analyze the Query:** Based on the user's query (\`\`\`${input.transcribedQuery}\`\`\`) and conversation history, determine their primary intent.
+    2.  **Translate to English:** Your entire thought process and tool usage must be in English.
+    3.  **Use Your Tools:** You have tools to get information about mandi prices, government schemes, and spraying advice. Use them whenever necessary to answer the user's question.
+        - When asked about future prices or price forecasts, use the \`predictMandiPriceTool\`.
+        - When asked about government schemes, subsidies, or support, use the \`schemeAdvisorTool\`.
+        - When asked about pesticide spraying conditions, use the \`sprayingAdviceTool\`.
+    4.  **Diagnosis Rule**: If the user's intent is to diagnose a crop disease, sick plant, or they describe a symptom like "yellow leaves", you MUST state that you need a photo and that they should go to the "Diagnose Disease" page to upload one. Do not use a tool.
+    5.  **Synthesize and Translate Final Response:** After using tools, formulate a single, helpful, conversational response. The final response MUST be translated into the user's preferred language: **${input.language}**.
+    `,
+        });
+        
+        const responseText = response.text();
 
-    if (!responseText) {
-        throw new Error('AgriGPT AI did not return a valid text response.');
+        if (!responseText) {
+            throw new Error('AgriGPT AI did not return a valid text response.');
+        }
+
+        return {
+            kisanMitraResponse: responseText
+        };
+    } catch (e: any) {
+        if (e.message?.includes('503 Service Unavailable')) {
+            throw new Error("The Kisan Mitra AI service is currently overloaded. Please try again in a few moments.");
+        }
+        throw e;
     }
-
-    return {
-        kisanMitraResponse: responseText
-    };
   }
 );
