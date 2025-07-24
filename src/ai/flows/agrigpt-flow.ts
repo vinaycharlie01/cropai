@@ -13,7 +13,6 @@ import { z } from 'zod';
 import { predictMandiPriceTool } from './predict-mandi-price';
 import { schemeAdvisorTool } from './scheme-advisor';
 import { sprayingAdviceTool } from './spraying-advice';
-import { generate } from 'genkit';
 
 // Define the structure of a single message in the conversation history
 const HistoryPartSchema = z.object({
@@ -58,8 +57,7 @@ const agrigptFlow = ai.defineFlow(
   },
   async (input) => {
     
-    const response = await generate({
-        model: 'googleai/gemini-1.5-flash',
+    const response = await ai.generate({
         tools: [predictMandiPriceTool, schemeAdvisorTool, sprayingAdviceTool],
         history: input.conversationHistory as any, // Cast to any to satisfy the complex type
         prompt: `You are Kisan Mitra, a friendly, empathetic, and expert AI assistant for Indian farmers, integrated into the "Kisan Rakshak" app. Your goal is to understand the farmer's query, use your available tools to find the information, and provide a clear, concise, and actionable response.
