@@ -25,7 +25,6 @@ type PredictionFormInputs = {
 type LivePriceFormInputs = {
     state: string;
     district: string;
-    market: string;
     commodity: string;
 };
 
@@ -72,7 +71,7 @@ export default function MandiPricesPage() {
             if (prices.length === 0) {
                 toast({
                     title: 'No Data Found',
-                    description: `No data found for ${data.commodity} in ${data.market}. Please check your spelling or try a different market.`
+                    description: `No data found for ${data.commodity} in ${data.district}. Please check your spelling or try different filters.`
                 });
             }
         } catch (error) {
@@ -105,7 +104,7 @@ export default function MandiPricesPage() {
                     </CardHeader>
                     <form onSubmit={livePriceForm.handleSubmit(onLivePriceSubmit)}>
                         <CardContent className="space-y-4">
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="grid sm:grid-cols-3 gap-4">
                                 <div className="space-y-1">
                                     <Label htmlFor="state">{t('yourState')}</Label>
                                     <Input id="state" placeholder="Andhra Pradesh" {...livePriceForm.register('state', { required: true })} />
@@ -113,10 +112,6 @@ export default function MandiPricesPage() {
                                 <div className="space-y-1">
                                     <Label htmlFor="district">District</Label>
                                     <Input id="district" placeholder="Chittor" {...livePriceForm.register('district', { required: true })} />
-                                </div>
-                                 <div className="space-y-1">
-                                    <Label htmlFor="market">{t('market')}</Label>
-                                    <Input id="market" placeholder="Palamaner" {...livePriceForm.register('market', { required: true })} />
                                 </div>
                                 <div className="space-y-1">
                                     <Label htmlFor="commodity">{t('crop')}</Label>

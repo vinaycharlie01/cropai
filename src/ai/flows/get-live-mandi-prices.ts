@@ -10,22 +10,22 @@ import { MandiPriceRecordSchema, MandiPriceRecord } from '@/types/mandi-prices';
 interface MandiPriceInput {
     state: string;
     district: string;
-    market: string;
     commodity: string;
 }
 
 const API_KEY = "579b464db66ec23bdd00000179a9b0a0494949954522ba8b8270a691";
-const RESOURCE_ID = '9ef84268-d588-465a-a308-a864a43d0070';
+const RESOURCE_ID = '35985678-0d79-46b4-9ed6-6f13308a1d24'; // Corrected Resource ID
 const BASE_URL = 'https://api.data.gov.in/resource/';
 
 export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPriceRecord[]> {
-    const { state, district, market, commodity } = input;
+    const { state, district, commodity } = input;
     
     if (!API_KEY) {
       throw new Error('The government API key is not configured. Please add it to the backend.');
     }
 
-    const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[state]=${encodeURIComponent(state)}&filters[district]=${encodeURIComponent(district)}&filters[market]=${encodeURIComponent(market)}&filters[commodity]=${encodeURIComponent(commodity)}&limit=50`;
+    // Corrected filter parameter casing (State, District, Commodity) and removed market filter
+    const url = `${BASE_URL}${RESOURCE_ID}?format=json&api-key=${API_KEY}&filters[State]=${encodeURIComponent(state)}&filters[District]=${encodeURIComponent(district)}&filters[Commodity]=${encodeURIComponent(commodity)}&limit=50`;
 
     try {
         const fetch = (await import('node-fetch')).default;
@@ -34,14 +34,12 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
         if (!response.ok) {
             const errorBody = await response.text();
             console.error("data.gov.in API error response:", errorBody);
-            // Try to parse for a more specific error message from the API's JSON response if possible
             try {
                 const errorJson = JSON.parse(errorBody);
                 if (errorJson.error) {
                     throw new Error(`The data.gov.in API returned an error: ${errorJson.error}`);
                 }
             } catch (e) {
-                // If parsing fails, it might be HTML or plain text
                  throw new Error(`The data.gov.in API returned a server error (${response.status}). Please check your filters or try again later.`);
             }
             throw new Error(`The data.gov.in API returned an error: ${response.statusText}`);
@@ -53,7 +51,6 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
             return [];
         }
         
-        // The API returns records, so we need to validate them.
         const validationResult = z.array(MandiPriceRecordSchema).safeParse(data.records);
 
         if (!validationResult.success) {
@@ -61,7 +58,6 @@ export async function getLiveMandiPrice(input: MandiPriceInput): Promise<MandiPr
             throw new Error('The data received from the server was in an unexpected format.');
         }
         
-        // Sort by latest date and then by highest modal price
         const sortedRecords = validationResult.data.sort((a, b) => {
             const dateA = new Date(a.arrival_date.split('/').reverse().join('-')).getTime();
             const dateB = new Date(b.arrival_date.split('/').reverse().join('-')).getTime();
