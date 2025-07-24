@@ -77,31 +77,6 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-        // This is a mock implementation to avoid quota errors during development.
-        // It provides a more relevant response based on the input crop type.
-        if (process.env.NODE_ENV === 'development') {
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-            
-            const cropName = input.cropType || "plant";
-            const mockDisease = `${cropName} Leaf Curl Virus`;
-            const mockRemedy = `Ensure proper spacing for air circulation around your ${cropName} plants. Water at the base to keep leaves dry. Remove and destroy infected leaves immediately.`;
-            const mockTreatment = `There is no cure for leaf curl virus. Management focuses on controlling whiteflies, which transmit the virus. Apply **Imidacloprid** or a similar systemic insecticide. Follow product instructions carefully.`;
-
-            return {
-                disease: mockDisease,
-                remedies: mockRemedy,
-                treatment: mockTreatment,
-                confidence: 0.88,
-                pesticideRecommendations: [
-                    {
-                        pesticideName: "Imidacloprid 17.8% SL",
-                        usageInstructions: "Mix 0.5 ml per liter of water and spray on the foliage, especially the underside of leaves.",
-                        productUrl: `https://www.indiamart.com/search.mp?ss=${encodeURIComponent("Imidacloprid 17.8% SL")}`
-                    }
-                ]
-            };
-        }
-
         const {output} = await prompt(input);
         if (!output) {
           throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
