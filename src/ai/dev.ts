@@ -11,7 +11,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import '@/ai/flows/spraying-advice';
-import '@/ai/flows/predict-mandi-price.ts';
 import '@/ai/flows/selling-advice.ts';
 import '@/ai/flows/irrigation-advice.ts';
 import '@/ai/flows/support-chat.ts';
@@ -22,7 +21,6 @@ import '@/ai/flows/assess-loan-eligibility.ts';
 import '@/ai/flows/get-risk-alerts.ts';
 import '@/ai/flows/tts-flow.ts';
 import '@/ai/flows/scheme-advisor.ts';
-import '@/ai/flows/get-mandi-prices';
 
 
 const DiagnoseCropDiseaseInputSchema = z.object({
