@@ -22,11 +22,12 @@ export const DailyForecastSchema = z.object({
 });
 export type DailyForecast = z.infer<typeof DailyForecastSchema>;
 
-// Schema for the clean, processed data we want our tool to return.
-// This is what the agent will receive.
+// Schema for the clean, processed data our main flow returns to the UI.
 export const WeatherOutputSchema = z.object({
     location: z.string().describe("The city and country of the provided coordinates.").optional(),
     forecast: z.array(DailyForecastSchema).max(5).describe("A 5-day weather forecast.").optional(),
+    sprayingAdvisory: z.string().optional().describe("A concise, 2-3 sentence advisory for farmers on when to spray pesticides based on the forecast."),
+    overallOutlook: z.string().optional().describe("A brief, 1-2 sentence summary of the overall weather pattern for the next 5 days."),
     error: z.string().optional().describe("An error message if the weather could not be fetched."),
 });
 export type WeatherOutput = z.infer<typeof WeatherOutputSchema>;
