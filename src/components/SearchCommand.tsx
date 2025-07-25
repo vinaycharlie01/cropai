@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import {
   Activity,
   BarChartBig,
-  CloudSun,
   Droplets,
   HeartPulse,
   Landmark,
@@ -37,7 +36,6 @@ const navItems = [
     { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
     { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },
     { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
-    { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
     { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
     { href: '/dashboard/help', icon: LifeBuoy, labelKey: 'helpSupport' },
 ] as const;

@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, CloudSun } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from "next-themes";
 import {
@@ -33,7 +33,6 @@ import { getAuth, signOut } from 'firebase/auth';
 const navItems = [
   { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
   { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
-  { href: '/dashboard/weather', icon: CloudSun, labelKey: 'weatherForecast' },
   { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
   { href: '/dashboard/monitor', icon: Activity, labelKey: 'growthMonitoring' },
   { href: '/dashboard/analytics', icon: PieChart, labelKey: 'healthAnalytics' },
