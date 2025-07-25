@@ -47,7 +47,9 @@ export default function WeatherPage() {
 
     const onRecognitionResult = useCallback((result: string) => {
         setValue('location', result, { shouldValidate: true });
-        handleSubmit(onSubmit)({ location: result });
+        if (result) {
+            handleSubmit(onSubmit)({ location: result });
+        }
     }, [setValue, handleSubmit]);
 
     const onRecognitionError = useCallback((err: string) => {
@@ -69,6 +71,15 @@ export default function WeatherPage() {
     };
     
     const fetchWeather = async (query: string) => {
+        if (!query || query.trim() === '') {
+            toast({
+                variant: 'destructive',
+                title: t('error'),
+                description: t('locationRequired'),
+            });
+            return;
+        }
+
         setIsLoading(true);
         setWeather(null);
         try {
