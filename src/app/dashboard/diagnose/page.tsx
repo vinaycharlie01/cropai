@@ -311,6 +311,10 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         await saveDiagnosis(data, result);
+        if (result.disease !== "Service Temporarily Overloaded") {
+          const textToSpeak = `Disease: ${result.disease}. Treatment: ${result.treatment}. Remedies: ${result.remedies}`;
+          getAudio(textToSpeak);
+        }
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
