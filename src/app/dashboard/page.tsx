@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, BarChartBig, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity, Shield, Landmark } from "lucide-react";
+import { ArrowRight, BarChartBig, Droplets, HeartPulse, LineChart, PieChart, ScrollText, Activity, Shield, Landmark, Cloud } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -30,6 +30,12 @@ const featureCards = [
     icon: LineChart,
     titleKey: "mandiPrices",
     descriptionKey: "mandiPricesDescription",
+  },
+  {
+    href: "/dashboard/weather",
+    icon: Cloud,
+    titleKey: "weatherForecast",
+    descriptionKey: "weatherInstruction",
   },
   {
     href: "/dashboard/schemes",
