@@ -24,7 +24,11 @@ const fetchWeatherTool = ai.defineTool(
     {
         name: 'fetchWeatherTool',
         description: 'Internal tool to fetch raw 5-day weather forecast data from WeatherAPI.com.',
-        inputSchema: WeatherInputSchema,
+        inputSchema: z.object({
+            latitude: z.number().optional(),
+            longitude: z.number().optional(),
+            city: z.string().optional(),
+        }),
         // The output is slightly different from the final WeatherOutput, as it doesn't include the advisory yet.
         outputSchema: z.object({
             location: z.string(),
@@ -100,15 +104,16 @@ const weatherAdvicePrompt = ai.definePrompt({
         schema: z.object({
             location: z.string(),
             forecast: z.array(DailyForecastSchema),
+            language: z.string(),
         }),
     },
     output: {
         schema: z.object({
-             sprayingAdvisory: z.string().describe("A concise, 2-3 sentence advisory for farmers on when to spray pesticides based on the forecast. Mention ideal conditions and warn against spraying on specific days with high wind or rain."),
-             overallOutlook: z.string().describe("A brief, 1-2 sentence summary of the overall weather pattern for the next 5 days (e.g., 'Expect sunny days with a chance of rain mid-week').")
+             sprayingAdvisory: z.string().describe("A concise, 2-3 sentence advisory for farmers on when to spray pesticides based on the forecast. Mention ideal conditions and warn against spraying on specific days with high wind or rain. MUST be in the requested language."),
+             overallOutlook: z.string().describe("A brief, 1-2 sentence summary of the overall weather pattern for the next 5 days (e.g., 'Expect sunny days with a chance of rain mid-week'). MUST be in the requested language.")
         })
     },
-    prompt: `You are an expert agricultural meteorologist. Analyze the following 5-day weather forecast for {{location}} and provide a spraying advisory for farmers.
+    prompt: `You are an expert agricultural meteorologist. Analyze the following 5-day weather forecast for {{location}} and provide a spraying advisory for farmers. Your entire response must be in the requested language: **{{language}}**.
 
 **Forecast Data:**
 {{#each forecast}}
@@ -121,6 +126,7 @@ const weatherAdvicePrompt = ai.definePrompt({
     *   Explicitly warn against spraying on specific day(s) with high wind (>15 kph) or a high chance of rain (>40%).
     *   Mention that early morning or late evening are generally the best times.
 2.  **Overall Outlook**: Write a 1-2 sentence summary of the general weather trend for the week.
+3.  **Language**: Your entire output must be in **{{language}}**.
 
 Provide the structured JSON output now.`,
 });
@@ -135,13 +141,14 @@ const weatherAdvisorFlow = ai.defineFlow(
     },
     async (input) => {
         try {
-            const weatherData = await fetchWeatherTool(input);
+            const { city, latitude, longitude, language } = input;
+            const weatherData = await fetchWeatherTool({ city, latitude, longitude });
 
             if (!weatherData?.forecast || weatherData.forecast.length === 0) {
                 return { error: "Weather data could not be retrieved, so no advice can be generated." };
             }
             
-            const advice = await weatherAdvicePrompt(weatherData);
+            const advice = await weatherAdvicePrompt({ ...weatherData, language });
 
             if (!advice.output) {
                 // If advice generation fails, still return the weather data

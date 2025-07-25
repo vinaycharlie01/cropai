@@ -6,6 +6,7 @@ export const WeatherInputSchema = z.object({
     latitude: z.number().describe('The latitude for the location.').optional(),
     longitude: z.number().describe('The longitude for the location.').optional(),
     city: z.string().describe('The name of the city for the location.').optional(),
+    language: z.string().describe("The language for the AI-generated advisory text."),
 }).refine(data => data.city || (data.latitude !== undefined && data.longitude !== undefined), {
     message: "Either city or both latitude and longitude must be provided.",
 });
