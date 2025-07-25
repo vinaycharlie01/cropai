@@ -1,16 +1,12 @@
 
+/*
 'use server';
-
-import { config } from 'dotenv';
-config({ path: require('path').resolve(__dirname, '../../.env') });
-
-/**
- * @fileOverview A crop disease diagnosis AI agent.
- *
- * - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
- * - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
- * - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
- */
+// @fileOverview A crop disease diagnosis AI agent.
+//
+// - diagnoseCropDisease - A function that handles the crop disease diagnosis process.
+// - DiagnoseCropDiseaseInput - The input type for the diagnoseCropDisease function.
+// - DiagnoseCropDiseaseOutput - The return type for the diagnoseCropDisease function.
+//
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
@@ -70,9 +66,9 @@ const prompt = ai.definePrompt({
 6.  **Confidence**: Provide a confidence score between 0.0 and 1.0 for your diagnosis.
 
 **INPUT DATA:**
-*   **Crop Type**: {{{cropType}}}
-*   **Location**: {{{location}}}
-*   **Photo**: {{media url=photoDataUri}}
+* **Crop Type**: {{{cropType}}}
+* **Location**: {{{location}}}
+* **Photo**: {{media url=photoDataUri}}
 
 Begin analysis and provide the structured JSON output now.
 `,
@@ -99,3 +95,4 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     }
   }
 );
+*/
