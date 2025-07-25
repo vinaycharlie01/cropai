@@ -95,7 +95,14 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
 
     } catch (e: any) {
         if (e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests')) {
-            throw new Error("The AI diagnosis service is currently overloaded. Please try again in a few moments.");
+            // Instead of throwing an error, return a mock response explaining the situation.
+            return {
+                disease: "Service Temporarily Overloaded",
+                remedies: "The live AI diagnosis service is currently experiencing high demand. We apologize for the inconvenience.",
+                treatment: "Please try again in a few moments. For best results, ensure your photo is clear, in focus, and shows the affected area of the plant against a plain background.",
+                confidence: 0,
+                pesticideRecommendations: [],
+            };
         }
         throw e;
     }
