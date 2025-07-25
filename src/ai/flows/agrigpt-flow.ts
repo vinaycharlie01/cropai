@@ -4,6 +4,8 @@
  * @fileOverview The central agentic flow for AgriGPT.
  * This flow coordinates multiple tools to provide comprehensive answers to farmer queries.
  */
+import { config } from 'dotenv';
+config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 import { ai } from '@/ai/genkit';
 import { diagnoseCropDiseaseTool } from './diagnose-crop-disease';
@@ -11,6 +13,22 @@ import { getLiveMandiPriceTool } from './get-live-mandi-prices';
 import { getWeatherTool } from './weather-api';
 import { schemeAdvisorTool } from './scheme-advisor';
 import { AgriGptInput, AgriGptInputSchema, AgriGptOutput, AgriGptOutputSchema } from '@/types/agrigpt';
+
+// Other flow imports for genkit dev server
+import './diagnose-crop-disease.ts';
+import './selling-advice.ts';
+import './irrigation-advice.ts';
+import './support-chat.ts';
+import './crop-health-analytics.ts';
+import './daily-crop-growth.ts';
+import './insurance-advice.ts';
+import './assess-loan-eligibility.ts';
+import './get-risk-alerts.ts';
+import './tts-flow.ts';
+import './scheme-advisor.ts';
+import './predict-mandi-price.ts';
+import './get-live-mandi-prices.ts';
+
 
 const agriGptPrompt = ai.definePrompt(
   {
