@@ -17,7 +17,6 @@ export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPla
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    // When a new audio source is loaded, automatically play it.
     if (audioSrc && audioRef.current) {
         audioRef.current.play().catch(e => console.error("Audio autoplay failed:", e));
     }
@@ -43,16 +42,14 @@ export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPla
         audioElement.removeEventListener('ended', handleEnded);
       };
     }
-  }, [audioSrc]); // Rerun when audioSrc changes to attach listeners to the new element
+  }, [audioSrc]);
 
   const handleTogglePlay = () => {
-    // If no audio is loaded yet, request it.
     if (!audioSrc) {
       onPlaybackRequest();
       return;
     }
 
-    // If audio is loaded, toggle play/pause.
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();

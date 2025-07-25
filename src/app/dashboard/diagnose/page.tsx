@@ -256,6 +256,9 @@ export default function DiagnosePage() {
   }
 
   const saveDiagnosis = async (data: FormInputs, diagnosisResult: DiagnoseCropDiseaseOutput) => {
+    if (diagnosisResult.disease === "Service Temporarily Overloaded") {
+        return; // Do not save fallback responses to history
+    }
     try {
       await addDoc(collection(db, "diagnoses"), {
         cropType: data.cropType,
@@ -308,9 +311,6 @@ export default function DiagnosePage() {
         });
         setDiagnosis(result);
         await saveDiagnosis(data, result);
-        const textToSpeak = `Disease: ${result.disease}. Treatment: ${result.treatment}. Remedies: ${result.remedies}`;
-        getAudio(textToSpeak);
-
       } catch (e) {
         console.error(e);
         const errorMessage = (e as Error).message || t('errorDiagnosis');
@@ -461,11 +461,13 @@ export default function DiagnosePage() {
                             <Bot />
                             <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                         </div>
-                        <AudioPlayer
-                            audioSrc={audioSrc}
-                            isLoading={isAudioLoading}
-                            onPlaybackRequest={handlePlaybackRequest}
-                        />
+                        {diagnosis.disease !== "Service Temporarily Overloaded" && (
+                            <AudioPlayer
+                                audioSrc={audioSrc}
+                                isLoading={isAudioLoading}
+                                onPlaybackRequest={handlePlaybackRequest}
+                            />
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
