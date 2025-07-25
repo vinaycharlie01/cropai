@@ -59,7 +59,7 @@ const weatherApiFlow = ai.defineFlow(
     const advisoryPrompt = ai.definePrompt({
         name: 'sprayingAdvisoryPrompt',
         input: { schema: z.object({ forecast: z.string(), lang: z.string() }) },
-        output: { schema: z.string() },
+        output: { schema: z.object({ sprayingAdvisory: z.string().describe('A 1-2 sentence advisory on the best and worst days for spraying. Must be in the requested language.') }) },
         prompt: `You are an agricultural expert. Analyze the following 5-day weather forecast data and provide a concise, 1-2 sentence spraying advisory for a farmer.
         
         **Rules for Advisory:**
@@ -71,15 +71,15 @@ const weatherApiFlow = ai.defineFlow(
         **Forecast Data (JSON):**
         {{{forecast}}}
 
-        Provide only the advisory text now.`,
+        Provide the output in the specified JSON format with the 'sprayingAdvisory' key now.`,
     });
     
-    const { output: sprayingAdvisory } = await advisoryPrompt({
+    const { output } = await advisoryPrompt({
         forecast: JSON.stringify(formattedForecast, null, 2),
         lang: language,
     });
     
-    if (!sprayingAdvisory) {
+    if (!output?.sprayingAdvisory) {
       throw new Error("Could not generate AI advisory.");
     }
 
@@ -92,7 +92,7 @@ const weatherApiFlow = ai.defineFlow(
         wind_kph: data.current.wind_kph,
       },
       forecast: formattedForecast,
-      sprayingAdvisory: sprayingAdvisory,
+      sprayingAdvisory: output.sprayingAdvisory,
     };
   }
 );
