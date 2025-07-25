@@ -86,25 +86,44 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     outputSchema: DiagnoseCropDiseaseOutputSchema,
   },
   async (input) => {
-    try {
-        const {output} = await prompt(input);
-        if (!output) {
-          throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
-        }
-        return output;
+    let attempts = 0;
+    const maxAttempts = 3;
+    const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
-    } catch (e: any) {
-        if (e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests')) {
-            // Instead of throwing an error, return a mock response explaining the situation.
-            return {
-                disease: "Service Temporarily Overloaded",
-                remedies: "The live AI diagnosis service is currently experiencing high demand. We apologize for the inconvenience.",
-                treatment: "Please try again in a few moments. For best results, ensure your photo is clear, in focus, and shows the affected area of the plant against a plain background.",
-                confidence: 0,
-                pesticideRecommendations: [],
-            };
+    while (attempts < maxAttempts) {
+        attempts++;
+        try {
+            const {output} = await prompt(input);
+            if (!output) {
+              throw new Error("The AI model did not return a valid diagnosis. The image may be unclear or not a plant.");
+            }
+            return output;
+
+        } catch (e: any) {
+             const isServiceOverloaded = e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests');
+            
+            if (isServiceOverloaded && attempts < maxAttempts) {
+                console.log(`Attempt ${attempts} failed due to service overload. Retrying in 500ms...`);
+                await delay(500);
+                continue; // Retry the loop
+            }
+            
+            // If it's the last attempt or a different error, return the fallback or throw
+            if (isServiceOverloaded) {
+                console.error("All retry attempts failed. Returning fallback response.");
+                return {
+                    disease: "Service Temporarily Overloaded",
+                    remedies: "The live AI diagnosis service is currently experiencing high demand. We apologize for the inconvenience.",
+                    treatment: "Please try again in a few moments. For best results, ensure your photo is clear, in focus, and shows the affected area of the plant against a plain background.",
+                    confidence: 0,
+                    pesticideRecommendations: [],
+                };
+            }
+            throw e; // Rethrow other errors immediately
         }
-        throw e;
     }
+    
+    // This part should theoretically not be reached, but as a safeguard:
+    throw new Error("The diagnosis flow failed after multiple attempts.");
   }
 );
