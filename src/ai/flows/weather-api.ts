@@ -47,7 +47,7 @@ const weatherApiFlow = ai.defineFlow(
     const data = await response.json();
 
     const formattedForecast = data.forecast.forecastday.map((day: any) => ({
-      day: new Date(day.date).toLocaleDateString(language, { weekday: 'short' }),
+      day: new Date(day.date).toLocaleDateString(language === 'en' ? 'en-US' : language, { weekday: 'short' }),
       avgtemp_c: day.day.avgtemp_c,
       condition: day.day.condition.text,
       daily_chance_of_rain: day.day.daily_chance_of_rain,
