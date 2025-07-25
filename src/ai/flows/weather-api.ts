@@ -76,7 +76,7 @@ export const weatherApiFlow = ai.defineFlow(
       }));
 
       // Generate spraying advice using the formatted forecast data
-      const advisory = await weatherAdvisorPrompt({
+      const advisoryText = await weatherAdvisorPrompt({
           forecast: JSON.stringify(formattedForecast, null, 2),
           language: language,
       });
@@ -94,7 +94,7 @@ export const weatherApiFlow = ai.defineFlow(
           humidity: data.current.humidity,
         },
         forecast: formattedForecast,
-        sprayingAdvisory: advisory,
+        sprayingAdvisory: advisoryText,
       };
 
     } catch (error) {
