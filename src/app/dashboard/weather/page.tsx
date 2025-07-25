@@ -7,7 +7,6 @@ import {
   Sun,
   Cloud,
   CloudRain,
-  Thermometer,
   Wind,
   Droplet,
   MapPin,
@@ -15,6 +14,7 @@ import {
   Snowflake,
   Search,
   Loader2,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -53,19 +53,29 @@ const smallWeatherIcons: { [key: string]: React.ReactNode } = Object.entries(wea
 
 const WeatherCardSkeleton = () => (
     <div className="space-y-6">
-        <div className="flex items-center justify-center space-x-6 p-4 bg-muted/50 rounded-lg">
-            <Skeleton className="w-20 h-20 rounded-full" />
-            <div className="space-y-2">
-                <Skeleton className="h-12 w-28" />
-                <Skeleton className="h-5 w-24" />
-            </div>
-        </div>
-         <div className="mt-6 pt-4 border-t">
-            <Skeleton className="h-6 w-1/3 mb-4" />
-             <div className="space-y-2">
-                {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12 rounded-lg" />)}
-             </div>
-        </div>
+        <Card className="bg-background">
+            <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
+            <CardContent className="space-y-4">
+                 <div className="flex items-center justify-center space-x-6 p-4">
+                    <Skeleton className="w-20 h-20 rounded-full" />
+                    <div className="space-y-2">
+                        <Skeleton className="h-12 w-28" />
+                        <Skeleton className="h-5 w-24" />
+                    </div>
+                </div>
+                 <div className="space-y-2">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12 rounded-lg" />)}
+                 </div>
+            </CardContent>
+        </Card>
+        <Card className="bg-background">
+            <CardHeader><Skeleton className="h-6 w-1/2" /></CardHeader>
+            <CardContent className="space-y-2">
+                <Skeleton className="w-full h-5" />
+                <Skeleton className="w-full h-5" />
+                 <Skeleton className="w-3/4 h-5" />
+            </CardContent>
+        </Card>
     </div>
 );
 
@@ -148,97 +158,140 @@ const WeatherPage = () => {
         initial={{ opacity: 0, y: 20 }} 
         animate={{ opacity: 1, y: 0 }} 
         transition={{ duration: 0.5 }}
-        className="space-y-6"
+        className="grid grid-cols-1 lg:grid-cols-3 gap-6"
     >
-        <Card className="shadow-lg">
-          <CardHeader className="pb-4">
-             <form onSubmit={handleSearch} className="flex items-center gap-2 mb-2">
-                <Input 
-                    placeholder={t('egAndhraPradesh')} 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10"
-                />
-                <Button type="submit" size="icon" className="h-10 w-10 shrink-0" disabled={loading}>
-                    {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5"/>}
-                </Button>
-                <Button type="button" size="icon" variant="outline" onClick={getLocation} title="Get Current Location" className="h-10 w-10 shrink-0">
-                    <MapPin className="h-5 w-5"/>
-                </Button>
-             </form>
-             <AnimatePresence>
-             {weatherData?.location && (
-                 <motion.div initial={{opacity:0}} animate={{opacity:1}}>
-                    <CardTitle className="flex items-center justify-between font-headline text-2xl pt-2">
-                        <span>{t('forecastFor')} {weatherData.location}</span>
-                        <Thermometer className="w-7 h-7 text-primary" />
-                    </CardTitle>
-                 </motion.div>
-             )}
-             </AnimatePresence>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-                <WeatherCardSkeleton />
-            ) : !weatherData?.forecast || weatherData.forecast.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center p-4 min-h-[300px]">
-                     <Cloud className="w-16 h-16 text-destructive mb-4"/>
-                     <CardTitle className="mb-2">Could Not Fetch Weather</CardTitle>
-                     <p className="text-muted-foreground mb-4 max-w-sm">{weatherData?.error || t('errorWeather')}</p>
-                     <Button onClick={getLocation}>
-                        Try My Location Again
-                     </Button>
-                </div>
-            ) : (
-                <AnimatePresence>
-                    <motion.div initial={{ opacity: 0}} animate={{ opacity: 1 }} transition={{ duration: 0.7 }} className="space-y-8">
-                        <div className="flex flex-col items-center justify-center text-center p-4 bg-muted/50 rounded-lg">
-                            <div className="flex items-center justify-center space-x-4">
-                                {weatherIcons[weatherData.forecast[0].condition] || <Cloud className="w-16 h-16 text-gray-400" />}
-                                <div>
-                                <p className="text-6xl font-bold">{weatherData.forecast[0].temperature}</p>
-                                <p className="text-muted-foreground capitalize">{weatherData.forecast[0].condition}</p>
+        <div className="lg:col-span-2">
+            <Card>
+                <CardHeader>
+                     <form onSubmit={handleSearch} className="flex items-center gap-2 mb-4">
+                        <Input 
+                            placeholder={t('egAndhraPradesh')} 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <Button type="submit" size="icon" className="shrink-0" disabled={loading}>
+                            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Search className="h-5 w-5"/>}
+                        </Button>
+                        <Button type="button" size="icon" variant="outline" onClick={getLocation} title="Get Current Location" className="shrink-0">
+                            <MapPin className="h-5 w-5"/>
+                        </Button>
+                     </form>
+                    <AnimatePresence>
+                     {weatherData?.location && !loading && (
+                         <motion.div initial={{opacity:0}} animate={{opacity:1}}>
+                            <CardTitle className="font-headline text-2xl">
+                                {t('forecastFor')} {weatherData.location}
+                            </CardTitle>
+                         </motion.div>
+                     )}
+                    </AnimatePresence>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                         <div className="space-y-4">
+                            <div className="flex items-center justify-center space-x-6 p-4">
+                                <Skeleton className="w-20 h-20 rounded-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-12 w-28" />
+                                    <Skeleton className="h-5 w-24" />
                                 </div>
                             </div>
+                            <div className="space-y-2 pt-4">
+                                {[...Array(5)].map((_, i) => <Skeleton key={i} className="w-full h-12 rounded-lg" />)}
+                            </div>
                         </div>
+                    ) : !weatherData?.forecast || weatherData.forecast.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center text-center p-4 min-h-[300px]">
+                            <Cloud className="w-16 h-16 text-destructive mb-4"/>
+                            <CardTitle className="mb-2">Could Not Fetch Weather</CardTitle>
+                            <p className="text-muted-foreground mb-4 max-w-sm">{weatherData?.error || t('errorWeather')}</p>
+                            <Button onClick={getLocation}>
+                                Try My Location Again
+                            </Button>
+                        </div>
+                    ) : (
+                        <AnimatePresence>
+                            <motion.div initial={{ opacity: 0}} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-4">
+                                <div className="flex flex-col items-center justify-center text-center p-4 bg-muted/50 rounded-lg">
+                                    <div className="flex items-center justify-center space-x-4">
+                                        {weatherIcons[weatherData.forecast[0].condition] || <Cloud className="w-16 h-16 text-gray-400" />}
+                                        <div>
+                                        <p className="text-6xl font-bold">{weatherData.forecast[0].temperature}</p>
+                                        <p className="text-muted-foreground capitalize">{weatherData.forecast[0].condition}</p>
+                                        </div>
+                                    </div>
+                                </div>
 
-                        <div className="mt-8 pt-6 border-t">
-                            <ul className="space-y-4">
-                              {weatherData.forecast.map((item, index) => (
-                                 <motion.li
-                                   key={index}
-                                   initial={{ opacity: 0, x: -20 }}
-                                   animate={{ opacity: 1, x: 0 }}
-                                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                                   className="flex items-center p-3 rounded-lg bg-background hover:bg-muted/50 transition-colors"
-                                 >
-                                   <span className="font-semibold text-base w-24">{item.day}</span>
-                                   <div className="flex-shrink-0 w-10 h-10 mx-4 flex items-center justify-center">
-                                     {smallWeatherIcons[item.condition] || <Cloud className="w-8 h-8 text-gray-400" />}
-                                   </div>
-                                   <div className="flex-1">
-                                     <p className="font-medium capitalize">{item.condition}</p>
-                                   </div>
-                                   <div className="grid grid-cols-3 gap-2 text-sm w-48 text-right">
-                                      <span className="font-bold text-lg">{item.temperature}</span>
-                                      <div className="flex items-center gap-1 text-muted-foreground justify-end">
-                                        <Droplet size={14}/>
-                                        <span>{item.humidity}</span>
-                                      </div>
-                                       <div className="flex items-center gap-1 text-muted-foreground justify-end">
-                                        <Wind size={14}/>
-                                        <span>{item.wind_kph}kph</span>
-                                      </div>
-                                   </div>
-                                 </motion.li>
-                              ))}
-                            </ul>
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
+                                <div className="mt-4">
+                                    <ul className="space-y-2">
+                                    {weatherData.forecast.map((item, index) => (
+                                        <motion.li
+                                        key={index}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                                        className="flex items-center p-2 rounded-lg bg-background hover:bg-muted/50 transition-colors"
+                                        >
+                                        <span className="font-semibold text-sm w-24">{item.day}</span>
+                                        <div className="flex-shrink-0 w-10 h-10 mx-2 flex items-center justify-center">
+                                            {smallWeatherIcons[item.condition] || <Cloud className="w-8 h-8 text-gray-400" />}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-medium capitalize text-sm">{item.condition}</p>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 text-xs w-40 text-right">
+                                            <span className="font-bold text-base">{item.temperature}</span>
+                                            <div className="flex items-center gap-1 text-muted-foreground justify-end">
+                                                <Droplet size={12}/>
+                                                <span>{item.humidity}</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 text-muted-foreground justify-end">
+                                                <Wind size={12}/>
+                                                <span>{item.wind_kph}kph</span>
+                                            </div>
+                                        </div>
+                                        </motion.li>
+                                    ))}
+                                    </ul>
+                                </div>
+                            </motion.div>
+                        </AnimatePresence>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+
+        <AnimatePresence>
+            {!loading && weatherData?.sprayingAdvisory && (
+                 <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.1 }}
+                    className="lg:col-span-1 space-y-6"
+                >
+                    <Card>
+                        <CardHeader>
+                             <CardTitle className="font-headline text-lg flex items-center gap-2">
+                                <Bot /> AI Spraying Advisory
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm text-muted-foreground">
+                            <p>{weatherData.sprayingAdvisory}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                             <CardTitle className="font-headline text-lg flex items-center gap-2">
+                                <Sun /> Overall Outlook
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-sm text-muted-foreground">
+                           <p>{weatherData.overallOutlook}</p>
+                        </CardContent>
+                    </Card>
+                </motion.div>
             )}
-          </CardContent>
-        </Card>
+        </AnimatePresence>
     </motion.div>
   );
 };

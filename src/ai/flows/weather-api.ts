@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Provides a Genkit tool to get weather information. This version is simplified to only fetch weather data without AI advice.
+ * @fileOverview Provides a Genkit tool to get weather information and AI-powered advice.
  * 
  * - getWeatherAction - An exported server action to call the main flow from the client.
  */
@@ -14,18 +14,75 @@ import { z } from 'zod';
 
 // This is the exported server action that the client component will call.
 export async function getWeatherAction(input: WeatherInput): Promise<WeatherOutput> {
-    return weatherToolFlow(input);
+    return weatherAdvisorFlow(input);
 }
 
 
-// --- The flow that fetches raw weather data ---
+// --- The main flow that orchestrates data fetching and AI advice ---
+
+const weatherAdvisorFlow = ai.defineFlow(
+    {
+        name: 'weatherAdvisorFlow',
+        description: 'Fetches a 5-day weather forecast and provides AI-powered spraying advice for farmers.',
+        inputSchema: WeatherInputSchema,
+        outputSchema: WeatherOutputSchema,
+    },
+    async (input) => {
+        const rawForecast = await weatherToolFlow(input);
+
+        if (rawForecast.error || !rawForecast.forecast) {
+            return { error: rawForecast.error || "Failed to fetch raw weather data." };
+        }
+
+        const advicePrompt = ai.definePrompt({
+            name: 'sprayingAdvicePrompt',
+            input: { 
+                schema: z.object({
+                    forecast: z.array(DailyForecastSchema),
+                    language: z.string(),
+                }) 
+            },
+            output: { schema: z.object({
+                sprayingAdvisory: z.string(),
+                overallOutlook: z.string(),
+            })},
+            prompt: `You are an expert agronomist providing advice to a farmer. Analyze the following 5-day weather forecast and provide a concise spraying advisory and an overall outlook.
+
+            **Forecast Data:**
+            {{#each forecast}}
+            - {{day}}: {{temperature}}, {{condition}}, Humidity {{humidity}}, Wind {{wind_kph}} kph, {{chance_of_rain}}% chance of rain.
+            {{/each}}
+
+            **Instructions:**
+            1.  **Spraying Advisory**: Write a 2-3 sentence advisory. Focus on the best and worst days for spraying pesticides. Mention wind speed (avoid spraying if > 15 kph) and rain (avoid spraying if rain chance is high).
+            2.  **Overall Outlook**: Write a 1-2 sentence summary of the general weather pattern for the next 5 days.
+            3.  Your entire response MUST be in the requested language: **{{{language}}}**.
+            4.  Provide the output in the specified JSON format.
+            `,
+        });
+
+        const { output: advice } = await advicePrompt({ forecast: rawForecast.forecast, language: input.language });
+        
+        return {
+            ...rawForecast,
+            ...advice,
+        };
+    }
+);
+
+
+// --- The sub-flow that only fetches raw weather data ---
 
 const weatherToolFlow = ai.defineFlow(
     {
         name: 'weatherToolFlow',
         description: 'Fetches raw 5-day weather forecast data from WeatherAPI.com.',
         inputSchema: WeatherInputSchema,
-        outputSchema: WeatherOutputSchema,
+        outputSchema: z.object({
+            location: z.string().optional(),
+            forecast: z.array(DailyForecastSchema).optional(),
+            error: z.string().optional(),
+        }),
     },
     async (input) => {
         const apiKey = process.env.WEATHERAPI_API_KEY;
@@ -33,7 +90,7 @@ const weatherToolFlow = ai.defineFlow(
              return { error: "The weather service is unavailable because the API key is not configured." };
         }
         
-        const { city, latitude, longitude, language } = input;
+        const { city, latitude, longitude } = input;
         
         let query = city;
         if (latitude !== undefined && longitude !== undefined) {
