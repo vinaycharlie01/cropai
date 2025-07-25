@@ -64,12 +64,6 @@ const agriGptFlow = ai.defineFlow(
     } catch (e: any) {
          console.error("AgriGPT Flow Error:", e);
          // Provide a more user-friendly error message
-         if (e.message?.includes('429 Too Many Requests') || e.message?.includes('exceeded your current quota')) {
-             return { reply: "I'm sorry, I'm currently experiencing high demand. Many features like Crop Insurance or Mandi Prices can be accessed directly from the dashboard. Please try asking me again later!" };
-         }
-         if (e.message?.includes('503 Service Unavailable') || e.message?.includes('The model is overloaded')) {
-            return { reply: "I'm sorry, the AI service is very busy right now. Please try again in a few moments. Many features like Crop Insurance or Mandi Prices can be accessed directly from the dashboard." };
-         }
          if (e.message?.includes('The AI diagnosis service is currently overloaded')) {
              return { reply: "I'm sorry, the diagnosis service is currently very busy. Please try again in a few minutes." };
          }
@@ -79,6 +73,7 @@ const agriGptFlow = ai.defineFlow(
          if (e.message?.includes('weather service is not configured') || e.message?.includes('weather service is unavailable')) {
              return { reply: "I'm sorry, the live weather service is not configured. Please add a WeatherAPI.com API key to use this feature." };
          }
+         // Generic fallback for quota errors or other unexpected issues.
          return { reply: `I'm sorry, I ran into an issue. Please try rephrasing your question or ask me something else.` };
     }
   }
