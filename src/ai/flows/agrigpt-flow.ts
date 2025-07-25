@@ -4,8 +4,6 @@
  * @fileOverview The central agentic flow for AgriGPT.
  * This flow coordinates multiple tools to provide comprehensive answers to farmer queries.
  */
-import { config } from 'dotenv';
-config({ path: require('path').resolve(__dirname, '../../../.env') });
 
 import { ai } from '@/ai/genkit';
 import { diagnoseCropDiseaseTool } from './diagnose-crop-disease';
