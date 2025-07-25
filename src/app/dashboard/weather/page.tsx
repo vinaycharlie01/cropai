@@ -72,7 +72,7 @@ export default function WeatherPage() {
         setIsLoading(true);
         setWeather(null);
         try {
-            const result = await getWeatherAction({ locationQuery: query });
+            const result = await getWeatherAction({ locationQuery: query, language: language });
             setWeather(result);
         } catch (e: any) {
             console.error(e);
@@ -192,7 +192,7 @@ export default function WeatherPage() {
                                     <div className="flex flex-col items-center md:items-end gap-2 text-lg">
                                         <div className="flex items-center gap-2"><Wind /> {weather.current.wind_kph} kph</div>
                                         <div className="flex items-center gap-2"><Droplets /> {weather.current.humidity}%</div>
-                                        <div className="flex items-center gap-2"><CloudRain /> {weather.forecast[0].chance_of_rain}% {t('rain')}</div>
+                                        <div className="flex items-center gap-2"><CloudRain /> {weather.forecast[0].daily_chance_of_rain}% {t('rain')}</div>
                                     </div>
                                </CardContent>
                             </Card>
@@ -218,7 +218,7 @@ export default function WeatherPage() {
                                         <p className="text-2xl font-bold">{Math.round(day.avgtemp_c)}°C</p>
                                         <p className="text-sm text-muted-foreground capitalize text-center h-10">{day.condition}</p>
                                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <CloudRain className="h-3 w-3" /> {day.chance_of_rain}%
+                                            <CloudRain className="h-3 w-3" /> {day.daily_chance_of_rain}%
                                         </div>
                                     </motion.div>
                                 ))}
@@ -243,4 +243,3 @@ export default function WeatherPage() {
         </motion.div>
     );
 }
-
