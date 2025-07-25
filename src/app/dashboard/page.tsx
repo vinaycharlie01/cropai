@@ -91,6 +91,22 @@ const carouselSlides = [
         imgHint: "farmer inspecting crop"
     },
     {
+        titleKey: "mandiPrices",
+        descriptionKey: "mandiPricesDescription",
+        buttonKey: "getStarted",
+        href: "/dashboard/mandi-prices",
+        imgSrc: "https://placehold.co/1920x1080.png",
+        imgHint: "market produce"
+    },
+    {
+        titleKey: "weatherForecast",
+        descriptionKey: "weatherInstruction",
+        buttonKey: "getForecast",
+        href: "/dashboard/weather",
+        imgSrc: "https://placehold.co/1920x1080.png",
+        imgHint: "sky clouds"
+    },
+    {
         titleKey: "cropInsurance",
         descriptionKey: "cropInsuranceDesc",
         buttonKey: "registerInsurance",
@@ -106,8 +122,6 @@ const carouselSlides = [
         imgSrc: "https://iili.io/FjhJ7cB.jpg",
         imgHint: "market stall vegetables"
     },
-    
-    
 ];
 
 export default function DashboardPage() {
