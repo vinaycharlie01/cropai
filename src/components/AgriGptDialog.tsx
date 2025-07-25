@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Bot, User, Send, Mic, Loader2, Sparkles, History, AlertTriangle } from 'lucide-react';
 import { agriGpt, type AgriGptInput, type AgriGptOutput } from '@/ai/flows/agrigpt-flow';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { getTtsLanguageCode, TranslationKeys } from '@/lib/translations';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AudioPlayer } from './AudioPlayer';
@@ -29,6 +29,13 @@ interface AgriGptDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+const suggestedPrompts: TranslationKeys[] = [
+    'diagnoseDisease',
+    'mandiPrices',
+    'govtSchemes',
+    'weatherForecast'
+];
 
 export function AgriGptDialog({ open, onOpenChange }: AgriGptDialogProps) {
   const { t, language } = useLanguage();
@@ -119,48 +126,59 @@ export function AgriGptDialog({ open, onOpenChange }: AgriGptDialogProps) {
         </DialogHeader>
         
         <ScrollArea className="flex-1 p-4">
-          <div className="space-y-4">
-            {messages.map((msg, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={cn('flex items-start gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}
-              >
-                {msg.role === 'model' && <Bot className="h-8 w-8 text-primary shrink-0" />}
-                <div
-                  className={cn(
-                    'max-w-md p-3 rounded-lg shadow-sm',
-                    msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                  )}
+          <AnimatePresence>
+            <div className="space-y-4">
+              {messages.map((msg, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn('flex items-start gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                   {msg.role === 'model' && (
-                    <div className="text-right mt-2">
-                         <AudioPlayer
-                            audioSrc={msg.audioSrc || null}
-                            isLoading={msg.isAudioLoading || false}
-                            onPlaybackRequest={() => handleTtsForMessage(msg.text, index)}
-                        />
-                    </div>
-                )}
-                </div>
-                {msg.role === 'user' && <User className="h-8 w-8 text-muted-foreground shrink-0" />}
-              </motion.div>
-            ))}
-            {isLoading && (
-              <div className="flex items-center gap-3">
-                  <Bot className="h-8 w-8 text-primary" />
-                  <div className="p-3 rounded-lg bg-muted">
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                  {msg.role === 'model' && <Bot className="h-8 w-8 text-primary shrink-0" />}
+                  <div
+                    className={cn(
+                      'max-w-md p-3 rounded-lg shadow-sm',
+                      msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    )}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
+                     {msg.role === 'model' && (
+                      <div className="text-right mt-2">
+                           <AudioPlayer
+                              audioSrc={msg.audioSrc || null}
+                              isLoading={msg.isAudioLoading || false}
+                              onPlaybackRequest={() => handleTtsForMessage(msg.text, index)}
+                          />
+                      </div>
+                  )}
                   </div>
-              </div>
-            )}
-          </div>
+                  {msg.role === 'user' && <User className="h-8 w-8 text-muted-foreground shrink-0" />}
+                </motion.div>
+              ))}
+              {isLoading && (
+                <div className="flex items-center gap-3">
+                    <Bot className="h-8 w-8 text-primary" />
+                    <div className="p-3 rounded-lg bg-muted">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                </div>
+              )}
+            </div>
+          </AnimatePresence>
           <div ref={messagesEndRef} />
         </ScrollArea>
         
         <div className="p-4 border-t bg-background">
+            {messages.length <= 1 && (
+                <div className="mb-4 grid grid-cols-2 gap-2 text-sm">
+                    {suggestedPrompts.map((key) => (
+                        <Button key={key} variant="outline" size="sm" className="justify-start h-auto py-2" onClick={() => handleSubmit(t(key))}>
+                            {t(key)}
+                        </Button>
+                    ))}
+                </div>
+            )}
           <div className="flex items-center gap-2">
             <Input
               value={input}

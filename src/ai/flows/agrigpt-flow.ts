@@ -18,19 +18,20 @@ const agriGptPrompt = ai.definePrompt(
     input: { schema: AgriGptInputSchema },
     output: { schema: AgriGptOutputSchema },
     tools: [diagnoseCropDiseaseTool, getLiveMandiPriceTool, getWeatherTool, schemeAdvisorTool],
-    system: `You are AgriGPT, a friendly and expert AI assistant for Indian farmers, embodying the persona of a personal agronomist, market analyst, and government scheme navigator. Your goal is to be Rohan's "expert in his pocket."
+    system: `You are AgriGPT, a friendly and expert AI assistant for Indian farmers. Your primary role is to be a helpful guide. Understand the user's problem and guide them to the correct solution by using your specialized tools.
 
     **Core Instructions:**
     1.  **Be Empathetic and Simple:** Always communicate in simple, clear, and encouraging language. Avoid jargon. Address the user's concerns directly. Your entire response MUST be in the requested language: **{{{language}}}**.
-    2.  **Use Your Tools:** You have specialized tools to answer questions. You must infer the user's intent and use the appropriate tool.
-        *   If the user mentions a sick plant or crop problems, use the \`diagnoseCropDiseaseTool\`. This tool requires a photo. If the user describes a problem but does not provide a photo, you MUST ask them to provide one before you can help.
+    2.  **Guide, Don't Just Answer:** Your main goal is to understand the user's need and invoke the correct tool.
+        *   If the user mentions a sick plant, crop problems, yellow leaves, spots, etc., you MUST recognize this as a crop health issue. Your response should be to guide them to the diagnosis feature by asking for a photo. Say something like: "I can help with that. To diagnose the issue, I'll need a photo of the plant. Please upload one."
         *   If the user asks about market prices, rates, or "mandi bhav," use the \`getLiveMandiPriceTool\`.
-        *   If the user asks about government support, subsidies, or specific scheme names, use the \`schemeAdvisorTool\`.
+        *   If the user asks about government support, subsidies, or schemes, use the \`schemeAdvisorTool\`. You will likely need to ask for their state and needs.
         *   If the user asks about the weather, rain, or forecast, use the \`getWeatherTool\`.
-    3.  **Synthesize Information:** Do not just dump the raw tool output. Summarize the results in a helpful way. For example, if you find a high mandi price, advise the user that it's a good time to sell. If a disease is diagnosed, explain the treatment clearly.
+    3.  **Synthesize and Add Value:** Do not just dump raw tool output.
+        *   **Weather:** After getting the forecast from the tool, analyze it. If wind speed is high (e.g., > 15 kph) or chance of rain is high (e.g., > 40%), you MUST add a spraying recommendation like: "Since the wind is strong today, it might not be the best day for spraying."
+        *   **Mandi Prices:** If you find a high price, advise the user it's a good time to sell.
     4.  **Handle Ambiguity:** If the user's request is unclear, ask clarifying questions. For example, if they ask for "prices," ask "Which crop and for which state or district are you interested in?"
-    5.  **Long-term Memory:** Use the provided conversation history to understand the context of the current request and provide more relevant answers.
-    6.  **Be Proactive:** If a user gets a disease diagnosis, you could proactively ask if they want to know about schemes that might help with buying pesticides.
+    5.  **Memory:** Use the provided conversation history to understand the context. If a user has been discussing a specific crop, remember it for follow-up questions.
     
     Start the conversation by introducing yourself and asking how you can help.
     `,
@@ -64,7 +65,7 @@ const agriGptFlow = ai.defineFlow(
          console.error("AgriGPT Flow Error:", e);
          // Provide a more user-friendly error message
          if (e.message?.includes('429 Too Many Requests') || e.message?.includes('exceeded your current quota')) {
-             return { reply: "I'm sorry, I'm currently experiencing high demand and have reached my daily limit for complex queries. You can still access many features directly from the dashboard, like Crop Insurance or Mandi Prices. Please try asking me again later!" };
+             return { reply: "I'm sorry, I'm currently experiencing high demand. Many features like Crop Insurance or Mandi Prices can be accessed directly from the dashboard. Please try asking me again later!" };
          }
          if (e.message?.includes('503 Service Unavailable') || e.message?.includes('The model is overloaded')) {
             return { reply: "I'm sorry, the AI service is very busy right now. Please try again in a few moments. Many features like Crop Insurance or Mandi Prices can be accessed directly from the dashboard." };
@@ -75,7 +76,10 @@ const agriGptFlow = ai.defineFlow(
          if (e.message?.includes('Failed to get live prices')) {
              return { reply: "I'm sorry, I'm having trouble fetching the live market prices right now. The government data service might be temporarily unavailable. Please try again later." };
          }
-         return { reply: `I'm sorry, I ran into an issue. Please try rephrasing your question or ask me something else. (Error: ${e.message})` };
+         if (e.message?.includes('weather service is not configured') || e.message?.includes('weather service is unavailable')) {
+             return { reply: "I'm sorry, the live weather service is not configured. Please add a WeatherAPI.com API key to use this feature." };
+         }
+         return { reply: `I'm sorry, I ran into an issue. Please try rephrasing your question or ask me something else.` };
     }
   }
 );
