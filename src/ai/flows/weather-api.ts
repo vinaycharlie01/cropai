@@ -142,6 +142,12 @@ const weatherAdvisorFlow = ai.defineFlow(
     async (input) => {
         try {
             const { city, latitude, longitude, language } = input;
+            
+            // Add validation to ensure location is provided
+            if (!city && (latitude === undefined || longitude === undefined)) {
+                return { error: "Location not specified. Please provide a city or coordinates." };
+            }
+
             const weatherData = await fetchWeatherTool({ city, latitude, longitude });
 
             if (!weatherData?.forecast || weatherData.forecast.length === 0) {
