@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "genkit:dev": "genkit start -- tsx src/ai/flows/agrigpt-flow.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/flows/agrigpt-flow.ts",
+    "genkit:dev": "genkit start -- tsx src/ai/flows/diagnose-crop-disease.ts",
+    "genkit:watch": "genkit start -- tsx --watch src/ai/flows/diagnose-crop-disease.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

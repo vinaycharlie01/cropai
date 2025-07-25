@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, CloudSun, Sparkles } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, CloudSun } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from "next-themes";
 import {
@@ -28,7 +28,6 @@ import { SearchCommand } from '@/components/SearchCommand';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getAuth, signOut } from 'firebase/auth';
-import { AgriGptDialog } from '@/components/AgriGptDialog';
 
 
 const navItems = [
@@ -62,7 +61,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [openSearch, setOpenSearch] = useState(false);
-  const [isGptDialogOpen, setIsGptDialogOpen] = useState(false);
   
   useEffect(() => {
     if (!loading && !user) {
@@ -76,10 +74,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         setOpenSearch((open) => !open)
-      }
-      if (e.key === "g" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        setIsGptDialogOpen((open) => !open)
       }
     }
     document.addEventListener("keydown", down)
@@ -199,7 +193,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="grid min-h-screen w-full bg-background">
       <SearchCommand open={openSearch} setOpen={setOpenSearch} />
-      <AgriGptDialog open={isGptDialogOpen} onOpenChange={setIsGptDialogOpen} />
       {/* Desktop Sidebar */}
       <div className={cn(
         "hidden md:flex flex-col border-r bg-background transition-all duration-300 ease-in-out fixed top-0 left-0 h-full z-40",
@@ -273,10 +266,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => setOpenSearch(true)}>
                 <Search className="h-5 w-5" />
                 <span className="sr-only">Search</span>
-              </Button>
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => setIsGptDialogOpen(true)}>
-                <Sparkles className="h-5 w-5" />
-                <span className="sr-only">Open AgriGPT</span>
               </Button>
               {themeToggle}
               {languageSelector}
