@@ -1,5 +1,9 @@
 
 'use server';
+
+import { config } from 'dotenv';
+config({ path: require('path').resolve(__dirname, '../../.env') });
+
 /**
  * @fileOverview A crop disease diagnosis AI agent.
  *
