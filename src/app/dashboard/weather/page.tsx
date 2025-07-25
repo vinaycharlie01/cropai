@@ -5,7 +5,6 @@ import { useState, useCallback } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MapPin, Loader2, Mic, Wind, Droplets, Sun, Cloud, CloudRain, CloudSun } from 'lucide-react';
-import Image from 'next/image';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';

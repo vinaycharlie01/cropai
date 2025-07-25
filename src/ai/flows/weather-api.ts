@@ -74,12 +74,14 @@ const weatherApiFlow = ai.defineFlow(
         Provide only the advisory text now.`,
     });
     
-    const advisoryResult = await advisoryPrompt({
+    const { output: sprayingAdvisory } = await advisoryPrompt({
         forecast: JSON.stringify(formattedForecast, null, 2),
         lang: language,
     });
     
-    const sprayingAdvisory = advisoryResult.output || "Could not generate AI advisory. Please check weather conditions manually before spraying.";
+    if (!sprayingAdvisory) {
+      throw new Error("Could not generate AI advisory.");
+    }
 
     return {
       location: `${data.location.name}, ${data.location.region}`,

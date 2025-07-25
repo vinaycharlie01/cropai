@@ -30,15 +30,15 @@ import {
 const navItems = [
     { href: '/dashboard', icon: LayoutDashboard, labelKey: 'dashboard' },
     { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
+    { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
+    { href: '/dashboard/weather', icon: Cloud, labelKey: 'weatherForecast' },
+    { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
     { href: '/dashboard/monitor', icon: Activity, labelKey: 'growthMonitoring' },
     { href: '/dashboard/analytics', icon: PieChart, labelKey: 'healthAnalytics' },
     { href: '/dashboard/insurance', icon: Shield, labelKey: 'cropInsurance' },
     { href: '/dashboard/capital', icon: Landmark, labelKey: 'smartCapitalAccess' },
     { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
     { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },
-    { href: '/dashboard/mandi-prices', icon: LineChart, labelKey: 'mandiPrices' },
-    { href: '/dashboard/weather', icon: Cloud, labelKey: 'weatherForecast' },
-    { href: '/dashboard/schemes', icon: ScrollText, labelKey: 'govtSchemes' },
     { href: '/dashboard/help', icon: LifeBuoy, labelKey: 'helpSupport' },
 ] as const;
 
