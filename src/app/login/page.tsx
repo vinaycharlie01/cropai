@@ -51,15 +51,24 @@ export default function LoginPage() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        'size': 'invisible',
-        'callback': (response: any) => {
-          // reCAPTCHA solved, allow signInWithPhoneNumber.
-        },
-      });
-    }
-    return window.recaptchaVerifier;
+    // This function will now be called only when the 'Send OTP' button is clicked.
+    // The reCAPTCHA will be rendered into the 'recaptcha-container' div.
+    return new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'normal', // Use 'normal' for a visible reCAPTCHA
+      'callback': (response: any) => {
+        // reCAPTCHA solved.
+        // We can now proceed with sending the OTP.
+        onPhoneSubmit(phoneForm.getValues());
+      },
+       'expired-callback': () => {
+        // Response expired. Ask user to solve reCAPTCHA again.
+         toast({
+          variant: 'destructive',
+          title: 'reCAPTCHA Expired',
+          description: 'Please solve the reCAPTCHA again.',
+        });
+      }
+    });
   };
 
   const onEmailSubmit: SubmitHandler<EmailFormInputs> = async (data) => {
@@ -116,7 +125,6 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-4 bg-background">
-      <div id="recaptcha-container"></div>
       <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080.png')] bg-cover bg-center opacity-10" data-ai-hint="farm landscape" />
       <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background to-background" />
 
@@ -198,6 +206,8 @@ export default function LoginPage() {
                     </div>
                     {phoneForm.formState.errors.phoneNumber && <p className="text-destructive text-sm">{phoneForm.formState.errors.phoneNumber.message}</p>}
                   </div>
+                  
+                  <div id="recaptcha-container" className="flex justify-center"></div>
 
                   {isOtpSent && (
                     <div className="space-y-2">
