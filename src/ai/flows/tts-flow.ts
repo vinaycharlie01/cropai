@@ -59,36 +59,48 @@ const ttsFlow = ai.defineFlow(
     outputSchema: GenerateSpeechOutputSchema,
   },
   async ({ text, language }) => {
-    const ttsLang = getTtsLanguageCode(language);
-    
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          languageCode: ttsLang,
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' },
+    try {
+        if (!text || text.trim() === '') {
+            console.warn('TTS flow received empty text. Skipping generation.');
+            return { audioDataUri: '' };
+        }
+
+        const ttsLang = getTtsLanguageCode(language);
+        
+        const { media } = await ai.generate({
+          model: 'googleai/gemini-2.5-flash-preview-tts',
+          config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              languageCode: ttsLang,
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: 'Algenib' },
+              },
+            },
           },
-        },
-      },
-      prompt: text,
-    });
-    
-    if (!media?.url) {
-      throw new Error('TTS generation failed. No audio media was returned.');
+          prompt: text,
+        });
+        
+        if (!media?.url) {
+          throw new Error('TTS generation failed. No audio media was returned from the AI service.');
+        }
+        
+        const audioBuffer = Buffer.from(
+          media.url.substring(media.url.indexOf(',') + 1),
+          'base64'
+        );
+          
+        const wavBase64 = await toWav(audioBuffer);
+        
+        return {
+          audioDataUri: `data:audio/wav;base64,${wavBase64}`,
+        };
+    } catch (error) {
+        console.error("Error in TTS Flow:", error);
+        // Return an empty audio URI to prevent client-side errors
+        // The client will see that the audio failed to load but won't crash.
+        return { audioDataUri: '' };
     }
-    
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-      
-    const wavBase64 = await toWav(audioBuffer);
-    
-    return {
-      audioDataUri: `data:audio/wav;base64,${wavBase64}`,
-    };
   }
 );
 
