@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, Cloud } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, Cloud, MessageSquareHeart } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from "next-themes";
 import {
@@ -41,6 +41,7 @@ const navItems = [
   { href: '/dashboard/capital', icon: Landmark, labelKey: 'smartCapitalAccess' },
   { href: '/dashboard/selling-advice', icon: BarChartBig, labelKey: 'aiSellingAdvice' },
   { href: '/dashboard/irrigation', icon: Droplets, labelKey: 'smartIrrigation' },
+  { href: '/dashboard/community', icon: MessageSquareHeart, labelKey: 'community' },
   { href: '/dashboard/help', icon: LifeBuoy, labelKey: 'helpSupport' },
 ] as const;
 
