@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -8,7 +9,7 @@ type Language = 'en' | 'hi' | 'te' | 'kn' | 'ml' | 'ta';
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: string) => void;
-  t: (key: TranslationKeys) => string;
+  t: (key: TranslationKeys, values?: Record<string, string | number>) => string;
   isLanguageSelected: boolean;
   setIsLanguageSelected: (selected: boolean) => void;
 }
@@ -37,8 +38,15 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const t = (key: TranslationKeys): string => {
-    return translations[language][key] || translations['en'][key];
+  const t = (key: TranslationKeys, values?: Record<string, string | number>): string => {
+    let text = translations[language][key] || translations['en'][key];
+    if (values) {
+      Object.keys(values).forEach(valueKey => {
+        const regex = new RegExp(`\\{${valueKey}\\}`, 'g');
+        text = text.replace(regex, String(values[valueKey]));
+      });
+    }
+    return text;
   };
 
   if (!isMounted) {

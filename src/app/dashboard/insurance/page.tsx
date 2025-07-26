@@ -37,6 +37,7 @@ import { format } from 'date-fns';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { getInsuranceAdvice, InsuranceAdviceOutput } from '@/ai/flows/insurance-advice';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 // Form Types
 type InsuranceFormInputs = {
@@ -407,16 +408,25 @@ function InsuranceRegistrationForm() {
                         <div className="space-y-4">
                             <div className="bg-background p-4 rounded-md">
                                 <h4 className="font-semibold flex items-center gap-2"><Lightbulb className="text-yellow-400" /> {t('recommendation')}: <span className="text-primary">{aiAdvice.recommendation}</span></h4>
-                                <p className="text-sm text-muted-foreground">{aiAdvice.reasoning}</p>
+                                <div className="flex items-start gap-2">
+                                  <p className="text-sm text-muted-foreground flex-1">{aiAdvice.reasoning}</p>
+                                  <AudioPlayer textToSpeak={aiAdvice.reasoning} language={language} />
+                                </div>
                             </div>
                             <div className="grid md:grid-cols-2 gap-4">
                                 <div className="bg-background p-4 rounded-md">
                                     <h4 className="font-semibold">PMFBY</h4>
-                                    <p className="text-sm text-muted-foreground">{aiAdvice.pmfbyDetails}</p>
+                                    <div className="flex items-start gap-2">
+                                      <p className="text-sm text-muted-foreground flex-1">{aiAdvice.pmfbyDetails}</p>
+                                      <AudioPlayer textToSpeak={aiAdvice.pmfbyDetails} language={language} />
+                                    </div>
                                 </div>
                                 <div className="bg-background p-4 rounded-md">
                                     <h4 className="font-semibold">{t('privateInsurance')}</h4>
-                                    <p className="text-sm text-muted-foreground">{aiAdvice.privateDetails}</p>
+                                    <div className="flex items-start gap-2">
+                                      <p className="text-sm text-muted-foreground flex-1">{aiAdvice.privateDetails}</p>
+                                      <AudioPlayer textToSpeak={aiAdvice.privateDetails} language={language} />
+                                    </div>
                                 </div>
                             </div>
                         </div>

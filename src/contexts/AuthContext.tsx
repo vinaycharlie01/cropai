@@ -8,7 +8,7 @@ import React, {
   ReactNode
 } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from '@/lib/firebase'; // Make sure this is correctly exporting a Firebase Auth instance
+import { auth } from '@/lib/firebase'; 
 
 // Define the context type
 interface AuthContextType {
@@ -33,8 +33,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
+  // Return a dummy user when auth is removed
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user: user, loading: loading }}>
       {children}
     </AuthContext.Provider>
   );

@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Mic, Loader2, Bot, User, Speaker } from 'lucide-react';
+import { Send, Mic, Loader2, Bot, User } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -121,11 +121,6 @@ export default function KisanSaathiChatPage() {
                   msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
               )}>
                 <p className="text-sm whitespace-pre-wrap">{msg.text}</p>
-                 {msg.role === 'model' && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6 mt-2 ml-auto block">
-                      <Speaker className="h-4 w-4" />
-                    </Button>
-                )}
               </div>
               {msg.role === 'user' && <User className="h-8 w-8 text-muted-foreground" />}
             </div>

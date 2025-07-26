@@ -25,7 +25,7 @@ export const MandiPricePredictionOutputSchema = z.object({
 export type MandiPricePredictionOutput = z.infer<typeof MandiPricePredictionOutputSchema>;
 
 
-// Schema for Live Mandi Price
+// Schema for Live Mandi Price (Kept for potential future use, but not used by the prediction flow)
 export const MandiPriceRecordSchema = z.object({
   state: z.string(),
   district: z.string(),

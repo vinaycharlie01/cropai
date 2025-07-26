@@ -1,92 +1,122 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Speaker, Loader2, Play, Pause } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Loader2, Play, Pause, AlertTriangle } from 'lucide-react';
+import { generateSpeech } from '@/ai/flows/tts-flow';
+import { getTtsLanguageCode } from '@/lib/translations';
 import { Button } from '@/components/ui/button';
-import { AnimatePresence, motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 interface AudioPlayerProps {
-  audioSrc: string | null;
-  isLoading: boolean;
-  onPlaybackRequest: () => void;
+  textToSpeak: string;
+  language: string;
 }
 
-export function AudioPlayer({ audioSrc, isLoading, onPlaybackRequest }: AudioPlayerProps) {
+export function AudioPlayer({ textToSpeak, language }: AudioPlayerProps) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioDataUriRef = useRef<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (audioSrc && audioRef.current) {
-        audioRef.current.play().catch(e => console.error("Audio autoplay failed:", e));
+    // Initialize the audio element once.
+    if (!audioRef.current) {
+        audioRef.current = new Audio();
+        audioRef.current.addEventListener('ended', () => setIsPlaying(false));
     }
-  }, [audioSrc]);
-  
-  useEffect(() => {
-    const audioElement = audioRef.current;
-    if (audioElement) {
-      const handlePlay = () => setIsPlaying(true);
-      const handlePause = () => setIsPlaying(false);
-      const handleEnded = () => setIsPlaying(false);
-      
-      audioElement.addEventListener('play', handlePlay);
-      audioElement.addEventListener('pause', handlePause);
-      audioElement.addEventListener('ended', handleEnded);
-
-      // Set initial state
-      setIsPlaying(!audioElement.paused);
-
-      return () => {
-        audioElement.removeEventListener('play', handlePlay);
-        audioElement.removeEventListener('pause', handlePause);
-        audioElement.removeEventListener('ended', handleEnded);
-      };
+    
+    // Reset state when the text to speak changes.
+    setIsPlaying(false);
+    audioDataUriRef.current = null;
+    setError(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
     }
-  }, [audioSrc]);
+    
+    // Cleanup on unmount
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.removeEventListener('ended', () => setIsPlaying(false));
+        }
+    }
+  }, [textToSpeak, language]);
 
-  const handleTogglePlay = () => {
-    if (!audioSrc) {
-      onPlaybackRequest();
+
+  const fetchAndPlayAudio = useCallback(async () => {
+    // If we already have the audio, just play it.
+    if (audioDataUriRef.current && audioRef.current) {
+      audioRef.current.play().catch(e => {
+          console.error("Audio play failed:", e);
+          setError("Could not play audio.");
+      });
+      setIsPlaying(true);
       return;
     }
 
-    if (audioRef.current) {
-      if (isPlaying) {
-        audioRef.current.pause();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const ttsLang = getTtsLanguageCode(language);
+      const result = await generateSpeech({ text: textToSpeak, languageCode: ttsLang });
+      
+      if (result.audioDataUri) {
+        audioDataUriRef.current = result.audioDataUri;
+        if (audioRef.current) {
+          audioRef.current.src = result.audioDataUri;
+          audioRef.current.play().catch(e => {
+            console.error("Audio play failed:", e);
+            setError("Could not play audio.");
+            setIsPlaying(false);
+          });
+          setIsPlaying(true);
+        }
       } else {
-        audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+        throw new Error('Failed to generate audio from the service.');
       }
+    } catch (e: any) {
+      console.error(e);
+      const errorMessage = e.message || 'Failed to generate audio for this text.';
+      setError(errorMessage);
+      toast({
+        variant: 'destructive',
+        title: 'Audio Error',
+        description: errorMessage,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [language, textToSpeak, toast]);
+
+
+  const handlePlayPause = () => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      fetchAndPlayAudio();
     }
   };
+  
+  if (!textToSpeak || textToSpeak.trim() === '') return null;
 
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={handleTogglePlay}
-        disabled={isLoading}
-        className="flex-shrink-0 h-8 w-8"
-        title="Listen to advice"
-      >
-        <AnimatePresence mode="wait">
-          {isLoading ? (
-            <motion.div key="loader" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-              <Loader2 className="h-4 w-4 animate-spin" />
-            </motion.div>
-          ) : isPlaying ? (
-            <motion.div key="pause" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-              <Pause className="h-4 w-4" />
-            </motion.div>
-          ) : (
-             <motion.div key="play" initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }}>
-              <Play className="h-4 w-4" />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </Button>
-      
-      {audioSrc && <audio ref={audioRef} src={audioSrc} className="hidden" />}
-    </div>
+    <Button variant="ghost" size="icon" onClick={handlePlayPause} disabled={isLoading}>
+      {isLoading ? (
+        <Loader2 className="h-5 w-5 animate-spin" />
+      ) : isPlaying ? (
+        <Pause className="h-5 w-5" />
+      ) : error ? (
+        <AlertTriangle className="h-5 w-5 text-destructive" />
+      ) : (
+        <Play className="h-5 w-5" />
+      )}
+      <span className="sr-only">Play/Pause Audio</span>
+    </Button>
   );
 }

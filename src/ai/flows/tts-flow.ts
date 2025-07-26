@@ -2,29 +2,39 @@
 'use server';
 
 /**
- * @fileOverview A central AI flow for converting text to speech.
- *
- * - generateSpeech - Converts a given text string into playable audio in a specified language.
- * - GenerateSpeechInput - The input type for the generateSpeech function.
- * - GenerateSpeechOutput - The return type for the generateSpeech function.
+ * @fileOverview A robust Genkit flow for converting text to speech.
  */
-
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import wav from 'wav';
-import { getTtsLanguageCode } from '@/lib/translations';
+import { googleAI } from '@genkit-ai/googleai';
 
-const GenerateSpeechInputSchema = z.object({
-  text: z.string().describe('The text to convert to speech.'),
-  language: z.string().describe('The language code for the speech (e.g., "en", "hi").'),
+
+const TtsInputSchema = z.object({
+    text: z.string().describe('The text to be converted to speech.'),
+    languageCode: z.string().describe('The BCP-47 language code for the speech, e.g., "en-US", "hi-IN".'),
 });
-export type GenerateSpeechInput = z.infer<typeof GenerateSpeechInputSchema>;
+export type TtsInput = z.infer<typeof TtsInputSchema>;
 
-const GenerateSpeechOutputSchema = z.object({
-  audioDataUri: z.string().describe("The generated audio as a data URI in WAV format. Expected format: 'data:audio/wav;base64,<encoded_data>'."),
+const TtsOutputSchema = z.object({
+    audioDataUri: z.string().nullable().describe("A data URI of the generated audio in WAV format, or null if generation failed. Format: 'data:audio/wav;base64,<encoded_data>'."),
 });
-export type GenerateSpeechOutput = z.infer<typeof GenerateSpeechOutputSchema>;
+export type TtsOutput = z.infer<typeof TtsOutputSchema>;
 
+
+/**
+ * Converts a string of text into a playable audio data URI.
+ * @param input The text and language code.
+ * @returns An object containing the audioDataUri, or null if an error occurred.
+ */
+export async function generateSpeech(input: TtsInput): Promise<TtsOutput> {
+  return ttsFlow(input);
+}
+
+
+/**
+ * Converts raw PCM audio buffer to a Base64 encoded WAV string.
+ */
 async function toWav(
   pcmData: Buffer,
   channels = 1,
@@ -40,12 +50,8 @@ async function toWav(
 
     let bufs: any[] = [];
     writer.on('error', reject);
-    writer.on('data', function (d) {
-      bufs.push(d);
-    });
-    writer.on('end', function () {
-      resolve(Buffer.concat(bufs).toString('base64'));
-    });
+    writer.on('data', (d) => bufs.push(d));
+    writer.on('end', () => resolve(Buffer.concat(bufs).toString('base64')));
 
     writer.write(pcmData);
     writer.end();
@@ -55,44 +61,50 @@ async function toWav(
 const ttsFlow = ai.defineFlow(
   {
     name: 'ttsFlow',
-    inputSchema: GenerateSpeechInputSchema,
-    outputSchema: GenerateSpeechOutputSchema,
+    inputSchema: TtsInputSchema,
+    outputSchema: TtsOutputSchema,
   },
-  async ({ text, language }) => {
-    const ttsLang = getTtsLanguageCode(language);
-    
-    const { media } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash-preview-tts',
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          languageCode: ttsLang,
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' },
-          },
-        },
-      },
-      prompt: text,
-    });
-    
-    if (!media?.url) {
-      throw new Error('TTS generation failed. No audio media was returned.');
+  async ({ text, languageCode }) => {
+    // Prevent calling the API with empty text
+    if (!text || text.trim() === '') {
+        console.warn("TTS flow called with empty text.");
+        return { audioDataUri: null };
     }
     
-    const audioBuffer = Buffer.from(
-      media.url.substring(media.url.indexOf(',') + 1),
-      'base64'
-    );
-      
-    const wavBase64 = await toWav(audioBuffer);
-    
-    return {
-      audioDataUri: `data:audio/wav;base64,${wavBase64}`,
-    };
+    try {
+        const { media } = await ai.generate({
+            model: 'googleai/gemini-2.5-flash-preview-tts',
+            config: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                  voiceConfig: {
+                    languageCode: languageCode,
+                  }
+                },
+            },
+            prompt: text,
+        });
+
+        if (!media?.url) {
+            console.error('TTS model did not return any media.');
+            return { audioDataUri: null };
+        }
+
+        const audioBuffer = Buffer.from(
+            media.url.substring(media.url.indexOf(',') + 1),
+            'base64'
+        );
+        
+        const wavBase64 = await toWav(audioBuffer);
+
+        return {
+            audioDataUri: 'data:audio/wav;base64,' + wavBase64,
+        };
+
+    } catch (error) {
+        console.error("Error in TTS flow:", error);
+        // Return a null URI to gracefully handle errors on the frontend
+        return { audioDataUri: null };
+    }
   }
 );
-
-
-export async function generateSpeech(input: GenerateSpeechInput): Promise<GenerateSpeechOutput> {
-  return ttsFlow(input);
-}

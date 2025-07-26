@@ -100,26 +100,25 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
             return output;
 
         } catch (e: any) {
-             const isServiceOverloaded = e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests');
+             const isServiceOverloaded = e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests') || e.message?.includes('service is overloaded');
             
             if (isServiceOverloaded && attempts < maxAttempts) {
-                console.log(`Attempt ${attempts} failed due to service overload. Retrying in 500ms...`);
-                await delay(500);
-                continue; // Retry the loop
+                console.log(`Attempt ${attempts} failed due to service overload. Retrying in ${2000 * attempts}ms...`);
+                await delay(2000 * attempts); // Increased delay
+                continue; 
             }
             
-            // If it's the last attempt or a different error, return the fallback or throw
             if (isServiceOverloaded) {
                 console.error("All retry attempts failed. Returning fallback response.");
                 return {
                     disease: "Service Temporarily Overloaded",
-                    remedies: "The live AI diagnosis service is currently experiencing high demand. We apologize for the inconvenience.",
-                    treatment: "Please try again in a few moments. For best results, ensure your photo is clear, in focus, and shows the affected area of the plant against a plain background.",
+                    remedies: "We are experiencing high demand for our AI diagnosis service. We apologize for the inconvenience.",
+                    treatment: "Please try again in a few moments. For best results, ensure your photo is clear and well-lit.",
                     confidence: 0,
                     pesticideRecommendations: [],
                 };
             }
-            throw e; // Rethrow other errors immediately
+            throw e; 
         }
     }
     
@@ -127,3 +126,4 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
     throw new Error("The diagnosis flow failed after multiple attempts.");
   }
 );
+
