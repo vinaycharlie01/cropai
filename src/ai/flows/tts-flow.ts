@@ -78,7 +78,7 @@ const ttsFlow = ai.defineFlow(
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                   voiceConfig: {
-                    languageCode: languageCode,
+                    prebuiltVoiceConfig: { languageCode: languageCode }
                   },
                 },
             },

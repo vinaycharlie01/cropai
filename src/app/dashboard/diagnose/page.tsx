@@ -34,22 +34,19 @@ type FormInputs = {
 type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
 
-const HighlightedText = ({ text, language }: { text: string, language: string }) => {
+const HighlightedText = ({ text }: { text: string }) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return (
-        <p className="flex items-start gap-2">
-            <span className="flex-1">
-                {parts.map((part, index) =>
-                    part.startsWith('**') && part.endsWith('**') ? (
-                        <strong key={index} className="font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
-                            {part.slice(2, -2)}
-                        </strong>
-                    ) : (
-                        part
-                    )
-                )}
-            </span>
-            <AudioPlayer textToSpeak={text.replace(/\*\*/g, '')} language={language} />
+        <p>
+            {parts.map((part, index) =>
+                part.startsWith('**') && part.endsWith('**') ? (
+                    <strong key={index} className="font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
+                        {part.slice(2, -2)}
+                    </strong>
+                ) : (
+                    part
+                )
+            )}
         </p>
     );
 };
@@ -293,6 +290,15 @@ export default function DiagnosePage() {
       }
   };
   
+  const getFullDiagnosisText = (diag: DiagnoseCropDiseaseOutput) => {
+    const parts = [
+        `${t('disease')}: ${diag.disease}.`,
+        `${t('treatment')}: ${diag.treatment.replace(/\*\*/g, '')}.`,
+        `${t('remedies')}: ${diag.remedies}.`,
+    ];
+    return parts.join(' ');
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -433,6 +439,7 @@ export default function DiagnosePage() {
                             <Bot />
                             <CardTitle className="font-headline">{t('diagnosisResult')}</CardTitle>
                         </div>
+                        <AudioPlayer textToSpeak={getFullDiagnosisText(diagnosis)} language={language} />
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -442,7 +449,7 @@ export default function DiagnosePage() {
                       </div>
                        <div>
                         <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
-                        <HighlightedText text={diagnosis.treatment} language={language} />
+                        <HighlightedText text={diagnosis.treatment} />
                       </div>
                        {diagnosis.pesticideRecommendations && diagnosis.pesticideRecommendations.length > 0 && (
                         <div>
@@ -467,10 +474,7 @@ export default function DiagnosePage() {
                        )}
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>
-                        <div className="flex items-start gap-2">
-                          <p className="flex-1">{diagnosis.remedies}</p>
-                          <AudioPlayer textToSpeak={diagnosis.remedies} language={language} />
-                        </div>
+                        <p>{diagnosis.remedies}</p>
                       </div>
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
