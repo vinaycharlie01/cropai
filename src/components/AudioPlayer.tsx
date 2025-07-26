@@ -22,28 +22,39 @@ export function AudioPlayer({ textToSpeak, language }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
+  // Effect to create and manage the audio element instance
   useEffect(() => {
-    // Reset state when text changes
+    audioRef.current = new Audio();
+    const audioElement = audioRef.current;
+
+    const handleAudioEnd = () => setIsPlaying(false);
+    audioElement.addEventListener('ended', handleAudioEnd);
+
+    // Cleanup function to remove event listener
+    return () => {
+      audioElement.removeEventListener('ended', handleAudioEnd);
+    };
+  }, []);
+
+  // Effect to reset state when the text to speak changes
+  useEffect(() => {
     setIsPlaying(false);
     setAudioDataUri(null);
     setError(null);
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
     }
-  }, [textToSpeak]);
-  
-  useEffect(() => {
-    if (audioDataUri && !audioRef.current) {
-        audioRef.current = new Audio(audioDataUri);
-        audioRef.current.onended = () => setIsPlaying(false);
-    }
-    if (audioRef.current && audioDataUri) {
-        audioRef.current.src = audioDataUri;
-    }
-  }, [audioDataUri]);
+  }, [textToSpeak, language]);
+
 
   const fetchAndPlayAudio = useCallback(async () => {
+    if (audioDataUri && audioRef.current) {
+      audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+      setIsPlaying(true);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     try {
@@ -52,43 +63,35 @@ export function AudioPlayer({ textToSpeak, language }: AudioPlayerProps) {
       
       if (result.audioDataUri) {
         setAudioDataUri(result.audioDataUri);
+        if (audioRef.current) {
+          audioRef.current.src = result.audioDataUri;
+          audioRef.current.play().catch(e => console.error("Audio play failed:", e));
+          setIsPlaying(true);
+        }
       } else {
         throw new Error('Failed to generate audio.');
       }
     } catch (e) {
       console.error(e);
-      setError('Failed to generate audio.');
+      const errorMessage = 'Failed to generate audio for this text.';
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Audio Error',
-        description: 'Failed to generate audio for this text.',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
     }
-  }, [language, textToSpeak, toast]);
+  }, [language, textToSpeak, toast, audioDataUri]);
 
-  useEffect(() => {
-    if(audioDataUri && audioRef.current && isPlaying) {
-        audioRef.current.play().catch(e => {
-            console.error("Audio play failed:", e)
-            setIsPlaying(false);
-        });
-    }
-  }, [audioDataUri, isPlaying])
 
-  const handlePlayPause = async () => {
-    if (isPlaying) {
-      audioRef.current?.pause();
+  const handlePlayPause = () => {
+    if (isPlaying && audioRef.current) {
+      audioRef.current.pause();
       setIsPlaying(false);
     } else {
-      if (audioDataUri && audioRef.current) {
-        audioRef.current.play().catch(e => console.error(e));
-        setIsPlaying(true);
-      } else if (!isLoading) {
-        await fetchAndPlayAudio();
-        setIsPlaying(true);
-      }
+      fetchAndPlayAudio();
     }
   };
   
