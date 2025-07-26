@@ -73,9 +73,6 @@ const ttsFlow = ai.defineFlow(
             responseModalities: ['AUDIO'],
             speechConfig: {
               languageCode: ttsLang,
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName: 'Algenib' },
-              },
             },
           },
           prompt: text,
