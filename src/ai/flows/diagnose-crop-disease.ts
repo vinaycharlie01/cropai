@@ -87,7 +87,7 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
   },
   async (input) => {
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 5; // Increased from 3 to 5
     const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
     while (attempts < maxAttempts) {
@@ -100,11 +100,11 @@ const diagnoseCropDiseaseFlow = ai.defineFlow(
             return output;
 
         } catch (e: any) {
-             const isServiceOverloaded = e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests');
+             const isServiceOverloaded = e.message?.includes('503 Service Unavailable') || e.message?.includes('429 Too Many Requests') || e.message?.includes('service is overloaded');
             
             if (isServiceOverloaded && attempts < maxAttempts) {
-                console.log(`Attempt ${attempts} failed due to service overload. Retrying in 500ms...`);
-                await delay(500);
+                console.log(`Attempt ${attempts} failed due to service overload. Retrying in ${1000 * attempts}ms...`);
+                await delay(1000 * attempts); // Increased delay with each attempt
                 continue; // Retry the loop
             }
             
