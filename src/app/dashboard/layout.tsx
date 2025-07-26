@@ -4,7 +4,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, LogOut, Moon, Sun, Shield, Landmark, Cloud, MessageSquareHeart } from 'lucide-react';
+import { Menu, HeartPulse, LineChart, ScrollText, Languages, ChevronLeft, BarChartBig, LayoutDashboard, Droplets, LifeBuoy, PieChart, Activity, Search, Moon, Sun, Shield, Landmark, Cloud, MessageSquareHeart } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTheme } from "next-themes";
 import {
@@ -19,16 +19,11 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LogoIcon } from '@/components/icons/logo';
 import { SearchCommand } from '@/components/SearchCommand';
-import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getAuth, signOut } from 'firebase/auth';
-
 
 const navItems = [
   { href: '/dashboard/diagnose', icon: HeartPulse, labelKey: 'diagnoseDisease' },
@@ -55,21 +50,12 @@ const languages = [
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { t, setLanguage, isLanguageSelected } = useLanguage();
-  const { user, loading } = useAuth();
+  const { t, setLanguage } = useLanguage();
   const { setTheme, theme } = useTheme();
   const pathname = usePathname();
-  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [openSearch, setOpenSearch] = useState(false);
   
-  useEffect(() => {
-    if (!loading && !user) {
-      router.replace('/login');
-    }
-  }, [user, loading, router]);
-
-
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -81,20 +67,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener("keydown", down)
   }, []);
   
-  if (loading || !user) {
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-background">
-            <div className="h-16 w-16 animate-spin rounded-full border-4 border-solid border-primary border-t-transparent"></div>
-        </div>
-    );
-  }
-  
-  const handleSignOut = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/login');
-  };
-
   const currentNavItem = navItems.find((item) => pathname.startsWith(item.href));
 
   const handleLanguageChange = (langCode: string) => {
@@ -132,32 +104,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         );
       })}
     </nav>
-  );
-
-  const userMenu = (
-     <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user.photoURL || `https://avatar.vercel.sh/${user.uid}.png`} alt={user.email || 'User'} />
-              <AvatarFallback>{user.email ? user.email.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem className="focus:bg-transparent cursor-default">
-            <div className="flex flex-col">
-              <span className="font-medium text-sm">{user.displayName || user.email}</span>
-              <span className="text-xs text-muted-foreground">{user.phoneNumber || (user.displayName ? user.email : null)}</span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={handleSignOut} className="cursor-pointer">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Sign out</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
   );
 
   const languageSelector = (
@@ -270,7 +216,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Button>
               {themeToggle}
               {languageSelector}
-              {userMenu}
             </div>
           </div>
         </header>
