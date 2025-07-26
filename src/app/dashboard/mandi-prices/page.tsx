@@ -4,21 +4,22 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Bot, Loader2, Search, LineChart, MapPin, BadgeIndianRupee } from 'lucide-react';
+import { Bot, Loader2, Search, LineChart, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { getLiveMandiPriceTool } from '@/ai/flows/get-live-mandi-prices';
-import { MandiPriceRecord } from '@/types/mandi-prices';
+import { predictMandiPrice } from '@/ai/flows/predict-mandi-price';
+import { MandiPricePredictionOutput, MandiPricePredictionInput } from '@/types/mandi-prices';
+import { cn } from '@/lib/utils';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 
 type SearchFormInputs = {
-    state: string;
-    district: string;
-    commodity: string;
+    location: string;
+    cropType: string;
 };
 
 
@@ -28,27 +29,27 @@ export default function MandiPricesPage() {
     const searchForm = useForm<SearchFormInputs>();
     
     const [isLoading, setIsLoading] = useState(false);
-    const [results, setResults] = useState<MandiPriceRecord[] | null>(null);
+    const [prediction, setPrediction] = useState<MandiPricePredictionOutput | null>(null);
 
     const onSearchSubmit: SubmitHandler<SearchFormInputs> = async (data) => {
         setIsLoading(true);
-        setResults(null);
+        setPrediction(null);
         try {
-            const priceResults = await getLiveMandiPriceTool(data);
-            setResults(priceResults);
-            if (priceResults.length === 0) {
-                toast({
-                    title: "No Results",
-                    description: "No market data found for your search. Try a different location or crop.",
-                });
-            }
+            const result = await predictMandiPrice({ ...data, language });
+            setPrediction(result);
         } catch (error) {
-            console.error("Failed to fetch live prices", error);
-            const errorMessage = (error instanceof Error) ? error.message : "Could not fetch live market prices.";
+            console.error("Failed to fetch price prediction", error);
+            const errorMessage = (error instanceof Error) ? error.message : "Could not fetch price prediction.";
             toast({ variant: 'destructive', title: t('error'), description: errorMessage });
         } finally {
             setIsLoading(false);
         }
+    };
+    
+    const TrendIcon = ({ trend }: { trend: 'up' | 'down' | 'stable' }) => {
+        if (trend === 'up') return <TrendingUp className="h-5 w-5 text-green-500" />;
+        if (trend === 'down') return <TrendingDown className="h-5 w-5 text-red-500" />;
+        return <ArrowRight className="h-5 w-5 text-gray-500" />;
     };
 
 
@@ -62,29 +63,25 @@ export default function MandiPricesPage() {
              <Card>
                 <CardHeader>
                     <CardTitle className="font-headline text-2xl flex items-center gap-2"><LineChart />{t('mandiPrices')}</CardTitle>
-                    <CardDescription>{t('mandiPriceInfo')}</CardDescription>
+                    <CardDescription>Get a 4-week AI-powered price forecast for your crop.</CardDescription>
                 </CardHeader>
                 <form onSubmit={searchForm.handleSubmit(onSearchSubmit)}>
-                    <CardContent className="grid md:grid-cols-3 gap-4">
+                    <CardContent className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="state">{t('yourState')}</Label>
-                            <Input id="state" placeholder="e.g., Karnataka" {...searchForm.register('state', { required: "State is required."})} />
-                            {searchForm.formState.errors.state && <p className="text-destructive text-sm">{searchForm.formState.errors.state.message}</p>}
+                            <Label htmlFor="location">{t('location')} (District, State)</Label>
+                            <Input id="location" placeholder="e.g., Kolar, Karnataka" {...searchForm.register('location', { required: "Location is required."})} />
+                            {searchForm.formState.errors.location && <p className="text-destructive text-sm">{searchForm.formState.errors.location.message}</p>}
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="district">District</Label>
-                            <Input id="district" placeholder="e.g., Kolar" {...searchForm.register('district')} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="commodity">{t('crop')}</Label>
-                            <Input id="commodity" placeholder="e.g., Tomato" {...searchForm.register('commodity', { required: "Crop/Commodity is required."})} />
-                             {searchForm.formState.errors.commodity && <p className="text-destructive text-sm">{searchForm.formState.errors.commodity.message}</p>}
+                            <Label htmlFor="cropType">{t('crop')}</Label>
+                            <Input id="cropType" placeholder="e.g., Tomato" {...searchForm.register('cropType', { required: "Crop/Commodity is required."})} />
+                             {searchForm.formState.errors.cropType && <p className="text-destructive text-sm">{searchForm.formState.errors.cropType.message}</p>}
                         </div>
                     </CardContent>
                     <CardFooter>
                          <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Search className="mr-2" />}
-                            Search Prices
+                            {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <Bot className="mr-2" />}
+                            Get Forecast
                         </Button>
                     </CardFooter>
                 </form>
@@ -93,44 +90,42 @@ export default function MandiPricesPage() {
             <AnimatePresence>
                 {isLoading && (
                     <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} className="flex justify-center items-center h-40">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </motion.div>
-                )}
-                {results && results.length > 0 && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="space-y-4"
-                    >
-                        <h2 className="text-xl font-bold">Results for {searchForm.getValues('commodity')} in {searchForm.getValues('district') || searchForm.getValues('state')}</h2>
-                         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {results.map((item, index) => (
-                                <Card key={index} className="bg-background hover:border-primary/50 transition-colors">
-                                    <CardHeader>
-                                        <CardTitle className="text-lg">{item.market}</CardTitle>
-                                        <CardDescription>Variety: {item.variety}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <div className="flex items-baseline gap-2">
-                                            <BadgeIndianRupee className="h-6 w-6 text-primary" />
-                                            <span className="text-3xl font-bold text-primary">{parseInt(item.modal_price).toLocaleString('en-IN')}</span>
-                                            <span className="text-sm text-muted-foreground">/ quintal</span>
-                                        </div>
-                                        <div className="text-xs text-muted-foreground">
-                                           Last updated: {new Date(item.arrival_date.split('/').reverse().join('-')).toLocaleDateString('en-IN')}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                        <div className="text-center space-y-2">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                            <p className="text-muted-foreground">Our AI analyst is crunching the numbers...</p>
                         </div>
                     </motion.div>
                 )}
-                 {results && results.length === 0 && !isLoading && (
-                     <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
-                        <Card className="text-center p-10 border-dashed">
-                             <CardContent className="pt-6">
-                                <p className="text-muted-foreground">No market data found for your search.</p>
-                                <p className="text-sm text-muted-foreground">Please try different criteria or a broader location.</p>
+                {prediction && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-6"
+                    >
+                         <Card>
+                             <CardHeader>
+                                <CardTitle className="flex items-center justify-between">
+                                    <span>Forecast for {prediction.cropType} in {prediction.location}</span>
+                                    <AudioPlayer textToSpeak={prediction.overall_trend} language={language} />
+                                </CardTitle>
+                                <CardDescription>{prediction.overall_trend}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                {prediction.forecast.map((item, index) => (
+                                    <Card key={index} className="bg-background hover:border-primary/50 transition-colors flex flex-col">
+                                        <CardHeader className="flex-row items-center justify-between pb-2">
+                                            <CardTitle className="text-base">{item.week}</CardTitle>
+                                            <TrendIcon trend={item.trend} />
+                                        </CardHeader>
+                                        <CardContent className="flex-grow space-y-2">
+                                            <div className="flex items-baseline gap-2">
+                                                <span className="text-3xl font-bold text-primary">₹{item.price.toLocaleString('en-IN')}</span>
+                                                <span className="text-sm text-muted-foreground">/ quintal</span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">{item.reasoning}</p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
                             </CardContent>
                         </Card>
                     </motion.div>
