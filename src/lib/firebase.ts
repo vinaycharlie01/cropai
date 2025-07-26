@@ -8,7 +8,7 @@ import { getStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 // These variables are loaded from the .env.local file
 const firebaseConfig = {
-  apiKey: "AIzaSyBSGKsRBFnyn5MBx040AsRY75E7Enxdxcw",
+  apiKey: "AIzaSyC_UtrWugUztz9SiQYQ2G4t9Gipv0bb9rk",
   authDomain: "kisan-rakshak-slne1.firebaseapp.com",
   projectId: "kisan-rakshak-slne1",
   storageBucket: "kisan-rakshak-slne1.appspot.com",
