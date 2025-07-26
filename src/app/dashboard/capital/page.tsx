@@ -117,7 +117,7 @@ export default function SmartCapitalPage() {
                             </Button>
                         </CardFooter>
                     </form>
-                </Card>>
+                </Card>
                 
                 {/* Status and Results Column */}
                 <div className="space-y-6">
