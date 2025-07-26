@@ -62,7 +62,7 @@ type FacingMode = 'user' | 'environment';
 // --- Main Component ---
 export default function MonitorPage() {
     const { t } = useLanguage();
-    const [user, loading: authLoading] = useAuthState(auth);
+    const [user, authLoading] = useAuthState(auth);
     const [crops, setCrops] = useState<Crop[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isRegistering, setIsRegistering] = useState(false);
@@ -453,4 +453,3 @@ function AddSnapForm({ crop, onSnapAdded }: { crop: Crop, onSnapAdded: () => voi
         </div>
     );
 }
-
