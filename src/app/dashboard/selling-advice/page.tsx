@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type FormInputs = {
   cropType: string;
@@ -200,7 +201,10 @@ export default function SellingAdvicePage() {
                     </div>
                 </CardHeader>
                 <CardContent className="whitespace-pre-wrap">
-                    <p>{advice.advice}</p>
+                    <div className="flex items-start gap-2">
+                      <p className="flex-1">{advice.advice}</p>
+                      <AudioPlayer textToSpeak={advice.advice} language={language} />
+                    </div>
                 </CardContent>
             </Card>
           </motion.div>

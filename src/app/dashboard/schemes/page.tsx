@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getSchemeRecommendations } from '@/ai/flows/scheme-advisor';
 import { SchemeFinderOutput, SchemeRecommendation } from '@/types/scheme-advisor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 const formSchema = z.object({
     helpType: z.string({ required_error: 'Please select a help type.' }),
@@ -206,7 +207,10 @@ export default function SchemesPage() {
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="space-y-4 pt-2">
-                                                <p className="text-muted-foreground">{scheme.description}</p>
+                                                <div className="flex items-start gap-2">
+                                                    <p className="text-muted-foreground flex-1">{scheme.description}</p>
+                                                    <AudioPlayer textToSpeak={scheme.description} language={language} />
+                                                </div>
                                                 <div>
                                                     <h4 className="font-medium text-primary">{t('schemeEligibility')}:</h4>
                                                     <p className="text-sm text-muted-foreground">{scheme.eligibility}</p>
@@ -217,7 +221,10 @@ export default function SchemesPage() {
                                                 </div>
                                                 <div>
                                                     <h4 className="font-medium text-primary">{t('howToApply')}:</h4>
-                                                    <p className="text-sm text-muted-foreground">{scheme.howToApply}</p>
+                                                    <div className="flex items-start gap-2">
+                                                        <p className="text-sm text-muted-foreground flex-1">{scheme.howToApply}</p>
+                                                        <AudioPlayer textToSpeak={scheme.howToApply} language={language} />
+                                                    </div>
                                                 </div>
                                                 <Button asChild variant="outline">
                                                     <a href={scheme.applicationUrl} target="_blank" rel="noopener noreferrer">

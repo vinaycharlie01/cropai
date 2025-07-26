@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type FormInputs = {
   cropType: string;
@@ -222,7 +223,10 @@ export default function IrrigationPage() {
                     <div className="space-y-4">
                         <div>
                             <h4 className="font-semibold text-muted-foreground">{t('reasoning')}</h4>
-                            <p>{advice.reasoning}</p>
+                            <div className="flex items-start gap-2">
+                              <p className="flex-1">{advice.reasoning}</p>
+                              <AudioPlayer textToSpeak={advice.reasoning} language={language} />
+                            </div>
                         </div>
                          <div>
                             <h4 className="font-semibold text-muted-foreground">{t('suggestedAmount')}</h4>

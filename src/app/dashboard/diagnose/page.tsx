@@ -22,6 +22,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getTtsLanguageCode } from '@/lib/translations';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 
 type FormInputs = {
@@ -33,19 +34,22 @@ type FormInputs = {
 type SttField = 'cropType' | 'location';
 type FacingMode = 'user' | 'environment';
 
-const HighlightedText = ({ text }: { text: string }) => {
+const HighlightedText = ({ text, language }: { text: string, language: string }) => {
     const parts = text.split(/(\*\*.*?\*\*)/g);
     return (
-        <p>
-            {parts.map((part, index) =>
-                part.startsWith('**') && part.endsWith('**') ? (
-                    <strong key={index} className="font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
-                        {part.slice(2, -2)}
-                    </strong>
-                ) : (
-                    part
-                )
-            )}
+        <p className="flex items-start gap-2">
+            <span className="flex-1">
+                {parts.map((part, index) =>
+                    part.startsWith('**') && part.endsWith('**') ? (
+                        <strong key={index} className="font-bold text-primary bg-primary/10 px-1 py-0.5 rounded-sm">
+                            {part.slice(2, -2)}
+                        </strong>
+                    ) : (
+                        part
+                    )
+                )}
+            </span>
+            <AudioPlayer textToSpeak={text.replace(/\*\*/g, '')} language={language} />
         </p>
     );
 };
@@ -438,7 +442,7 @@ export default function DiagnosePage() {
                       </div>
                        <div>
                         <h3 className="font-semibold text-muted-foreground">{t('treatment')}</h3>
-                        <HighlightedText text={diagnosis.treatment} />
+                        <HighlightedText text={diagnosis.treatment} language={language} />
                       </div>
                        {diagnosis.pesticideRecommendations && diagnosis.pesticideRecommendations.length > 0 && (
                         <div>
@@ -447,7 +451,10 @@ export default function DiagnosePage() {
                                 {diagnosis.pesticideRecommendations.map((p, index) => (
                                     <div key={index} className="p-4 bg-muted/50 rounded-lg">
                                         <p className="font-bold text-primary">{p.pesticideName}</p>
-                                        <p className="text-sm my-1">{p.usageInstructions}</p>
+                                        <div className="flex items-start gap-2">
+                                            <p className="text-sm my-1 flex-1">{p.usageInstructions}</p>
+                                            <AudioPlayer textToSpeak={p.usageInstructions} language={language} />
+                                        </div>
                                         <Button size="sm" variant="outline" asChild>
                                             <a href={p.productUrl} target="_blank" rel="noopener noreferrer">
                                                 <ShoppingCart className="mr-2" /> {t('buyNow')}
@@ -460,7 +467,10 @@ export default function DiagnosePage() {
                        )}
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('remedies')}</h3>
-                        <p>{diagnosis.remedies}</p>
+                        <div className="flex items-start gap-2">
+                          <p className="flex-1">{diagnosis.remedies}</p>
+                          <AudioPlayer textToSpeak={diagnosis.remedies} language={language} />
+                        </div>
                       </div>
                       <div>
                         <h3 className="font-semibold text-muted-foreground">{t('confidence')}</h3>
