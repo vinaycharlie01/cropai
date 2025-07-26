@@ -49,12 +49,13 @@ const prompt = ai.definePrompt({
 *   Rule 1: If the requested amount is over ₹50,000, mark it for 'pending_review' as it requires manual verification. Set approvedAmount to 0.
 *   Rule 2: If the requested amount is under ₹10,000, 'approve' it for the full amount.
 *   Rule 3: If the amount is between ₹10,000 and ₹50,000, 'approve' it, but for 80% of the requested amount.
+*   Rule 4 (Fallback): If the purpose does not fit the common categories or is unclear, mark it as 'pending_review' for a standard check. Set approvedAmount to 0.
 *   Calculate the approved amount based on these rules.
 
 **YOUR TASK:**
 1.  Determine the 'status' and 'approvedAmount' based on the rules above.
 2.  Write a 'recommendation' message. It should be positive and encouraging, even if the amount is reduced or pending.
-3.  Write a 'reasoning' message. Explain *why* the decision was made in very simple terms. For approvals, mention it's based on their good farming history (simulated). For pending, explain it's a standard check for larger amounts.
+3.  Write a 'reasoning' message. Explain *why* the decision was made in very simple terms. For approvals, mention it's based on their good farming history (simulated). For pending, explain it's a standard check for larger amounts or specific requests.
 4.  Your entire response (recommendation and reasoning) MUST be in the requested language: **{{{language}}}**.
 5.  Provide the output in the specified JSON format.
 
@@ -71,11 +72,11 @@ const loanEligibilityFlow = ai.defineFlow(
   async input => {
     // In a real application, this is where you would:
     // 1. Fetch farmer data from Firestore based on input.userId.
-    // 2. Call a deployed Vertex AI model with the aggregated data.
+    // 2. Call a deployed credit scoring model.
     // 3. Pass the real AI score and farmer data into the prompt.
     const {output} = await prompt(input); // For now, we pass the input directly to the simulation prompt.
     if (!output) {
-        throw new Error("The AI model did not return a valid loan assessment.");
+        throw new Error("The AI model did not return a valid loan assessment. Please try again.");
     }
     return output;
   }
