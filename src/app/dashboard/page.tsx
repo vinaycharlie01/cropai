@@ -95,7 +95,7 @@ const carouselSlides = [
         descriptionKey: "mandiPricesDescription",
         buttonKey: "getStarted",
         href: "/dashboard/mandi-prices",
-        imgSrc: "https://placehold.co/1920x1080.png",
+        imgSrc: "https://iili.io/Fk8EfBs.jpg",
         imgHint: "market produce"
     },
     {
