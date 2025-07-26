@@ -112,7 +112,6 @@ export default function MonitorPage() {
             await addDoc(collection(db, "userCrops"), {
                 userId: user.uid,
                 ...data,
-                cropId: `${user.uid}_${data.cropType.toLowerCase()}_${format(data.sowingDate, 'yyyy-MM-dd')}`,
                 createdAt: serverTimestamp(),
             });
             setIsFormOpen(false);
