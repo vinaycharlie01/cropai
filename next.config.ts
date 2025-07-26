@@ -1,4 +1,5 @@
 
+import {genkit} from '@genkit-ai/next';
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -34,4 +35,4 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["**/*.cloudworkstations.dev", "**/*.firebase.studio"],
 };
 
-export default nextConfig;
+export default genkit(nextConfig);
