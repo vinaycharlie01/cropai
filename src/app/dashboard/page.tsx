@@ -103,7 +103,7 @@ const carouselSlides = [
         descriptionKey: "weatherInstruction",
         buttonKey: "getForecast",
         href: "/dashboard/weather",
-        imgSrc: "https://placehold.co/1920x1080.png",
+        imgSrc: "https://iili.io/FkmytLJ.jpg",
         imgHint: "sky clouds"
     },
     {
@@ -114,14 +114,7 @@ const carouselSlides = [
         imgSrc: "https://iili.io/FjhJ7cB.jpg",
         imgHint: "farm landscape sunset"
     },
-    {
-        titleKey: "aiSellingAdvice",
-        descriptionKey: "aiSellingAdviceDesc",
-        buttonKey: "getAdvice",
-        href: "/dashboard/selling-advice",
-        imgSrc: "https://iili.io/FjhJ7cB.jpg",
-        imgHint: "market stall vegetables"
-    },
+    
 ];
 
 export default function DashboardPage() {
