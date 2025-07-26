@@ -17,10 +17,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useToast } from '@/hooks/use-toast';
 import { getSchemeRecommendations } from '@/ai/flows/scheme-advisor';
-import { generateSpeech } from '@/ai/flows/tts-flow';
 import { SchemeFinderOutput, SchemeRecommendation } from '@/types/scheme-advisor';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { AudioPlayer } from '@/components/AudioPlayer';
 
 const formSchema = z.object({
     helpType: z.string({ required_error: 'Please select a help type.' }),
@@ -33,12 +31,6 @@ const formSchema = z.object({
 
 type FormInputs = z.infer<typeof formSchema>;
 
-interface SchemeWithAudio extends SchemeRecommendation {
-    audioSrc: string | null;
-    isAudioLoading: boolean;
-}
-
-
 const helpTypes = ['cropInsurance', 'irrigation', 'financialSupport', 'equipmentSubsidy', 'soilHealth', 'generalSupport'];
 const farmerTypes = ['landholder', 'tenant', 'sharecropper', 'womanFarmer'];
 
@@ -50,7 +42,7 @@ export default function SchemesPage() {
     });
 
     const [isLoading, setIsLoading] = useState(false);
-    const [recommendations, setRecommendations] = useState<SchemeWithAudio[] | null>(null);
+    const [recommendations, setRecommendations] = useState<SchemeRecommendation[] | null>(null);
 
     const hasLand = watch('hasLand');
 
@@ -66,7 +58,7 @@ export default function SchemesPage() {
                 });
                 setRecommendations([]);
             } else {
-                setRecommendations(result.map(r => ({ ...r, audioSrc: null, isAudioLoading: false })));
+                setRecommendations(result);
             }
         } catch (e) {
             console.error(e);
@@ -76,52 +68,6 @@ export default function SchemesPage() {
             setIsLoading(false);
         }
     };
-    
-    const getSchemeTextForTts = (scheme: SchemeRecommendation) => {
-        return `
-            Scheme Name: ${scheme.schemeName}.
-            Description: ${scheme.description}.
-            Eligibility: ${scheme.eligibility}.
-            Benefits: ${scheme.benefits}.
-            How to Apply: ${scheme.howToApply}.
-        `;
-    };
-
-    const handlePlaybackRequest = useCallback(async (index: number) => {
-        if (!recommendations) return;
-
-        const targetScheme = recommendations[index];
-        if (targetScheme.audioSrc) return; // Already loaded
-
-        // Set loading state for the specific item
-        setRecommendations(prev => {
-            if (!prev) return null;
-            const newRecs = [...prev];
-            newRecs[index].isAudioLoading = true;
-            return newRecs;
-        });
-
-        try {
-            const textToSpeak = getSchemeTextForTts(targetScheme);
-            const response = await generateSpeech({ text: textToSpeak, language });
-             setRecommendations(prev => {
-                if (!prev) return null;
-                const newRecs = [...prev];
-                newRecs[index].audioSrc = response.audioDataUri;
-                return newRecs;
-            });
-        } catch (err) {
-            console.error('TTS Generation Error:', err);
-            toast({ variant: 'destructive', title: 'Audio Error', description: 'Failed to generate audio.' });
-        } finally {
-             setRecommendations(prev => {
-                if (!prev) return null;
-                const newRecs = [...prev];
-                newRecs[index].isAudioLoading = false;
-                return newRecs;
-            });
-        }
-    }, [recommendations, language, toast]);
 
     return (
         <motion.div
@@ -257,11 +203,6 @@ export default function SchemesPage() {
                                             <AccordionTrigger className="font-semibold text-lg hover:no-underline text-left">
                                                 <div className="flex justify-between items-center w-full pr-4">
                                                     <span>{scheme.schemeName}</span>
-                                                    <AudioPlayer
-                                                        audioSrc={scheme.audioSrc}
-                                                        isLoading={scheme.isAudioLoading}
-                                                        onPlaybackRequest={() => handlePlaybackRequest(index)}
-                                                    />
                                                 </div>
                                             </AccordionTrigger>
                                             <AccordionContent className="space-y-4 pt-2">
