@@ -73,7 +73,7 @@ const ttsFlow = ai.defineFlow(
     
     try {
         const { media } = await ai.generate({
-            model: 'googleai/gemini-2.5-flash-preview-tts', // Corrected model invocation
+            model: 'googleai/gemini-2.5-flash-preview-tts',
             config: {
                 responseModalities: ['AUDIO'],
                 speechConfig: {
