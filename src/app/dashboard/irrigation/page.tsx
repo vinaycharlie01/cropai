@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Droplets, Loader2, Search, Wind, Sun, Cloud, CloudRain, Mic } from 'lucide-react';
 
 import { getIrrigationAdvice, IrrigationAdviceOutput } from '@/ai/flows/irrigation-advice';
+import { generateSpeech } from '@/ai/flows/tts-flow';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
+import { AudioPlayer } from '@/components/AudioPlayer';
 
 type FormInputs = {
   cropType: string;
@@ -38,6 +40,8 @@ export default function IrrigationPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [activeSttField, setActiveSttField] = useState<SttField | null>(null);
+  const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
 
   const onRecognitionResult = useCallback((result: string) => {
     if (activeSttField) {
@@ -56,6 +60,30 @@ export default function IrrigationPage() {
     onEnd: () => setActiveSttField(null),
   });
 
+  const getAudio = useCallback(async (textToSpeak: string) => {
+    setIsAudioLoading(true);
+    try {
+      const response = await generateSpeech({ text: textToSpeak, language });
+      setAudioSrc(response.audioDataUri);
+    } catch (err) {
+      console.error('TTS Generation Error:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Audio Error',
+        description: 'Failed to generate audio for this text.',
+      });
+    } finally {
+      setIsAudioLoading(false);
+    }
+  }, [language, toast]);
+
+  const handlePlaybackRequest = () => {
+    if (advice) {
+        const textToSpeak = `Recommendation: ${advice.recommendation}. Reasoning: ${advice.reasoning}. Suggested Amount: ${advice.amount}.`;
+        getAudio(textToSpeak);
+    }
+  };
+
   const handleSttToggle = (field: SttField) => {
     if (isListening && activeSttField === field) {
         stopListening();
@@ -71,10 +99,13 @@ export default function IrrigationPage() {
     setIsLoading(true);
     setError(null);
     setAdvice(null);
+    setAudioSrc(null);
 
     try {
       const result = await getIrrigationAdvice({ ...data, language });
       setAdvice(result);
+      const textToSpeak = `Recommendation: ${result.recommendation}. Reasoning: ${result.reasoning}. Suggested Amount: ${result.amount}.`;
+      getAudio(textToSpeak);
     } catch (e) {
       console.error(e);
       setError(t('errorGettingAdvice'));
@@ -207,9 +238,16 @@ export default function IrrigationPage() {
           >
             <Card className="bg-background">
                 <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Bot />
-                        <CardTitle className="font-headline">{t('irrigationAdvice')}</CardTitle>
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Bot />
+                            <CardTitle className="font-headline">{t('irrigationAdvice')}</CardTitle>
+                        </div>
+                        <AudioPlayer
+                            audioSrc={audioSrc}
+                            isLoading={isAudioLoading}
+                            onPlaybackRequest={handlePlaybackRequest}
+                        />
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6">
