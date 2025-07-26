@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useForm, SubmitHandler, Controller } from 'react-hook-form';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, Bot, Loader2, Activity, Sprout, Video, Camera, SwitchCamera, Mic, PlusCircle, LineChart, Image as ImageIcon } from 'lucide-react';
+import { Upload, Bot, Loader2, Activity, Sprout, Video, Camera, SwitchCamera, Mic, PlusCircle, LineChart, Image as ImageIcon, Trash2, MoreVertical, AlertTriangle } from 'lucide-react';
 import { format, formatDistanceToNowStrict, differenceInDays } from 'date-fns';
 
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -16,7 +16,6 @@ import { Label } from '@/components/ui/label';
 import { useToast } from "@/hooks/use-toast";
 import { monitorCropGrowth, CropGrowthOutput } from '@/ai/flows/daily-crop-growth';
 import { generateSpeech } from '@/ai/flows/tts-flow';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSpeechRecognition } from '@/hooks/use-speech-recognition';
 import { getTtsLanguageCode } from '@/lib/translations';
@@ -25,8 +24,25 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDocs, orderBy } from 'firebase/firestore';
+import { collection, addDoc, query, where, onSnapshot, serverTimestamp, doc, updateDoc, getDocs, orderBy, deleteDoc } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 // --- Types ---
 
@@ -73,7 +89,7 @@ export default function MonitorPage() {
     useEffect(() => {
         if (!user) return;
         setIsLoading(true);
-        const q = query(collection(db, "userCrops"), where("userId", "==", user.uid));
+        const q = query(collection(db, "userCrops"), where("userId", "==", user.uid), orderBy("sowingDate", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const userCrops = snapshot.docs.map(doc => ({
                 id: doc.id,
@@ -194,6 +210,7 @@ function CropCard({ crop }: { crop: Crop }) {
     const [snaps, setSnaps] = useState<Snap[]>([]);
     const [isSnapsLoading, setIsSnapsLoading] = useState(true);
     const [isSnapFormOpen, setIsSnapFormOpen] = useState(false);
+    const { toast } = useToast();
     const lastSnap = snaps[0];
     
     useEffect(() => {
@@ -210,13 +227,56 @@ function CropCard({ crop }: { crop: Crop }) {
         return () => unsubscribe();
     }, [crop.id]);
 
+    const handleDeleteCrop = async () => {
+        try {
+            await deleteDoc(doc(db, "userCrops", crop.id));
+            toast({ title: "Crop Deleted", description: `"${crop.cropType}" has been removed.` });
+        } catch (error) {
+            console.error("Error deleting crop: ", error);
+            toast({ variant: "destructive", title: "Error", description: "Could not delete crop." });
+        }
+    };
+
     const daysSinceSowing = differenceInDays(new Date(), crop.sowingDate);
     
     return (
         <Card className="flex flex-col">
             <CardHeader>
-                <CardTitle>{crop.cropType}</CardTitle>
-                <CardDescription>{t('sownOn', { date: format(crop.sowingDate, 'PPP') })}</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>{crop.cropType}</CardTitle>
+                        <CardDescription>{t('sownOn', { date: format(crop.sowingDate, 'PPP') })}</CardDescription>
+                    </div>
+                    <AlertDialog>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon"><MoreVertical /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem className="text-destructive" onSelect={(e) => e.preventDefault()}>
+                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Crop
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete your crop
+                                    and all its associated snaps from our servers.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleDeleteCrop} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Yes, delete crop
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
                 <div className="text-sm font-semibold text-primary pt-2">{t('daysOld', { count: daysSinceSowing })}</div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
