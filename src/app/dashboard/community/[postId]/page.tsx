@@ -112,7 +112,7 @@ export default function PostDetailsPage() {
                  <CardHeader className="flex flex-row items-start gap-4 space-y-0">
                     <Avatar>
                         <AvatarImage src={post.authorPhotoURL || `https://avatar.vercel.sh/${post.authorId}.png`} />
-                        <AvatarFallback>{post.authorName.charAt(0)}</AvatarFallback>
+                        <AvatarFallback>{post.authorName ? post.authorName.charAt(0) : 'A'}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                         <p className="font-semibold">{post.authorName}</p>
@@ -142,7 +142,7 @@ export default function PostDetailsPage() {
                         <div key={comment.id} className="flex items-start gap-3">
                             <Avatar className="h-8 w-8">
                                 <AvatarImage src={comment.authorPhotoURL || `https://avatar.vercel.sh/${comment.authorId}.png`} />
-                                <AvatarFallback>{comment.authorName.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{comment.authorName ? comment.authorName.charAt(0) : 'U'}</AvatarFallback>
                             </Avatar>
                             <div className="bg-muted p-3 rounded-lg flex-1">
                                 <div className="flex items-baseline gap-2">
